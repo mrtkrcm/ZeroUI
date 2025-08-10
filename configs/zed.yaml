@@ -1,0 +1,155 @@
+app_name: "Zed"
+config_path: "~/.config/zed/settings.json"
+config_type: "json"
+
+settings:
+  theme:
+    name: "theme"
+    type: "string"
+    description: "The color theme for the editor interface."
+    example: "One Dark"
+    category: "appearance"
+
+  buffer_font_family:
+    name: "buffer_font_family"
+    type: "string"
+    description: "The font family for editor text."
+    default_value: "Zed Plex Mono"
+    example: "JetBrains Mono"
+    category: "font"
+
+  buffer_font_size:
+    name: "buffer_font_size"
+    type: "number"
+    description: "The font size for editor text in pixels."
+    default_value: 15
+    example: 16
+    category: "font"
+
+  ui_font_size:
+    name: "ui_font_size"
+    type: "number"
+    description: "The font size for UI elements in pixels."
+    default_value: 16
+    example: 18
+    category: "font"
+
+  base_keymap:
+    name: "base_keymap"
+    type: "string"
+    description: "Base keymap to use for key bindings."
+    valid_values: ["VSCode", "Atom", "JetBrains", "None", "SublimeText", "TextMate"]
+    default_value: "VSCode"
+    category: "keybinds"
+
+  vim_mode:
+    name: "vim_mode"
+    type: "boolean"
+    description: "Enable Vim key bindings."
+    default_value: false
+    category: "behavior"
+
+  autosave:
+    name: "autosave"
+    type: "string"
+    description: "When to automatically save files."
+    valid_values: ["off", "on_focus_change", "on_window_change", "after_delay"]
+    default_value: "off"
+    category: "behavior"
+
+  tab_size:
+    name: "tab_size"
+    type: "number"
+    description: "Number of spaces per tab."
+    default_value: 4
+    example: 2
+    category: "editor"
+
+  hard_tabs:
+    name: "hard_tabs"
+    type: "boolean"
+    description: "Use tab characters instead of spaces."
+    default_value: false
+    category: "editor"
+
+  show_whitespaces:
+    name: "show_whitespaces"
+    type: "string"
+    description: "When to show whitespace characters."
+    valid_values: ["none", "selection", "all"]
+    default_value: "none"
+    category: "editor"
+
+  wrap_guides:
+    name: "wrap_guides"
+    type: "array"
+    description: "Column positions to show wrap guides."
+    example: [80, 120]
+    category: "editor"
+
+  auto_update:
+    name: "auto_update"
+    type: "boolean"
+    description: "Enable automatic updates."
+    default_value: true
+    category: "behavior"
+
+  telemetry:
+    name: "telemetry"
+    type: "boolean"
+    description: "Enable telemetry data collection."
+    default_value: true
+    category: "behavior"
+
+  project_panel:
+    name: "project_panel"
+    type: "object"
+    description: "Configuration for the project panel."
+    category: "ui"
+
+  terminal:
+    name: "terminal"
+    type: "object"
+    description: "Integrated terminal configuration."
+    category: "terminal"
+
+  lsp:
+    name: "lsp"
+    type: "object"
+    description: "Language server configuration."
+    category: "language"
+
+  file_scan_exclusions:
+    name: "file_scan_exclusions"
+    type: "array"
+    description: "Patterns for files to exclude from scanning."
+    example: ["**/.git", "**/node_modules"]
+    category: "files"
+
+  format_on_save:
+    name: "format_on_save"
+    type: "boolean"
+    description: "Format files automatically on save."
+    default_value: false
+    category: "editor"
+
+  confirm_quit:
+    name: "confirm_quit"
+    type: "boolean"
+    description: "Confirm before quitting the application."
+    default_value: false
+    category: "behavior"
+
+  restore_on_startup:
+    name: "restore_on_startup"
+    type: "string"
+    description: "What to restore when starting Zed."
+    valid_values: ["last_session", "last_workspace", "none"]
+    default_value: "last_session"
+    category: "behavior"
+
+  indent_guides:
+    name: "indent_guides"
+    type: "object"
+    description: "Indentation guide configuration."
+    category: "editor"

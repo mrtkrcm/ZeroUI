@@ -1,0 +1,153 @@
+app_name: "Ghostty"
+config_path: "~/.config/ghostty/config"
+config_type: "toml"
+
+settings:
+  font-family:
+    name: "font-family"
+    type: "string"
+    description: "The font family to use for terminal text. You can specify multiple fonts for fallback."
+    example: "JetBrains Mono"
+    category: "font"
+
+  font-size:
+    name: "font-size"
+    type: "number"
+    description: "Font size in points. Can be fractional for precise sizing."
+    default_value: 12
+    example: 14
+    category: "font"
+
+  theme:
+    name: "theme"
+    type: "string"
+    description: "Color theme for the terminal. Can be built-in theme name or path to custom theme file."
+    valid_values: ["default", "dark", "light"]
+    example: "dark"
+    category: "appearance"
+
+  background:
+    name: "background"
+    type: "string"
+    description: "Background color of the terminal in hex format."
+    example: "#1e1e1e"
+    category: "appearance"
+
+  foreground:
+    name: "foreground"
+    type: "string"
+    description: "Foreground (text) color of the terminal in hex format."
+    example: "#ffffff"
+    category: "appearance"
+
+  cursor-style:
+    name: "cursor-style"
+    type: "string"
+    description: "The style of the terminal cursor."
+    valid_values: ["block", "bar", "underline"]
+    default_value: "block"
+    example: "bar"
+    category: "behavior"
+
+  cursor-blink:
+    name: "cursor-blink"
+    type: "boolean"
+    description: "Whether the cursor should blink."
+    default_value: false
+    category: "behavior"
+
+  window-padding:
+    name: "window-padding"
+    type: "number"
+    description: "Padding around the terminal content in pixels."
+    default_value: 0
+    example: 10
+    category: "appearance"
+
+  window-width:
+    name: "window-width"
+    type: "number"
+    description: "Default window width in characters."
+    default_value: 80
+    example: 120
+    category: "window"
+
+  window-height:
+    name: "window-height"
+    type: "number"
+    description: "Default window height in characters."
+    default_value: 24
+    example: 40
+    category: "window"
+
+  shell-integration:
+    name: "shell-integration"
+    type: "boolean"
+    description: "Enable shell integration features for enhanced functionality."
+    default_value: true
+    category: "behavior"
+
+  scrollback-limit:
+    name: "scrollback-limit"
+    type: "number"
+    description: "Maximum number of lines to keep in scrollback buffer."
+    default_value: 10000
+    example: 50000
+    category: "behavior"
+
+  copy-on-select:
+    name: "copy-on-select"
+    type: "boolean"
+    description: "Automatically copy text to clipboard when selected."
+    default_value: false
+    category: "behavior"
+
+  mouse-hide-while-typing:
+    name: "mouse-hide-while-typing"
+    type: "boolean"
+    description: "Hide mouse cursor while typing."
+    default_value: true
+    category: "behavior"
+
+  background-opacity:
+    name: "background-opacity"
+    type: "number"
+    description: "Opacity level of the background (0.0 to 1.0)."
+    default_value: 1.0
+    example: 0.9
+    category: "appearance"
+
+  window-decoration:
+    name: "window-decoration"
+    type: "boolean"
+    description: "Show window title bar and borders."
+    default_value: true
+    category: "window"
+
+  fullscreen:
+    name: "fullscreen"
+    type: "boolean"
+    description: "Start in fullscreen mode."
+    default_value: false
+    category: "window"
+
+  confirm-close-surface:
+    name: "confirm-close-surface"
+    type: "boolean"
+    description: "Confirm before closing terminal with running processes."
+    default_value: true
+    category: "behavior"
+
+  title:
+    name: "title"
+    type: "string"
+    description: "Default window title."
+    example: "Ghostty Terminal"
+    category: "window"
+
+  working-directory:
+    name: "working-directory"
+    type: "string"
+    description: "Default working directory for new terminals."
+    example: "~/Projects"
+    category: "behavior"

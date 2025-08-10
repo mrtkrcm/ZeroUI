@@ -1,0 +1,165 @@
+app_name: "Mise"
+config_path: "~/.config/mise/config.toml"
+config_type: "toml"
+
+settings:
+  activate_aggressive:
+    name: "activate_aggressive"
+    type: "boolean"
+    description: "Push tools' bin-paths to front of PATH instead of allowing modifications after activation."
+    default_value: false
+    category: "environment"
+
+  all_compile:
+    name: "all_compile"
+    type: "boolean"
+    description: "Do not use precompiled binaries for all languages. Useful for Alpine Linux."
+    default_value: false
+    category: "installation"
+
+  always_keep_download:
+    name: "always_keep_download"
+    type: "boolean"
+    description: "Keep downloaded files after installation."
+    default_value: false
+    category: "installation"
+
+  always_keep_install:
+    name: "always_keep_install"
+    type: "boolean"
+    description: "Keep install files after installation even if it fails."
+    default_value: false
+    category: "installation"
+
+  auto_install:
+    name: "auto_install"
+    type: "boolean"
+    description: "Automatically install missing tools when running commands."
+    default_value: true
+    category: "behavior"
+
+  cache_prune_age:
+    name: "cache_prune_age"
+    type: "string"
+    description: "Age of cache files before considered stale (e.g., '30d', '1w')."
+    default_value: "30d"
+    example: "7d"
+    category: "cache"
+
+  color:
+    name: "color"
+    type: "boolean"
+    description: "Use color in terminal output."
+    default_value: true
+    category: "ui"
+
+  default_config_filename:
+    name: "default_config_filename"
+    type: "string"
+    description: "Default config filename for new config files."
+    default_value: "mise.toml"
+    example: ".mise.toml"
+    category: "behavior"
+
+  disable_backends:
+    name: "disable_backends"
+    type: "array"
+    description: "List of backends to disable (e.g., asdf, pipx)."
+    example: ["asdf", "pipx"]
+    category: "advanced"
+
+  disable_hints:
+    name: "disable_hints"
+    type: "array"
+    description: "Disable specific helpful hints."
+    example: ["python_multi"]
+    category: "ui"
+
+  disable_tools:
+    name: "disable_tools"
+    type: "array"
+    description: "Tools defined in mise.toml that should be ignored."
+    category: "tools"
+
+  enable_tools:
+    name: "enable_tools"
+    type: "array"
+    description: "Tools defined in mise.toml that should be used (whitelist mode)."
+    category: "tools"
+
+  env:
+    name: "env"
+    type: "array"
+    description: "Enables profile-specific config files (e.g., .mise.development.toml)."
+    example: ["development", "production"]
+    category: "environment"
+
+  jobs:
+    name: "jobs"
+    type: "number"
+    description: "Number of parallel jobs for installations."
+    default_value: 4
+    category: "performance"
+
+  legacy_version_file:
+    name: "legacy_version_file"
+    type: "boolean"
+    description: "Use legacy .tool-versions files."
+    default_value: true
+    category: "behavior"
+
+  node_compile:
+    name: "node_compile"
+    type: "boolean"
+    description: "Compile Node.js from source instead of using prebuilt binaries."
+    default_value: false
+    category: "installation"
+
+  python_compile:
+    name: "python_compile"
+    type: "boolean"
+    description: "Compile Python from source instead of using prebuilt binaries."
+    default_value: false
+    category: "installation"
+
+  quiet:
+    name: "quiet"
+    type: "boolean"
+    description: "Suppress non-error output."
+    default_value: false
+    category: "ui"
+
+  raw:
+    name: "raw"
+    type: "boolean"
+    description: "Directly pipe command output (no mise processing)."
+    default_value: false
+    category: "behavior"
+
+  verbose:
+    name: "verbose"
+    type: "boolean"
+    description: "Show verbose output."
+    default_value: false
+    category: "ui"
+
+  yes:
+    name: "yes"
+    type: "boolean"
+    description: "Answer yes to all prompts automatically."
+    default_value: false
+    category: "behavior"
+
+  trusted_config_paths:
+    name: "trusted_config_paths"
+    type: "array"
+    description: "Paths that are trusted to run arbitrary code."
+    example: ["~/work", "~/projects"]
+    category: "security"
+
+  experimental:
+    name: "experimental"
+    type: "boolean"
+    description: "Enable experimental features."
+    default_value: false
+    category: "advanced"
