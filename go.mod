@@ -2,7 +2,7 @@ module github.com/mrtkrcm/ZeroUI
 
 // TODO: Update dependencies for security and performance (Week 2):
 // TODO: - Add github.com/go-playground/validator/v10 for validation
-// TODO: - Add github.com/hashicorp/golang-lru for LRU caching  
+// TODO: - Add github.com/hashicorp/golang-lru for LRU caching
 // TODO: - Consider github.com/spf13/cast for type conversions
 // TODO: - Add github.com/fsnotify/fsnotify for file watching
 
@@ -15,6 +15,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/golang/mock v1.6.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/knadh/koanf/parsers/json v1.0.0
 	github.com/knadh/koanf/parsers/toml v0.1.0
 	github.com/knadh/koanf/parsers/yaml v1.1.0
@@ -24,6 +25,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.10.0
+	github.com/go-playground/validator/v10 v10.22.1
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.0
 	go.opentelemetry.io/otel/metric v1.21.0

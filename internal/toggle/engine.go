@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
@@ -22,9 +24,8 @@ type Engine struct {
 	loader *config.Loader
 	logger *logger.Logger
 	homeDir string // Cache for home directory
-	pathCache map[string]string // Cache for expanded paths
-	// TODO: Add mutex for thread-safe access to pathCache (HIGH PRIORITY)
-	// TODO: Implement LRU cache with 1000 entry limit to prevent memory leak (CRITICAL)
+	pathCache *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
+	pathMutex sync.RWMutex // Thread-safe access to pathCache
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -35,22 +36,24 @@ func NewEngine() (*Engine, error) {
 	}
 
 	homeDir, _ := os.UserHomeDir()
+	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
 		loader: loader,
 		logger: logger.Global(), // Use global logger for backwards compatibility
 		homeDir: homeDir,
-		pathCache: make(map[string]string),
+		pathCache: pathCache,
 	}, nil
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
 func NewEngineWithDeps(configLoader *config.Loader, log *logger.Logger) *Engine {
 	homeDir, _ := os.UserHomeDir()
+	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
 		loader: configLoader,
 		logger: log,
 		homeDir: homeDir,
-		pathCache: make(map[string]string),
+		pathCache: pathCache,
 	}
 }
 
@@ -561,12 +564,15 @@ func (e *Engine) setEnvironmentVariables(envVars map[string]string) error {
 	return nil
 }
 
-// expandPath efficiently expands ~ to home directory with caching
+// expandPath efficiently expands ~ to home directory with thread-safe LRU caching
 func (e *Engine) expandPath(path string) string {
-	// Check cache first
-	if expanded, exists := e.pathCache[path]; exists {
+	// Check cache first with read lock
+	e.pathMutex.RLock()
+	if expanded, exists := e.pathCache.Get(path); exists {
+		e.pathMutex.RUnlock()
 		return expanded
 	}
+	e.pathMutex.RUnlock()
 
 	// Expand path
 	var expanded string
@@ -576,7 +582,10 @@ func (e *Engine) expandPath(path string) string {
 		expanded = path
 	}
 
-	// Cache the result
-	e.pathCache[path] = expanded
+	// Cache the result with write lock
+	e.pathMutex.Lock()
+	e.pathCache.Add(path, expanded)
+	e.pathMutex.Unlock()
+	
 	return expanded
 }
