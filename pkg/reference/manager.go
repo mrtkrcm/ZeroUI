@@ -11,13 +11,13 @@ func (rm *ReferenceManager) GetReference(appName string) (*ConfigReference, erro
 	if ref, exists := rm.cache[appName]; exists {
 		return ref, nil
 	}
-	
+
 	// Load from source
 	ref, err := rm.loader.LoadReference(appName)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache and return
 	rm.cache[appName] = ref
 	return ref, nil
@@ -29,7 +29,7 @@ func (rm *ReferenceManager) ValidateConfiguration(appName, settingName string, v
 	if err != nil {
 		return nil, err
 	}
-	
+
 	setting, exists := ref.Settings[settingName]
 	if !exists {
 		return &ValidationResult{
@@ -38,20 +38,20 @@ func (rm *ReferenceManager) ValidateConfiguration(appName, settingName string, v
 			Suggestions: findSimilarSettings(ref, settingName),
 		}, nil
 	}
-	
+
 	return validateSetting(setting, value), nil
 }
 
 // validateSetting validates a value against a setting definition
 func validateSetting(setting ConfigSetting, value interface{}) *ValidationResult {
 	result := &ValidationResult{Valid: true}
-	
+
 	// Type validation
 	if !isValidType(setting.Type, value) {
 		result.Valid = false
 		result.Errors = append(result.Errors, fmt.Sprintf("Expected type %s, got %T", setting.Type, value))
 	}
-	
+
 	// Valid values validation
 	if len(setting.ValidValues) > 0 {
 		strValue := fmt.Sprintf("%v", value)
@@ -67,7 +67,7 @@ func validateSetting(setting ConfigSetting, value interface{}) *ValidationResult
 			result.Errors = append(result.Errors, fmt.Sprintf("Value must be one of: %v", setting.ValidValues))
 		}
 	}
-	
+
 	return result
 }
 
@@ -105,10 +105,10 @@ func isValidType(expectedType SettingType, value interface{}) bool {
 func findSimilarSettings(ref *ConfigReference, settingName string) []string {
 	var suggestions []string
 	targetLower := strings.ToLower(settingName)
-	
+
 	for name := range ref.Settings {
 		nameLower := strings.ToLower(name)
-		
+
 		// Simple similarity: contains or is contained
 		if strings.Contains(targetLower, nameLower) || strings.Contains(nameLower, targetLower) {
 			suggestions = append(suggestions, name)
@@ -117,7 +117,7 @@ func findSimilarSettings(ref *ConfigReference, settingName string) []string {
 			}
 		}
 	}
-	
+
 	return suggestions
 }
 
@@ -127,10 +127,10 @@ func (rm *ReferenceManager) SearchSettings(appName, query string) ([]ConfigSetti
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var results []ConfigSetting
 	queryLower := strings.ToLower(query)
-	
+
 	for _, setting := range ref.Settings {
 		if strings.Contains(strings.ToLower(setting.Name), queryLower) ||
 			strings.Contains(strings.ToLower(setting.Description), queryLower) ||
@@ -138,23 +138,23 @@ func (rm *ReferenceManager) SearchSettings(appName, query string) ([]ConfigSetti
 			results = append(results, setting)
 		}
 	}
-	
+
 	return results, nil
 }
 
 // ListApps returns available applications
 func (rm *ReferenceManager) ListApps() ([]string, error) {
 	var apps []string
-	
+
 	// This would scan the config directory for available files
 	// For now, return known apps
 	knownApps := []string{"ghostty", "zed", "mise"}
-	
+
 	for _, app := range knownApps {
 		if _, err := rm.GetReference(app); err == nil {
 			apps = append(apps, app)
 		}
 	}
-	
+
 	return apps, nil
 }

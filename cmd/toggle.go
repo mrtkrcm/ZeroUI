@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/spf13/cobra"
 )
 
 // toggleCmd represents the toggle command

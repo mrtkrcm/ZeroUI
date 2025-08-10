@@ -56,7 +56,7 @@ func (s *ConfigService) ApplyPreset(app, presetName string) error {
 // ListApplications returns all available applications
 func (s *ConfigService) ListApplications() ([]string, error) {
 	s.logger.Debug("Listing applications")
-	
+
 	apps, err := s.loader.ListApps()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list applications: %w", err)
@@ -175,9 +175,9 @@ func (s *ConfigService) ListFields(app string) (map[string]config.FieldConfig, e
 
 // contains is a helper function to check if a string contains a substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		 indexOfSubstring(s, substr) >= 0)))
+	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) &&
+		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			indexOfSubstring(s, substr) >= 0)))
 }
 
 // indexOfSubstring finds the index of a substring in a string

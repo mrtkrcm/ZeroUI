@@ -37,23 +37,23 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 	for appIdx := 0; appIdx < numApps; appIdx++ {
 		appName := fmt.Sprintf("perf-app-%d", appIdx)
 		targetPath := filepath.Join(targetDir, fmt.Sprintf("%s.json", appName))
-		
+
 		// Generate app config
 		var appConfig strings.Builder
 		appConfig.WriteString(fmt.Sprintf("name: %s\n", appName))
 		appConfig.WriteString(fmt.Sprintf("path: %s\n", targetPath))
 		appConfig.WriteString("format: json\n")
 		appConfig.WriteString(fmt.Sprintf("description: Performance test app %d\n\n", appIdx))
-		
+
 		appConfig.WriteString("fields:\n")
-		
+
 		// Generate target config data
 		targetConfig := make(map[string]interface{})
-		
+
 		// Add fields
 		for fieldIdx := 0; fieldIdx < fieldsPerApp; fieldIdx++ {
 			fieldName := fmt.Sprintf("field-%d", fieldIdx)
-			
+
 			// Create different field types for variety
 			switch fieldIdx % 4 {
 			case 0: // Choice field
@@ -71,7 +71,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 				appConfig.WriteString("    default: \"option1\"\n")
 				appConfig.WriteString(fmt.Sprintf("    description: \"Choice field %d\"\n", fieldIdx))
 				targetConfig[fieldName] = "option1"
-				
+
 			case 1: // Number field
 				values := []string{"10", "20", "30", "40", "50"}
 				appConfig.WriteString(fmt.Sprintf("  %s:\n", fieldName))
@@ -87,14 +87,14 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 				appConfig.WriteString("    default: 10\n")
 				appConfig.WriteString(fmt.Sprintf("    description: \"Number field %d\"\n", fieldIdx))
 				targetConfig[fieldName] = 10
-				
+
 			case 2: // Boolean field
 				appConfig.WriteString(fmt.Sprintf("  %s:\n", fieldName))
 				appConfig.WriteString("    type: boolean\n")
 				appConfig.WriteString("    default: false\n")
 				appConfig.WriteString(fmt.Sprintf("    description: \"Boolean field %d\"\n", fieldIdx))
 				targetConfig[fieldName] = false
-				
+
 			case 3: // String field
 				appConfig.WriteString(fmt.Sprintf("  %s:\n", fieldName))
 				appConfig.WriteString("    type: string\n")
@@ -103,7 +103,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 				targetConfig[fieldName] = "default-value"
 			}
 		}
-		
+
 		// Add presets (every 5th app gets presets)
 		if appIdx%5 == 0 {
 			appConfig.WriteString("\npresets:\n")
@@ -113,7 +113,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 				appConfig.WriteString(fmt.Sprintf("    name: %s\n", presetName))
 				appConfig.WriteString(fmt.Sprintf("    description: \"Preset %d for %s\"\n", presetIdx, appName))
 				appConfig.WriteString("    values:\n")
-				
+
 				// Set some field values in preset
 				for fieldIdx := 0; fieldIdx < min(fieldsPerApp, 5); fieldIdx++ {
 					fieldName := fmt.Sprintf("field-%d", fieldIdx)
@@ -130,13 +130,13 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 				}
 			}
 		}
-		
+
 		// Write app config file
 		appConfigPath := filepath.Join(appsDir, fmt.Sprintf("%s.yaml", appName))
 		if err := ioutil.WriteFile(appConfigPath, []byte(appConfig.String()), 0644); err != nil {
 			t.Fatalf("Failed to write app config: %v", err)
 		}
-		
+
 		// Write target config file (JSON format)
 		targetJSON := "{\n"
 		first := true
@@ -157,7 +157,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 			first = false
 		}
 		targetJSON += "\n}"
-		
+
 		if err := ioutil.WriteFile(targetPath, []byte(targetJSON), 0644); err != nil {
 			t.Fatalf("Failed to write target config: %v", err)
 		}
@@ -188,7 +188,7 @@ func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
 		if i%20 == 0 {
 			content.WriteString(fmt.Sprintf("# Section %d\n", i/20))
 		}
-		
+
 		switch i % 6 {
 		case 0:
 			content.WriteString(fmt.Sprintf("theme-%d = GruvboxDark\n", i))
@@ -203,7 +203,7 @@ func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
 		case 5:
 			content.WriteString(fmt.Sprintf("background-opacity-%d = 0.%d\n", i, (i%10)+1))
 		}
-		
+
 		// Add some repeated keys to test array handling
 		if i%100 == 0 {
 			for j := 0; j < 5; j++ {
@@ -226,13 +226,13 @@ func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
 // BenchmarkEngine_LoadManyApps benchmarks loading many applications
 func BenchmarkEngine_LoadManyApps(b *testing.B) {
 	sizes := []struct {
-		numApps     int
+		numApps      int
 		fieldsPerApp int
 	}{
-		{10, 10},   // Small: 10 apps, 10 fields each
-		{50, 20},   // Medium: 50 apps, 20 fields each
-		{100, 30},  // Large: 100 apps, 30 fields each
-		{200, 50},  // XLarge: 200 apps, 50 fields each
+		{10, 10},  // Small: 10 apps, 10 fields each
+		{50, 20},  // Medium: 50 apps, 20 fields each
+		{100, 30}, // Large: 100 apps, 30 fields each
+		{200, 50}, // XLarge: 200 apps, 50 fields each
 	}
 
 	for _, size := range sizes {
@@ -279,7 +279,7 @@ func BenchmarkEngine_ToggleOperations(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		appName := apps[i%len(apps)]
 		fieldName := fmt.Sprintf("field-%d", i%50) // Cycle through fields
-		
+
 		// Alternate between different values
 		var value string
 		switch (i % 50) % 4 {
@@ -362,23 +362,23 @@ func BenchmarkCustomParser_WriteOperations(b *testing.B) {
 
 	// Create large config data
 	largeConfig := make(map[string]interface{})
-	
+
 	// Add many settings
 	for i := 0; i < 1000; i++ {
 		largeConfig[fmt.Sprintf("setting-%d", i)] = fmt.Sprintf("value-%d", i)
 	}
-	
+
 	// Add array values
 	fontFeatures := make([]string, 20)
 	keybinds := make([]string, 50)
-	
+
 	for i := 0; i < 20; i++ {
 		fontFeatures[i] = fmt.Sprintf("feature-%d", i)
 	}
 	for i := 0; i < 50; i++ {
 		keybinds[i] = fmt.Sprintf("cmd+%d=action-%d", i, i)
 	}
-	
+
 	largeConfig["font-feature"] = fontFeatures
 	largeConfig["keybind"] = keybinds
 
@@ -418,11 +418,11 @@ func TestConcurrentOperations(t *testing.T) {
 			go func(appIdx int) {
 				defer wg.Done()
 				appName := fmt.Sprintf("perf-app-%d", appIdx)
-				
+
 				for j := 0; j < 10; j++ {
 					fieldName := fmt.Sprintf("field-%d", j)
 					value := fmt.Sprintf("option%d", (j%3)+1)
-					
+
 					if err := engine.Toggle(appName, fieldName, value); err != nil {
 						errChan <- err
 						return
@@ -448,18 +448,18 @@ func TestConcurrentOperations(t *testing.T) {
 
 		for i := 0; i < 10; i++ {
 			wg.Add(2)
-			
+
 			// Toggle operation
 			go func(fieldIdx int) {
 				defer wg.Done()
 				fieldName := fmt.Sprintf("field-%d", fieldIdx)
 				value := fmt.Sprintf("option%d", (fieldIdx%3)+1)
-				
+
 				if err := engine.Toggle(appName, fieldName, value); err != nil {
 					errChan <- err
 				}
 			}(i)
-			
+
 			// Cycle operation
 			go func(fieldIdx int) {
 				defer wg.Done()
@@ -571,7 +571,7 @@ func TestLargeConfigOperations(t *testing.T) {
 		k.Set("new-setting-2", "new-value-2")
 
 		outputPath := filepath.Join(tmpDir, "large-output.conf")
-		
+
 		start := time.Now()
 		err = config.WriteGhosttyConfig(outputPath, k, configPath)
 		duration := time.Since(start)

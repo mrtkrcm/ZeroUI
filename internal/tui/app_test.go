@@ -697,12 +697,12 @@ func TestPresetView(t *testing.T) {
 // Helper functions
 
 func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-			len(s) > len(substr) && 
-			(s[:len(substr)] == substr || 
-			 s[len(s)-len(substr):] == substr ||
-			 findSubstring(s, substr)))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					findSubstring(s, substr)))
 }
 
 func findSubstring(s, substr string) bool {

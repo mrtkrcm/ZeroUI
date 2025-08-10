@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
+	"github.com/spf13/cobra"
 )
 
 // designSystemCmd represents the design-system command
@@ -43,7 +43,7 @@ Examples:
 
 		// Create the design system showcase TUI
 		showcase := tui.NewDesignSystemShowcase(container.Logger(), interactive)
-		
+
 		container.Logger().Info("Starting design system showcase", map[string]interface{}{
 			"interactive": interactive,
 		})

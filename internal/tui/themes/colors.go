@@ -99,29 +99,29 @@ func (t *DefaultColorTheme) Background() lipgloss.Style {
 
 // Color constants for direct use
 const (
-	PrimaryColor    = "#7D56F4"  // Purple
-	SecondaryColor  = "#FF6B9D"  // Pink
-	AccentColor     = "#C9A96E"  // Gold
-	SuccessColor    = "#50FA7B"  // Green
-	WarningColor    = "#FFB86C"  // Orange
-	ErrorColor      = "#FF5555"  // Red
-	InfoColor       = "#8BE9FD"  // Cyan
-	BackgroundColor = "#282A36"  // Dark Gray
-	ForegroundColor = "#F8F8F2"  // Light Gray
-	BorderColor     = "#44475A"  // Medium Gray
-	CaptionColor    = "#6272A4"  // Blue Gray
+	PrimaryColor    = "#7D56F4" // Purple
+	SecondaryColor  = "#FF6B9D" // Pink
+	AccentColor     = "#C9A96E" // Gold
+	SuccessColor    = "#50FA7B" // Green
+	WarningColor    = "#FFB86C" // Orange
+	ErrorColor      = "#FF5555" // Red
+	InfoColor       = "#8BE9FD" // Cyan
+	BackgroundColor = "#282A36" // Dark Gray
+	ForegroundColor = "#F8F8F2" // Light Gray
+	BorderColor     = "#44475A" // Medium Gray
+	CaptionColor    = "#6272A4" // Blue Gray
 )
 
 // Validation state colors
 var (
 	ValidStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(SuccessColor))
+			Foreground(lipgloss.Color(SuccessColor))
 
 	InvalidStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(ErrorColor))
+			Foreground(lipgloss.Color(ErrorColor))
 
 	PendingStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(WarningColor))
+			Foreground(lipgloss.Color(WarningColor))
 )
 
 // GetColorInfo returns detailed color information for display

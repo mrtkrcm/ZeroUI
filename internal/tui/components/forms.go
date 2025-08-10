@@ -56,36 +56,36 @@ func (i *DefaultInputStyle) Success() lipgloss.Style {
 // Global input styles for direct use
 var (
 	InputNormalStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#6272A4")).
-		Foreground(lipgloss.Color("#F8F8F2"))
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color("#6272A4")).
+				Foreground(lipgloss.Color("#F8F8F2"))
 
 	InputFocusedStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Foreground(lipgloss.Color("#F8F8F2"))
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color("#7D56F4")).
+				Foreground(lipgloss.Color("#F8F8F2"))
 
 	InputErrorStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#FF5555")).
-		Foreground(lipgloss.Color("#F8F8F2"))
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("#FF5555")).
+			Foreground(lipgloss.Color("#F8F8F2"))
 
 	InputSuccessStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#50FA7B")).
-		Foreground(lipgloss.Color("#F8F8F2"))
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color("#50FA7B")).
+				Foreground(lipgloss.Color("#F8F8F2"))
 )
 
 // InputComponent represents an input field with validation
 type InputComponent struct {
-	Input       textinput.Model
-	Label       string
-	Error       string
-	Success     string
-	Required    bool
-	Focused     bool
-	HasError    bool
-	HasSuccess  bool
+	Input      textinput.Model
+	Label      string
+	Error      string
+	Success    string
+	Required   bool
+	Focused    bool
+	HasError   bool
+	HasSuccess bool
 }
 
 // NewInputComponent creates a new input component
@@ -93,7 +93,7 @@ func NewInputComponent(label, placeholder string, width int) *InputComponent {
 	input := textinput.New()
 	input.Placeholder = placeholder
 	input.Width = width
-	
+
 	return &InputComponent{
 		Input: input,
 		Label: label,
@@ -137,7 +137,7 @@ func (i *InputComponent) Blur() {
 // Render renders the input component
 func (i *InputComponent) Render() string {
 	var style lipgloss.Style
-	
+
 	if i.HasError {
 		style = InputErrorStyle
 	} else if i.HasSuccess {
@@ -147,26 +147,26 @@ func (i *InputComponent) Render() string {
 	} else {
 		style = InputNormalStyle
 	}
-	
+
 	// Render input with appropriate style
 	input := style.Render(i.Input.View())
-	
+
 	// Add label if present
 	if i.Label != "" {
 		input = i.Label + "\n" + input
 	}
-	
+
 	// Add validation message if present
 	if i.HasError && i.Error != "" {
 		input += "\n" + lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF5555")).
-			Render("❌ " + i.Error)
+			Render("❌ "+i.Error)
 	} else if i.HasSuccess && i.Success != "" {
 		input += "\n" + lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#50FA7B")).
-			Render("✓ " + i.Success)
+			Render("✓ "+i.Success)
 	}
-	
+
 	return input
 }
 

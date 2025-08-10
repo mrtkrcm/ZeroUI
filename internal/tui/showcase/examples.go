@@ -31,7 +31,7 @@ func NewExampleRenderer() *ExampleRenderer {
 // RenderOverview renders the overview section example
 func (e *ExampleRenderer) RenderOverview(width int) string {
 	title := themes.ContentTitleStyle.Width(width - 4).Render("🏠 Welcome to ZeroUI Design System")
-	
+
 	intro := themes.ContentStyle.Width(width - 4).Render(`
 This showcase demonstrates the actual design system used in ZeroUI, 
 a powerful CLI tool for managing application configurations.
@@ -475,7 +475,7 @@ func (e *ExampleRenderer) RenderRealExamples(width int) string {
 			lipgloss.Left,
 			themes.TitleStyle.Render("ZeroUI - Select Application"),
 			"",
-			"> " + themes.SelectedStyle.Render("ghostty"),
+			"> "+themes.SelectedStyle.Render("ghostty"),
 			"  alacritty",
 			"  vscode",
 			"  neovim",
@@ -490,7 +490,7 @@ func (e *ExampleRenderer) RenderRealExamples(width int) string {
 			lipgloss.Left,
 			themes.TitleStyle.Render("ZeroUI - ghostty"),
 			"",
-			"> " + themes.SelectedStyle.Render("theme: dark") + " " + themes.HelpStyle.Render("[dark, light, auto]"),
+			"> "+themes.SelectedStyle.Render("theme: dark")+" "+themes.HelpStyle.Render("[dark, light, auto]"),
 			"  font-size: 12",
 			"  font-family: JetBrains Mono",
 			"  opacity: 0.9",

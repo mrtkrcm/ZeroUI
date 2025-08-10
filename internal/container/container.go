@@ -20,7 +20,7 @@ type Container struct {
 
 // Config holds container configuration
 type Config struct {
-	LogLevel string
+	LogLevel  string
 	LogFormat string
 }
 
@@ -47,7 +47,7 @@ func New(cfg *Config) (*Container, error) {
 		Output: os.Stderr, // Use stderr for logging to avoid interfering with TUI
 	}
 	c.logger = logger.New(loggerConfig)
-	
+
 	// Initialize global logger for convenience
 	logger.InitGlobal(loggerConfig)
 

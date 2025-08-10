@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/themes"
@@ -98,7 +98,7 @@ func (r *ShowcaseRenderer) RenderSidebar(sectionList list.Model, width, height i
 	}
 
 	title := themes.TitleStyle.Width(sidebarWidth - 2).Render("ZeroUI Design System")
-	
+
 	listHeight := height - 6
 	sectionList.SetHeight(listHeight)
 	sectionList.SetWidth(sidebarWidth - 2)
@@ -165,11 +165,11 @@ func (r *ShowcaseRenderer) RenderStaticShowcase(width int, params RenderParams) 
 
 // RenderParams holds parameters needed for rendering sections
 type RenderParams struct {
-	ProgressVal  float64
-	Progress     progress.Model
-	Spinner      spinner.Model  
-	TextInput    textinput.Model
-	AnimTicker   time.Time
+	ProgressVal float64
+	Progress    progress.Model
+	Spinner     spinner.Model
+	TextInput   textinput.Model
+	AnimTicker  time.Time
 }
 
 // ShowcaseDelegate implements list.ItemDelegate for the section list
@@ -201,14 +201,14 @@ func (d ShowcaseDelegate) Render(w io.Writer, m list.Model, index int, listItem 
 // List item styles
 var (
 	ListItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#F8F8F2")).
-		Padding(0, 1)
+			Foreground(lipgloss.Color("#F8F8F2")).
+			Padding(0, 1)
 
 	SelectedItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7D56F4")).
-		Background(lipgloss.Color("#44475A")).
-		Bold(true).
-		Padding(0, 1)
+				Foreground(lipgloss.Color("#7D56F4")).
+				Background(lipgloss.Color("#44475A")).
+				Bold(true).
+				Padding(0, 1)
 )
 
 // LayoutCalculator helps with responsive layout calculations
@@ -233,7 +233,7 @@ func (l *LayoutCalculator) CalculateContentWidth(totalWidth int, interactive boo
 	if !interactive {
 		return totalWidth
 	}
-	
+
 	contentWidth := (totalWidth * 2) / 3
 	if contentWidth < 50 {
 		contentWidth = 50
@@ -248,7 +248,7 @@ func (l *LayoutCalculator) UpdateComponentDimensions(contentWidth int, textInput
 		// textInput.Width = contentWidth - 20 (would need proper type assertion)
 	}
 
-	// Update progress bar width  
+	// Update progress bar width
 	if contentWidth > 60 {
 		// progress.Width = contentWidth - 20 (would need proper type assertion)
 	}

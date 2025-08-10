@@ -11,15 +11,15 @@ import (
 
 // mockPlugin is a test plugin for testing
 type mockPlugin struct {
-	name        string
-	description string
-	configPath  string
-	fields      map[string]FieldMeta
-	presets     map[string]Preset
-	hooks       map[string]string
-	failDetect  bool
-	failParse   bool
-	failWrite   bool
+	name         string
+	description  string
+	configPath   string
+	fields       map[string]FieldMeta
+	presets      map[string]Preset
+	hooks        map[string]string
+	failDetect   bool
+	failParse    bool
+	failWrite    bool
 	failValidate bool
 }
 
@@ -76,11 +76,11 @@ func newMockPlugin() *mockPlugin {
 }
 
 // Plugin interface implementation
-func (p *mockPlugin) Name() string                          { return p.name }
-func (p *mockPlugin) Description() string                   { return p.description }
+func (p *mockPlugin) Name() string                           { return p.name }
+func (p *mockPlugin) Description() string                    { return p.description }
 func (p *mockPlugin) GetFieldMetadata() map[string]FieldMeta { return p.fields }
-func (p *mockPlugin) GetPresets() map[string]Preset         { return p.presets }
-func (p *mockPlugin) GetHooks() map[string]string           { return p.hooks }
+func (p *mockPlugin) GetPresets() map[string]Preset          { return p.presets }
+func (p *mockPlugin) GetHooks() map[string]string            { return p.hooks }
 
 func (p *mockPlugin) DetectConfigPath() (string, error) {
 	if p.failDetect {
@@ -113,7 +113,7 @@ func (p *mockPlugin) ValidateValue(field string, value interface{}) error {
 	if p.failValidate {
 		return fmt.Errorf("mock validation failure")
 	}
-	
+
 	fieldMeta, exists := p.fields[field]
 	if !exists {
 		return nil // Allow unknown fields
@@ -129,7 +129,7 @@ func (p *mockPlugin) ValidateValue(field string, value interface{}) error {
 		}
 		return fmt.Errorf("invalid value %s for field %s", strValue, field)
 	}
-	
+
 	return nil
 }
 
@@ -293,7 +293,7 @@ func TestAutoGenerate(t *testing.T) {
 	}
 
 	contentStr := string(content)
-	
+
 	// Check for expected content
 	if !strings.Contains(contentStr, "name: test-plugin") {
 		t.Error("Expected 'name: test-plugin' in generated config")
@@ -558,12 +558,12 @@ func TestPlugin_FieldValidation(t *testing.T) {
 // BenchmarkRegistry_Register benchmarks plugin registration
 func BenchmarkRegistry_Register(b *testing.B) {
 	registry := NewRegistry()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		plugin := newMockPlugin()
 		plugin.name = fmt.Sprintf("plugin-%d", i)
-		
+
 		if err := registry.Register(plugin); err != nil {
 			b.Fatalf("Failed to register plugin: %v", err)
 		}
@@ -573,14 +573,14 @@ func BenchmarkRegistry_Register(b *testing.B) {
 // BenchmarkRegistry_Get benchmarks plugin retrieval
 func BenchmarkRegistry_Get(b *testing.B) {
 	registry := NewRegistry()
-	
+
 	// Register some plugins
 	for i := 0; i < 100; i++ {
 		plugin := newMockPlugin()
 		plugin.name = fmt.Sprintf("plugin-%d", i)
 		registry.Register(plugin)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		name := fmt.Sprintf("plugin-%d", i%100)
@@ -599,19 +599,19 @@ func BenchmarkAutoGenerate(b *testing.B) {
 	defer os.RemoveAll(tmpDir)
 
 	originalHome := os.Getenv("HOME")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testDir := filepath.Join(tmpDir, fmt.Sprintf("test-%d", i))
 		os.Setenv("HOME", testDir)
-		
+
 		plugin := newMockPlugin()
 		plugin.name = fmt.Sprintf("bench-plugin-%d", i)
-		
+
 		if err := AutoGenerate(plugin); err != nil {
 			b.Fatalf("Failed to auto-generate: %v", err)
 		}
 	}
-	
+
 	os.Setenv("HOME", originalHome)
 }

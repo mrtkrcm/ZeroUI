@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
+	"github.com/spf13/cobra"
 )
 
 // listCmd represents the list command
@@ -60,18 +60,18 @@ func init() {
 // Styles for list output
 var (
 	listHeaderStyle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color("#7D56F4"))
+			Bold(true).
+			Foreground(lipgloss.Color("#7D56F4"))
 
 	listItemDisplayStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#FAFAFA"))
 
 	listDescriptionStyle = lipgloss.NewStyle().
-					Foreground(lipgloss.Color("#626262"))
+				Foreground(lipgloss.Color("#626262"))
 
 	listCountStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#50C7E3")).
-				Bold(true)
+			Foreground(lipgloss.Color("#50C7E3")).
+			Bold(true)
 )
 
 func listApps(configService *service.ConfigService) error {
@@ -113,8 +113,8 @@ func listPresets(configService *service.ConfigService, app string) error {
 
 	for name, preset := range presets {
 		if preset.Description != "" {
-			fmt.Printf("  %s - %s\n", 
-				listItemDisplayStyle.Render("• "+name), 
+			fmt.Printf("  %s - %s\n",
+				listItemDisplayStyle.Render("• "+name),
 				listDescriptionStyle.Render(preset.Description))
 		} else {
 			fmt.Printf("  %s\n", listItemDisplayStyle.Render("• "+name))
@@ -141,19 +141,19 @@ func listKeys(configService *service.ConfigService, app string) error {
 
 	for key, field := range fields {
 		var parts []string
-		
+
 		if field.Type != "" {
 			parts = append(parts, fmt.Sprintf("(%s)", field.Type))
 		}
-		
+
 		if len(field.Values) > 0 {
 			parts = append(parts, "choices: "+strings.Join(field.Values, ", "))
 		}
-		
+
 		if field.Description != "" {
 			parts = append(parts, field.Description)
 		}
-		
+
 		keyDisplay := listItemDisplayStyle.Render("• " + key)
 		if len(parts) > 0 {
 			fmt.Printf("  %s %s\n", keyDisplay, listDescriptionStyle.Render("- "+strings.Join(parts, " - ")))

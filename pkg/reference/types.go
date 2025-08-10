@@ -4,11 +4,11 @@ import "time"
 
 // ConfigReference represents application configuration metadata
 type ConfigReference struct {
-	AppName     string                    `json:"app_name"`
-	ConfigPath  string                    `json:"config_path"`
-	ConfigType  string                    `json:"config_type"` // json, toml, yaml, ini
-	LastUpdated time.Time                 `json:"last_updated"`
-	Settings    map[string]ConfigSetting  `json:"settings"`
+	AppName     string                   `json:"app_name"`
+	ConfigPath  string                   `json:"config_path"`
+	ConfigType  string                   `json:"config_type"` // json, toml, yaml, ini
+	LastUpdated time.Time                `json:"last_updated"`
+	Settings    map[string]ConfigSetting `json:"settings"`
 }
 
 // ConfigSetting represents a single configuration option

@@ -33,9 +33,9 @@ func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
 				Default:  "dark",
 			},
 			"font-size": {
-				Type: "number",
-				Min:  floatPtr(8),
-				Max:  floatPtr(72),
+				Type:    "number",
+				Min:     floatPtr(8),
+				Max:     floatPtr(72),
 				Default: 14,
 			},
 			"debug": {
@@ -68,9 +68,15 @@ func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
 
 	validator.RegisterSchema(schema)
 
-	// Create schema file for loading tests
+	// Create schema file for loading tests with a different name
+	loadedSchema := &Schema{
+		Name:        "loaded-app",
+		Description: "Test loaded application schema",
+		Version:     "1.0.0",
+		Fields:      make(map[string]*FieldRule),
+	}
 	schemaPath := filepath.Join(tmpDir, "test-schema.json")
-	schemaData, _ := json.MarshalIndent(schema, "", "  ")
+	schemaData, _ := json.MarshalIndent(loadedSchema, "", "  ")
 	if err := ioutil.WriteFile(schemaPath, schemaData, 0644); err != nil {
 		t.Fatalf("Failed to write schema file: %v", err)
 	}
@@ -83,7 +89,7 @@ func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
 }
 
 // Helper functions
-func intPtr(i int) *int       { return &i }
+func intPtr(i int) *int           { return &i }
 func floatPtr(f float64) *float64 { return &f }
 
 // TestNewValidator tests validator creation
@@ -101,7 +107,7 @@ func TestNewValidator(t *testing.T) {
 // TestValidator_RegisterSchema tests schema registration
 func TestValidator_RegisterSchema(t *testing.T) {
 	validator := NewValidator()
-	
+
 	schema := &Schema{
 		Name:        "test-app",
 		Description: "Test schema",
@@ -165,10 +171,10 @@ func TestValidator_ValidateField(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name      string
-		app       string
-		field     string
-		value     interface{}
+		name        string
+		app         string
+		field       string
+		value       interface{}
 		expectValid bool
 		expectCode  string
 	}{
@@ -213,7 +219,7 @@ func TestValidator_ValidateField(t *testing.T) {
 				}
 
 				if !found {
-					t.Errorf("Expected error/warning with code '%s', but not found. Errors: %v, Warnings: %v", 
+					t.Errorf("Expected error/warning with code '%s', but not found. Errors: %v, Warnings: %v",
 						tt.expectCode, result.Errors, result.Warnings)
 				}
 			}
@@ -531,8 +537,8 @@ func TestUtilityFunctions(t *testing.T) {
 	// Test convertToFloat64
 	t.Run("convertToFloat64", func(t *testing.T) {
 		tests := []struct {
-			input    interface{}
-			expected float64
+			input     interface{}
+			expected  float64
 			shouldErr bool
 		}{
 			{42, 42.0, false},
@@ -545,7 +551,7 @@ func TestUtilityFunctions(t *testing.T) {
 
 		for _, test := range tests {
 			result, err := convertToFloat64(test.input)
-			
+
 			if test.shouldErr {
 				if err == nil {
 					t.Errorf("Expected error for input %v (%T)", test.input, test.input)
@@ -589,7 +595,7 @@ func TestFormatValidation(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s_%s", test.format, test.value), func(t *testing.T) {
 			err := validator.validateFormat(test.value, test.format)
-			
+
 			if test.shouldErr {
 				if err == nil {
 					t.Errorf("Expected error for format '%s' with value '%s'", test.format, test.value)

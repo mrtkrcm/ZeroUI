@@ -3,7 +3,7 @@ package tui
 // Refactored design system showcase using modular architecture
 // Components are now organized across focused modules:
 // - themes/colors.go: Color schemes and palettes
-// - themes/typography.go: Typography and text styles  
+// - themes/typography.go: Typography and text styles
 // - components/buttons.go: Button styles and interactions
 // - components/forms.go: Input fields and validation
 // - components/layout.go: Spacing, layout, and containers
@@ -14,12 +14,12 @@ import (
 	"fmt"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/showcase"
@@ -75,8 +75,8 @@ type DesignSystemModel struct {
 	interactive bool
 
 	// Modular components
-	renderer        *showcase.ShowcaseRenderer
-	layoutCalc      *showcase.LayoutCalculator
+	renderer   *showcase.ShowcaseRenderer
+	layoutCalc *showcase.LayoutCalculator
 
 	// Navigation
 	sections       []showcase.ShowcaseItem
@@ -84,22 +84,22 @@ type DesignSystemModel struct {
 	sectionList    list.Model
 
 	// Components for demonstration
-	spinner     spinner.Model
-	progress    progress.Model
-	textInput   textinput.Model
-	viewport    viewport.Model
+	spinner   spinner.Model
+	progress  progress.Model
+	textInput textinput.Model
+	viewport  viewport.Model
 
 	// State
 	loading     bool
 	progressVal float64
-	
+
 	// Layout
 	width  int
 	height int
 
 	// Demo state
-	demoIndex   int
-	animTicker  time.Time
+	demoIndex  int
+	animTicker time.Time
 }
 
 // Use showcase package types
@@ -242,7 +242,7 @@ func (m *DesignSystemModel) View() string {
 		return m.renderStaticShowcase()
 	}
 
-	// Interactive mode with sidebar navigation  
+	// Interactive mode with sidebar navigation
 	sidebar := m.renderer.RenderSidebar(m.sectionList, m.width, m.height)
 	content := m.renderCurrentSection()
 
@@ -325,7 +325,7 @@ type showcaseDelegate = showcase.ShowcaseDelegate
 
 // All styles have been moved to modular components:
 // - themes/colors.go: Color schemes and status colors
-// - themes/typography.go: Text styles and emphasis 
+// - themes/typography.go: Text styles and emphasis
 // - components/buttons.go: Button styling
 // - components/forms.go: Input and validation styles
 // - components/layout.go: Layout, spacing, and containers

@@ -9,7 +9,7 @@ import (
 func TestStaticConfigLoader(t *testing.T) {
 	// Create temporary config directory
 	tempDir := t.TempDir()
-	
+
 	// Create a test config file
 	testConfig := `
 app_name: "test_app"
@@ -25,37 +25,37 @@ settings:
     valid_values: ["option1", "option2"]
     category: "test"
 `
-	
+
 	configFile := filepath.Join(tempDir, "test_app.yaml")
 	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
-	
+
 	// Test loader
 	loader := NewStaticConfigLoader(tempDir)
 	ref, err := loader.LoadReference("test_app")
 	if err != nil {
 		t.Fatalf("Failed to load reference: %v", err)
 	}
-	
+
 	// Validate loaded data
 	if ref.AppName != "test_app" {
 		t.Errorf("Expected app name 'test_app', got '%s'", ref.AppName)
 	}
-	
+
 	if len(ref.Settings) != 1 {
 		t.Errorf("Expected 1 setting, got %d", len(ref.Settings))
 	}
-	
+
 	setting, exists := ref.Settings["test_setting"]
 	if !exists {
 		t.Error("Expected 'test_setting' to exist")
 	}
-	
+
 	if setting.Type != TypeString {
 		t.Errorf("Expected type 'string', got '%s'", setting.Type)
 	}
-	
+
 	if len(setting.ValidValues) != 2 {
 		t.Errorf("Expected 2 valid values, got %d", len(setting.ValidValues))
 	}
@@ -64,7 +64,7 @@ settings:
 func TestReferenceManager(t *testing.T) {
 	// Create temporary config directory with test data
 	tempDir := t.TempDir()
-	
+
 	testConfig := `
 app_name: "test_app"
 config_path: "~/.test/config"
@@ -98,41 +98,41 @@ settings:
     valid_values: ["option1", "option2", "option3"]
     category: "advanced"
 `
-	
+
 	configFile := filepath.Join(tempDir, "test_app.yaml")
 	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
-	
+
 	// Create manager
 	loader := NewStaticConfigLoader(tempDir)
 	manager := NewReferenceManager(loader)
-	
+
 	t.Run("GetReference", func(t *testing.T) {
 		ref, err := manager.GetReference("test_app")
 		if err != nil {
 			t.Fatalf("Failed to get reference: %v", err)
 		}
-		
+
 		if ref.AppName != "test_app" {
 			t.Errorf("Expected app name 'test_app', got '%s'", ref.AppName)
 		}
-		
+
 		if len(ref.Settings) != 4 {
 			t.Errorf("Expected 4 settings, got %d", len(ref.Settings))
 		}
-		
+
 		// Test caching - second call should use cache
 		ref2, err := manager.GetReference("test_app")
 		if err != nil {
 			t.Fatalf("Failed to get cached reference: %v", err)
 		}
-		
+
 		if ref != ref2 {
 			t.Error("Expected cached reference to be the same instance")
 		}
 	})
-	
+
 	t.Run("ValidateConfiguration", func(t *testing.T) {
 		// Valid string
 		result, err := manager.ValidateConfiguration("test_app", "string_setting", "test value")
@@ -142,7 +142,7 @@ settings:
 		if !result.Valid {
 			t.Error("Expected string validation to be valid")
 		}
-		
+
 		// Valid number
 		result, err = manager.ValidateConfiguration("test_app", "number_setting", 123)
 		if err != nil {
@@ -151,7 +151,7 @@ settings:
 		if !result.Valid {
 			t.Error("Expected number validation to be valid")
 		}
-		
+
 		// Valid boolean
 		result, err = manager.ValidateConfiguration("test_app", "boolean_setting", true)
 		if err != nil {
@@ -160,7 +160,7 @@ settings:
 		if !result.Valid {
 			t.Error("Expected boolean validation to be valid")
 		}
-		
+
 		// Valid enum value
 		result, err = manager.ValidateConfiguration("test_app", "enum_setting", "option1")
 		if err != nil {
@@ -169,7 +169,7 @@ settings:
 		if !result.Valid {
 			t.Error("Expected valid enum value to be valid")
 		}
-		
+
 		// Invalid enum value
 		result, err = manager.ValidateConfiguration("test_app", "enum_setting", "invalid_option")
 		if err != nil {
@@ -181,7 +181,7 @@ settings:
 		if len(result.Errors) == 0 {
 			t.Error("Expected validation errors for invalid enum value")
 		}
-		
+
 		// Invalid setting name
 		result, err = manager.ValidateConfiguration("test_app", "nonexistent", "value")
 		if err != nil {
@@ -194,7 +194,7 @@ settings:
 			t.Error("Expected suggestions for similar settings")
 		}
 	})
-	
+
 	t.Run("SearchSettings", func(t *testing.T) {
 		// Search by name
 		results, err := manager.SearchSettings("test_app", "string")
@@ -207,7 +207,7 @@ settings:
 		if results[0].Name != "string_setting" {
 			t.Errorf("Expected 'string_setting', got '%s'", results[0].Name)
 		}
-		
+
 		// Search by category
 		results, err = manager.SearchSettings("test_app", "basic")
 		if err != nil {
@@ -216,7 +216,7 @@ settings:
 		if len(results) != 3 {
 			t.Errorf("Expected 3 results, got %d", len(results))
 		}
-		
+
 		// Search with no matches
 		results, err = manager.SearchSettings("test_app", "nonexistent")
 		if err != nil {
@@ -232,14 +232,14 @@ func TestEdgeCases(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewStaticConfigLoader(tempDir)
 	manager := NewReferenceManager(loader)
-	
+
 	t.Run("NonexistentApp", func(t *testing.T) {
 		_, err := manager.GetReference("nonexistent_app")
 		if err == nil {
 			t.Error("Expected error for nonexistent app")
 		}
 	})
-	
+
 	t.Run("EmptyConfigDirectory", func(t *testing.T) {
 		apps, err := manager.ListApps()
 		if err != nil {
@@ -254,7 +254,7 @@ func TestEdgeCases(t *testing.T) {
 func BenchmarkReferenceOperations(b *testing.B) {
 	// Setup test data
 	tempDir := b.TempDir()
-	
+
 	testConfig := `
 app_name: "bench_app"
 settings:
@@ -271,15 +271,15 @@ settings:
     type: "boolean"
     description: "Test setting 3"
 `
-	
+
 	configFile := filepath.Join(tempDir, "bench_app.yaml")
 	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
 		b.Fatalf("Failed to create test config: %v", err)
 	}
-	
+
 	loader := NewStaticConfigLoader(tempDir)
 	manager := NewReferenceManager(loader)
-	
+
 	b.Run("GetReference", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, err := manager.GetReference("bench_app")
@@ -288,7 +288,7 @@ settings:
 			}
 		}
 	})
-	
+
 	b.Run("ValidateConfiguration", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, err := manager.ValidateConfiguration("bench_app", "setting1", "test")
@@ -297,7 +297,7 @@ settings:
 			}
 		}
 	})
-	
+
 	b.Run("SearchSettings", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, err := manager.SearchSettings("bench_app", "setting")

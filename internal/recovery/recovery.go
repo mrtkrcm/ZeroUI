@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/security"
 )
 
 // BackupManager handles configuration backups for recovery
 type BackupManager struct {
-	backupDir string
+	backupDir     string
+	pathValidator *security.PathValidator
 }
 
 // NewBackupManager creates a new backup manager
@@ -27,8 +29,12 @@ func NewBackupManager() (*BackupManager, error) {
 			WithSuggestions("Check directory permissions")
 	}
 
+	// Create path validator with backup directory as the only allowed path
+	pathValidator := security.NewPathValidator(backupDir)
+
 	return &BackupManager{
-		backupDir: backupDir,
+		backupDir:     backupDir,
+		pathValidator: pathValidator,
 	}, nil
 }
 
@@ -59,6 +65,12 @@ func (bm *BackupManager) CreateBackup(configPath, appName string) (string, error
 
 // RestoreBackup restores a configuration file from backup
 func (bm *BackupManager) RestoreBackup(backupPath, targetPath string) error {
+	// Validate backup path is within allowed directories (prevents directory traversal)
+	if err := bm.pathValidator.ValidatePath(backupPath); err != nil {
+		return errors.Wrap(errors.SystemPermission, "backup path validation failed", err).
+			WithSuggestions("Use only backup names from 'list' command")
+	}
+
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 		return errors.New(errors.ConfigNotFound, "backup file not found").
 			WithSuggestions("Check if backup exists", "List backups with: configtoggle list backups")
@@ -100,10 +112,10 @@ func (bm *BackupManager) ListBackups(appName string) ([]BackupInfo, error) {
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			name := entry.Name()
-			if appName == "" || (len(name) > len(prefix)+len(suffix) && 
-				name[:len(prefix)] == prefix && 
+			if appName == "" || (len(name) > len(prefix)+len(suffix) &&
+				name[:len(prefix)] == prefix &&
 				name[len(name)-len(suffix):] == suffix) {
-				
+
 				info, err := entry.Info()
 				if err != nil {
 					continue

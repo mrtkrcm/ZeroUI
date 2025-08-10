@@ -101,37 +101,37 @@ func (t *DefaultTypographyTheme) Strikethrough() lipgloss.Style {
 var (
 	// Title styles
 	TitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1).
-		Bold(true)
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#7D56F4")).
+			Padding(0, 1).
+			Bold(true)
 
 	ContentTitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7D56F4")).
-		Bold(true).
-		MarginBottom(1)
+				Foreground(lipgloss.Color("#7D56F4")).
+				Bold(true).
+				MarginBottom(1)
 
 	ComponentTitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF79C6")).
-		Bold(true)
+				Foreground(lipgloss.Color("#FF79C6")).
+				Bold(true)
 
 	LayoutTitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#8BE9FD")).
-		Bold(true)
+				Foreground(lipgloss.Color("#8BE9FD")).
+				Bold(true)
 
 	// Common text styles
 	ContentStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#F8F8F2"))
+			Foreground(lipgloss.Color("#F8F8F2"))
 
 	HelpStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6272A4"))
+			Foreground(lipgloss.Color("#6272A4"))
 
 	SelectedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7D56F4"))
+			Foreground(lipgloss.Color("#7D56F4"))
 
 	// Code styles
 	CodeStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6272A4"))
+			Foreground(lipgloss.Color("#6272A4"))
 )
 
 // Typography demonstration content

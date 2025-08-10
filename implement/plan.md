@@ -1,124 +1,130 @@
-# Implementation Plan - Test Coverage & UI Testing Enhancement
-**Session**: zeroui-coverage-testing-20250810  
-**Start Time**: 2025-08-10T18:15:00Z
+# Implementation Plan - Security Hardening
+**Session**: configtoggle-security-hardening-20250810  
+**Start Time**: 2025-08-10T20:30:00Z
 
 ## Source Analysis
-- **Source Type**: Test coverage enhancement and TUI testing implementation
-- **Core Features**: Comprehensive unit/integration tests, TUI component testing, CLI testing
-- **Dependencies**: Go testing framework, testify, bubble tea testing utilities
-- **Complexity**: Medium (requires understanding TUI testing patterns and coverage gaps)
-
-## Current State Assessment
-- **Current Coverage**: 25.8% (13 tests written)
-- **Target Coverage**: >80% overall coverage
-- **Critical Gaps**:
-  - Config loader: 11.8% coverage (needs major improvement)
-  - TUI components: No comprehensive tests
-  - CLI integration: Limited integration test coverage
-  - Plugin system: Needs thorough testing
+- **Source Type**: Critical security TODO items from codebase analysis
+- **Core Features**: Path validation, resource limits, secure file operations
+- **Dependencies**: Go filepath package, YAML parser limits, path validation utilities
+- **Complexity**: Medium (security-critical implementations require careful validation)
 
 ## Target Integration
 - **Integration Points**: 
-  - Enhanced test coverage for all core modules
-  - TUI component testing with bubble tea testing framework
-  - CLI integration tests for all commands
-  - Plugin system testing
+  - Backup command path validation (cmd/backup.go)
+  - YAML parser security limits (internal/config/loader.go)
+  - File system operations hardening
 - **Affected Files**: 
-  - All `*_test.go` files (enhancement)
-  - New test files for TUI components
-  - Integration test expansion
-- **Pattern Matching**: Follow existing Go testing patterns, use testify assertions
+  - `cmd/backup.go` - Add path traversal protection
+  - `internal/config/loader.go` - Add YAML complexity limits
+  - New security utilities as needed
+- **Pattern Matching**: Follow existing error handling, use structured validation
 
 ## Implementation Tasks
 
-### Phase 1: Coverage Analysis & Setup
-- [x] Update implementation session for coverage focus
-- [ ] Analyze current test coverage gaps in detail
-- [ ] Set up TUI testing framework and utilities
-- [ ] Create test infrastructure for integration tests
-- [ ] Generate baseline coverage report
+### Phase 1: Security Analysis & Setup
+- [ ] Create new implementation session for security focus
+- [ ] Analyze current security vulnerabilities in detail
+- [ ] Review backup path handling for directory traversal risks
+- [ ] Analyze YAML parsing for resource exhaustion vectors
+- [ ] Design security validation framework
 
-### Phase 2: Core Module Testing
-- [ ] Enhance config loader test coverage (target: >80%)
-- [ ] Add comprehensive plugin system tests
-- [ ] Improve toggle engine test coverage (current: 57.9%)
-- [ ] Add validation system tests
-- [ ] Test atomic operations thoroughly
+### Phase 2: Backup Path Security
+- [ ] Implement path validation to prevent directory traversal
+- [ ] Ensure backup paths stay within ~/.config/zeroui/backups/
+- [ ] Add path canonicalization and boundary checking
+- [ ] Test against common directory traversal attacks (../, symlinks)
+- [ ] Add comprehensive security tests for path validation
 
-### Phase 3: User Interface Testing
-- [ ] Create TUI component test framework
-- [ ] Test TUI application state management
-- [ ] Test TUI user interactions and flows
-- [ ] Test TUI error handling and display
-- [ ] Test TUI configuration loading and display
+### Phase 3: YAML Parser Hardening  
+- [ ] Add YAML complexity limits to prevent resource exhaustion
+- [ ] Implement max file size, depth, and key count limits
+- [ ] Add memory usage monitoring during parsing
+- [ ] Implement timeout protection for large YAML files
+- [ ] Test against YAML bombs and deeply nested structures
 
-### Phase 4: Integration & CLI Testing
-- [ ] Add comprehensive CLI command integration tests
-- [ ] Test backup/restore CLI workflow end-to-end
-- [ ] Test toggle/cycle/preset commands with real configs
-- [ ] Add performance benchmarking tests
-- [ ] Test cross-platform compatibility scenarios
+### Phase 4: Security Testing & Validation
+- [ ] Create comprehensive security test suite
+- [ ] Test directory traversal attack scenarios
+- [ ] Test YAML resource exhaustion scenarios
+- [ ] Validate all security boundaries work correctly
+- [ ] Performance test security validations don't impact normal use
 
-### Phase 5: Validation & Reporting
-- [ ] Run comprehensive test suite
-- [ ] Generate detailed coverage reports
-- [ ] Validate coverage targets met (>80%)
-- [ ] Document testing patterns and best practices
-- [ ] Create test maintenance guidelines
+### Phase 5: Integration & Documentation
+- [ ] Integrate security validations with existing error handling
+- [ ] Update CLI help text to document security restrictions
+- [ ] Add security best practices documentation
+- [ ] Validate security implementations work across platforms
+- [ ] Create security incident response guidelines
 
-## Testing Strategy
+## Security Requirements
 
-### Unit Testing Focus Areas
-1. **Config Loader** (priority: high, current: 11.8%)
-   - Multi-format parsing (YAML, TOML, JSON, custom)
-   - Error handling for invalid formats
-   - File watching and reload functionality
-   
-2. **TUI Components** (priority: high, current: minimal)
-   - Application state management
-   - User input handling
-   - Display rendering and formatting
-   - Error state handling
+### Backup Path Security Goals
+1. **Directory Traversal Prevention**
+   - Block `../` path components
+   - Prevent symlink exploitation
+   - Validate paths stay within authorized directories
+   - Use absolute path validation
 
-3. **Plugin System** (priority: medium)
-   - Plugin registration and loading
-   - Plugin interface compliance
-   - Plugin error handling
-   - Plugin configuration validation
+2. **Path Boundary Enforcement**
+   - Restrict to `~/.config/zeroui/backups/` directory
+   - Validate canonical path resolution
+   - Block access to system directories
+   - Prevent overwriting critical files
 
-### Integration Testing Strategy
-- CLI command workflows with real configuration files
-- TUI interactions with actual config data
-- End-to-end backup/restore operations
-- Cross-component data flow validation
+### YAML Parser Security Goals
+1. **Resource Exhaustion Prevention**
+   - Maximum file size: 10MB
+   - Maximum nesting depth: 50 levels
+   - Maximum key count: 10,000 keys
+   - Parse timeout: 30 seconds
 
-### TUI Testing Approach
-- Use bubble tea testing utilities for component testing
-- Mock user interactions (key presses, selections)
-- Validate screen renders and state changes
-- Test error scenarios and recovery
+2. **Memory Protection**
+   - Monitor memory usage during parsing
+   - Abort parsing if memory threshold exceeded
+   - Implement streaming parser for large files
+   - Add garbage collection hints for large operations
+
+## Security Testing Strategy
+
+### Attack Vector Testing
+1. **Directory Traversal Tests**
+   - `../../../etc/passwd` attempts
+   - Symlink-based directory escape
+   - URL-encoded path traversal
+   - Windows vs Unix path separator handling
+
+2. **YAML Bomb Tests**
+   - Exponential entity expansion
+   - Deeply nested structures (1000+ levels)
+   - Large key/value combinations
+   - Billion laughs attack variants
+
+### Security Validation Framework
+- Automated security test suite
+- Fuzzing for path validation
+- Resource monitoring during tests
+- Cross-platform security validation
 
 ## Validation Checklist
-- [ ] Overall test coverage >80%
-- [ ] Config loader coverage >80%
-- [ ] TUI components comprehensively tested
-- [ ] All CLI commands have integration tests
-- [ ] Plugin system fully tested
-- [ ] Performance benchmarks established
-- [ ] All tests passing
-- [ ] Documentation updated with testing guidelines
+- [ ] All directory traversal attacks blocked
+- [ ] YAML resource exhaustion attacks prevented
+- [ ] Security validations don't break legitimate use cases
+- [ ] Performance impact of security checks is minimal (<5ms)
+- [ ] Security tests pass on all supported platforms
+- [ ] Documentation updated with security considerations
+- [ ] Error messages don't leak sensitive path information
 
 ## Risk Mitigation
 - **Potential Issues**: 
-  - TUI testing complexity with terminal interactions
-  - Mocking file system operations for config loading
-  - Race conditions in concurrent test execution
-  - Platform-specific path handling in tests
-- **Rollback Strategy**: Git checkpoints at each testing phase
-- **Testing Strategy**: Isolated test environments, comprehensive mocking, parallel test execution
+  - Security validations may break existing workflows
+  - Performance impact of path validation
+  - Platform-specific path handling differences
+  - False positives blocking legitimate operations
+- **Rollback Strategy**: Git checkpoints before each security implementation
+- **Testing Strategy**: Comprehensive attack scenario testing, performance benchmarking
 
 ## Success Criteria
-- **Primary**: Achieve >80% overall test coverage
-- **Secondary**: Comprehensive TUI component testing
-- **Tertiary**: Full CLI integration test coverage
-- **Quality**: All tests reliable, fast, and maintainable
+- **Primary**: All critical security vulnerabilities patched
+- **Secondary**: No regression in legitimate functionality
+- **Tertiary**: Security validations add <5ms to operations
+- **Quality**: Comprehensive security test coverage with attack scenarios

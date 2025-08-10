@@ -285,7 +285,7 @@ func TestWriteGhosttyConfig(t *testing.T) {
 	// Test writing new config file
 	t.Run("New config file", func(t *testing.T) {
 		outputPath := filepath.Join(tmpDir, "new.conf")
-		
+
 		// Create config data
 		k := koanf.New(".")
 		k.Set("theme", "GruvboxDark")
@@ -310,7 +310,7 @@ func TestWriteGhosttyConfig(t *testing.T) {
 		}
 
 		contentStr := string(content)
-		
+
 		// Check header
 		if !strings.Contains(contentStr, "# Ghostty Configuration") {
 			t.Error("Expected header in new config file")
@@ -354,11 +354,11 @@ debug = false
 
 		// Create updated config data
 		k := koanf.New(".")
-		k.Set("theme", "GruvboxDark")  // Update existing
-		k.Set("font-family", "JetBrains Mono")  // Update existing
-		k.Set("font-size", "14")  // Update existing
-		k.Set("debug", "true")  // Update existing
-		k.Set("new-setting", "new-value")  // Add new
+		k.Set("theme", "GruvboxDark")          // Update existing
+		k.Set("font-family", "JetBrains Mono") // Update existing
+		k.Set("font-size", "14")               // Update existing
+		k.Set("debug", "true")                 // Update existing
+		k.Set("new-setting", "new-value")      // Add new
 
 		err := WriteGhosttyConfig(outputPath, k, originalPath)
 		if err != nil {

@@ -2,14 +2,14 @@ package config
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"reflect"
 	"fmt"
 	"io/ioutil"
-	
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/knadh/koanf/v2"
 )
 
@@ -68,6 +68,7 @@ hooks:
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	// Test loading app config
 	appConfig, err := loader.LoadAppConfig("test-app")
@@ -144,6 +145,7 @@ func TestLoader_LoadAppConfig_NotFound(t *testing.T) {
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	_, err = loader.LoadAppConfig("nonexistent")
 	if err == nil {
@@ -178,6 +180,7 @@ func TestLoader_ListApps(t *testing.T) {
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	apps, err := loader.ListApps()
 	if err != nil {
@@ -212,6 +215,7 @@ func TestLoader_ListApps_Empty(t *testing.T) {
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	apps, err := loader.ListApps()
 	if err != nil {
@@ -278,6 +282,7 @@ presets:
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -299,6 +304,7 @@ func TestLoader_LoadTargetConfig(t *testing.T) {
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	// Test JSON format
 	t.Run("JSON format", func(t *testing.T) {
@@ -487,11 +493,12 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 	loader := &Loader{
 		configDir: tmpDir,
 	}
+	loader.SetConfigDir(tmpDir) // Initialize yamlValidator for testing
 
 	// Test JSON format
 	t.Run("JSON format", func(t *testing.T) {
 		jsonPath := filepath.Join(tmpDir, "save-test.json")
-		
+
 		// Create koanf config
 		k := koanf.New(".")
 		k.Set("theme", "dark")
@@ -534,7 +541,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 	// Test YAML format
 	t.Run("YAML format", func(t *testing.T) {
 		yamlPath := filepath.Join(tmpDir, "save-test.yaml")
-		
+
 		k := koanf.New(".")
 		k.Set("theme", "light")
 		k.Set("font-size", 18)
@@ -564,7 +571,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 	// Test custom format
 	t.Run("Custom format", func(t *testing.T) {
 		customPath := filepath.Join(tmpDir, "save-test.conf")
-		
+
 		k := koanf.New(".")
 		k.Set("theme", "GruvboxDark")
 		k.Set("font-family", "SF Mono")

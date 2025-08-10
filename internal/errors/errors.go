@@ -44,9 +44,9 @@ const (
 	PluginError    ErrorType = "PLUGIN_ERROR"
 
 	// Validation related errors
-	ValidationError   ErrorType = "VALIDATION_ERROR"
-	SchemaError      ErrorType = "SCHEMA_ERROR"
-	TypeConversion   ErrorType = "TYPE_CONVERSION"
+	ValidationError ErrorType = "VALIDATION_ERROR"
+	SchemaError     ErrorType = "SCHEMA_ERROR"
+	TypeConversion  ErrorType = "TYPE_CONVERSION"
 
 	// User input errors
 	UserInputError   ErrorType = "USER_INPUT_ERROR"
@@ -60,20 +60,20 @@ type ZeroUIError struct {
 	App         string
 	Field       string
 	Value       string
-	Path        string        // File path where error occurred
-	Line        int          // Line number in file (if applicable)
-	Column      int          // Column number in file (if applicable)
+	Path        string // File path where error occurred
+	Line        int    // Line number in file (if applicable)
+	Column      int    // Column number in file (if applicable)
 	Cause       error
 	Suggestions []string
-	Actions     []string     // Actionable next steps
+	Actions     []string          // Actionable next steps
 	Context     map[string]string // Additional context information
-	Severity    Severity     // Error severity level
+	Severity    Severity          // Error severity level
 }
 
 // Error implements the error interface
 func (e *ZeroUIError) Error() string {
 	var parts []string
-	
+
 	if e.App != "" {
 		parts = append(parts, fmt.Sprintf("app: %s", e.App))
 	}
@@ -83,18 +83,18 @@ func (e *ZeroUIError) Error() string {
 	if e.Value != "" {
 		parts = append(parts, fmt.Sprintf("value: %s", e.Value))
 	}
-	
+
 	context := ""
 	if len(parts) > 0 {
 		context = fmt.Sprintf(" (%s)", strings.Join(parts, ", "))
 	}
-	
+
 	msg := e.Message + context
-	
+
 	if e.Cause != nil {
 		msg += fmt.Sprintf(": %v", e.Cause)
 	}
-	
+
 	return msg
 }
 
@@ -106,14 +106,14 @@ func (e *ZeroUIError) Unwrap() error {
 // String returns a user-friendly error message with suggestions
 func (e *ZeroUIError) String() string {
 	msg := e.Error()
-	
+
 	if len(e.Suggestions) > 0 {
 		msg += "\n\nSuggestions:"
 		for _, suggestion := range e.Suggestions {
 			msg += fmt.Sprintf("\n  • %s", suggestion)
 		}
 	}
-	
+
 	return msg
 }
 
@@ -173,7 +173,7 @@ func NewAppNotFoundError(app string, availableApps []string) *ZeroUIError {
 	if len(availableApps) > 0 {
 		suggestions = append(suggestions, fmt.Sprintf("Available apps: %s", strings.Join(availableApps, ", ")))
 	}
-	
+
 	return New(AppNotFound, fmt.Sprintf("application '%s' not found", app)).
 		WithApp(app).
 		WithSuggestions(suggestions...)
@@ -187,7 +187,7 @@ func NewFieldNotFoundError(app, field string, availableFields []string) *ZeroUIE
 	if len(availableFields) > 0 {
 		suggestions = append(suggestions, fmt.Sprintf("Available fields: %s", strings.Join(availableFields, ", ")))
 	}
-	
+
 	return New(FieldNotFound, fmt.Sprintf("field '%s' not found", field)).
 		WithApp(app).
 		WithField(field).
@@ -200,7 +200,7 @@ func NewInvalidValueError(app, field, value string, validValues []string) *ZeroU
 	if len(validValues) > 0 {
 		suggestions = append(suggestions, fmt.Sprintf("Valid values: %s", strings.Join(validValues, ", ")))
 	}
-	
+
 	return New(FieldInvalidValue, fmt.Sprintf("invalid value '%s' for field '%s'", value, field)).
 		WithApp(app).
 		WithField(field).
@@ -216,7 +216,7 @@ func NewPresetNotFoundError(app, preset string, availablePresets []string) *Zero
 	if len(availablePresets) > 0 {
 		suggestions = append(suggestions, fmt.Sprintf("Available presets: %s", strings.Join(availablePresets, ", ")))
 	}
-	
+
 	return New(PresetNotFound, fmt.Sprintf("preset '%s' not found", preset)).
 		WithApp(app).
 		WithValue(preset).
@@ -230,7 +230,7 @@ func NewConfigNotFoundError(path string) *ZeroUIError {
 		"Use --dry-run to see what would be changed without creating the file",
 		"Check if the path is correct and accessible",
 	}
-	
+
 	return New(ConfigNotFound, fmt.Sprintf("configuration file not found at '%s'", path)).
 		WithSuggestions(suggestions...)
 }
@@ -242,7 +242,7 @@ func NewConfigParseError(path string, cause error) *ZeroUIError {
 		"Ensure the file format matches the expected format",
 		"Try validating the file with a format-specific tool",
 	}
-	
+
 	return Wrap(ConfigParseError, fmt.Sprintf("failed to parse configuration file '%s'", path), cause).
 		WithSuggestions(suggestions...)
 }
@@ -254,7 +254,7 @@ func NewPermissionError(path string, operation string) *ZeroUIError {
 		"Check file and directory permissions",
 		"Try running with appropriate privileges if needed",
 	}
-	
+
 	return New(SystemPermission, fmt.Sprintf("permission denied: cannot %s '%s'", operation, path)).
 		WithSuggestions(suggestions...)
 }

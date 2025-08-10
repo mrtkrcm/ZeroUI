@@ -10,10 +10,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/spf13/cobra"
-	"github.com/mrtkrcm/ZeroUI/internal/recovery"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/recovery"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/spf13/cobra"
 )
 
 // backupCmd represents the backup command
@@ -227,7 +227,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 			fmt.Printf("Current config: %s\n", configPath)
 			fmt.Printf("Backup: %s\n", backupName)
 			fmt.Print("Are you sure? (y/N): ")
-			
+
 			var response string
 			fmt.Scanln(&response)
 			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {

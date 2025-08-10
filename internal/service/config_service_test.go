@@ -1,14 +1,14 @@
 package service_test
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-	"io/ioutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
@@ -51,10 +51,10 @@ fields:
 	configLoader, err := config.NewLoader()
 	require.NoError(t, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
-	
+
 	testLogger := logger.New(logger.DefaultConfig())
 	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
-	
+
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
 	t.Run("ListApplications", func(t *testing.T) {
@@ -66,7 +66,7 @@ fields:
 	t.Run("ToggleConfiguration", func(t *testing.T) {
 		err := service.ToggleConfiguration("test-app", "theme", "light")
 		require.NoError(t, err)
-		
+
 		// Verify the change was applied
 		content, err := ioutil.ReadFile(targetPath)
 		require.NoError(t, err)
@@ -77,11 +77,11 @@ fields:
 		// Reset to known state
 		err := service.ToggleConfiguration("test-app", "theme", "dark")
 		require.NoError(t, err)
-		
+
 		// Cycle should change to next value
 		err = service.CycleConfiguration("test-app", "theme")
 		require.NoError(t, err)
-		
+
 		// Verify the change was applied
 		content, err := ioutil.ReadFile(targetPath)
 		require.NoError(t, err)
@@ -98,10 +98,10 @@ func TestConfigService_ErrorHandling(t *testing.T) {
 	configLoader, err := config.NewLoader()
 	require.NoError(t, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
-	
+
 	testLogger := logger.New(logger.DefaultConfig())
 	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
-	
+
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
 	t.Run("NonexistentApp", func(t *testing.T) {
@@ -150,10 +150,10 @@ fields:
 	configLoader, err := config.NewLoader()
 	require.NoError(b, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
-	
+
 	testLogger := logger.New(logger.DefaultConfig())
 	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
-	
+
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
 	b.ResetTimer()

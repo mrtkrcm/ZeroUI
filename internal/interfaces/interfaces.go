@@ -33,7 +33,7 @@ type Logger interface {
 // MetricsCollector defines the interface for metrics collection
 type MetricsCollector interface {
 	RecordToggleOperation(app, key string, success bool, duration int64)
-	RecordCycleOperation(app, key string, success bool, duration int64)  
+	RecordCycleOperation(app, key string, success bool, duration int64)
 	RecordPresetOperation(app, preset string, success bool, duration int64)
 	RecordError(operation, errorType string)
 }

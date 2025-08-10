@@ -6,9 +6,9 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/exporters/prometheus"
 )
 
 const (
@@ -18,23 +18,23 @@ const (
 // Metrics holds all application metrics
 type Metrics struct {
 	// Operation counters
-	toggleOperations   metric.Int64Counter
-	cycleOperations    metric.Int64Counter
-	presetOperations   metric.Int64Counter
-	
+	toggleOperations metric.Int64Counter
+	cycleOperations  metric.Int64Counter
+	presetOperations metric.Int64Counter
+
 	// Duration histograms
-	operationDuration  metric.Float64Histogram
-	
+	operationDuration metric.Float64Histogram
+
 	// Error counters
-	operationErrors    metric.Int64Counter
-	
+	operationErrors metric.Int64Counter
+
 	// Application metrics
-	activeApps         metric.Int64UpDownCounter
-	configChanges      metric.Int64Counter
-	
+	activeApps    metric.Int64UpDownCounter
+	configChanges metric.Int64Counter
+
 	// TUI metrics
-	tuiSessions        metric.Int64Counter
-	tuiDuration        metric.Float64Histogram
+	tuiSessions metric.Int64Counter
+	tuiDuration metric.Float64Histogram
 }
 
 // MetricsConfig holds metrics configuration

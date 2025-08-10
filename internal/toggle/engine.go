@@ -21,11 +21,11 @@ import (
 
 // Engine handles configuration toggling operations
 type Engine struct {
-	loader *config.Loader
-	logger *logger.Logger
-	homeDir string // Cache for home directory
+	loader    *config.Loader
+	logger    *logger.Logger
+	homeDir   string                     // Cache for home directory
 	pathCache *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
-	pathMutex sync.RWMutex // Thread-safe access to pathCache
+	pathMutex sync.RWMutex               // Thread-safe access to pathCache
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -38,9 +38,9 @@ func NewEngine() (*Engine, error) {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
-		loader: loader,
-		logger: logger.Global(), // Use global logger for backwards compatibility
-		homeDir: homeDir,
+		loader:    loader,
+		logger:    logger.Global(), // Use global logger for backwards compatibility
+		homeDir:   homeDir,
 		pathCache: pathCache,
 	}, nil
 }
@@ -50,9 +50,9 @@ func NewEngineWithDeps(configLoader *config.Loader, log *logger.Logger) *Engine 
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
-		loader: configLoader,
-		logger: log,
-		homeDir: homeDir,
+		loader:    configLoader,
+		logger:    log,
+		homeDir:   homeDir,
 		pathCache: pathCache,
 	}
 }
@@ -60,7 +60,7 @@ func NewEngineWithDeps(configLoader *config.Loader, log *logger.Logger) *Engine 
 // Toggle sets a specific configuration key to a value
 func (e *Engine) Toggle(appName, key, value string) error {
 	log := e.logger.WithApp(appName).WithField(key)
-	
+
 	if viper.GetBool("verbose") {
 		log.Debug("Starting toggle operation", map[string]interface{}{
 			"value": value,
@@ -166,7 +166,7 @@ func (e *Engine) Toggle(appName, key, value string) error {
 // Cycle moves to the next value in a field's value list
 func (e *Engine) Cycle(appName, key string) error {
 	log := e.logger.WithApp(appName).WithField(key)
-	
+
 	if viper.GetBool("verbose") {
 		log.Debug("Starting cycle operation")
 	}
@@ -192,7 +192,7 @@ func (e *Engine) Cycle(appName, key string) error {
 	}
 
 	currentValue := targetConfig.String(key)
-	
+
 	// Find current value index
 	currentIndex := -1
 	for i, value := range fieldConfig.Values {
@@ -242,7 +242,7 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 	log := e.logger.WithApp(appName).WithContext(map[string]interface{}{
 		"preset": presetName,
 	})
-	
+
 	if viper.GetBool("verbose") {
 		log.Debug("Starting preset application")
 	}
@@ -444,7 +444,7 @@ func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
 
 	// Use filepath.Clean to prevent path traversal
 	commandPath := filepath.Clean(parts[0])
-	
+
 	// Create command with timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -497,8 +497,8 @@ func (e *Engine) validateHookCommand(hookCmd string) error {
 	dangerousPatterns := []string{
 		"|", "&&", "||", ";", "`", "$", // Shell operators
 		"rm -rf", "rm -f", ">/dev/null", // Dangerous operations
-		"curl", "wget", "nc", "telnet",   // Network operations
-		"sudo", "su -", "chmod +x",       // Privilege escalation
+		"curl", "wget", "nc", "telnet", // Network operations
+		"sudo", "su -", "chmod +x", // Privilege escalation
 	}
 
 	lowerCmd := strings.ToLower(hookCmd)
@@ -586,6 +586,6 @@ func (e *Engine) expandPath(path string) string {
 	e.pathMutex.Lock()
 	e.pathCache.Add(path, expanded)
 	e.pathMutex.Unlock()
-	
+
 	return expanded
 }

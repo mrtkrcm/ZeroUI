@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
+	"github.com/spf13/cobra"
 )
 
 // uiCmd represents the ui command

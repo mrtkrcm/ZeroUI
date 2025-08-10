@@ -15,28 +15,28 @@ import (
 type Plugin interface {
 	// Name returns the name of the plugin
 	Name() string
-	
+
 	// Description returns a description of the plugin
 	Description() string
-	
+
 	// DetectConfigPath attempts to find the configuration file path
 	DetectConfigPath() (string, error)
-	
+
 	// ParseConfig parses the configuration file into a standard format
 	ParseConfig(configPath string) (map[string]interface{}, error)
-	
+
 	// WriteConfig writes the configuration back to file
 	WriteConfig(configPath string, config map[string]interface{}) error
-	
+
 	// GetFieldMetadata returns metadata about configurable fields
 	GetFieldMetadata() map[string]FieldMeta
-	
+
 	// GetPresets returns available presets
 	GetPresets() map[string]Preset
-	
+
 	// ValidateValue validates a value for a specific field
 	ValidateValue(field string, value interface{}) error
-	
+
 	// GetHooks returns hooks to run for various events
 	GetHooks() map[string]string
 }
@@ -110,7 +110,7 @@ func AutoGenerate(plugin Plugin) error {
 	}
 
 	configPath := filepath.Join(configDir, plugin.Name()+".yaml")
-	
+
 	// Check if config already exists
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("configuration for %s already exists", plugin.Name())

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroUI Logo SVG Variants</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 40px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .variant-section {
+            margin-bottom: 60px;
+        }
+        
+        .variant-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .logo-card {
+            border-radius: 12px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .logo-card.white-bg {
+            background: white;
+        }
+        
+        .logo-card.dark-bg {
+            background: #000000;
+        }
+        
+        .logo-card.gray-bg {
+            background: #1E1E1E;
+        }
+        
+        .download-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .download-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .svg-code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .copy-btn {
+            background: #007ACC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #005a9e;
+        }
+        
+        .copy-btn.copied {
+            background: #04B575;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Horizontal Logo Variants -->
+        <div class="variant-section">
+            <h2 class="variant-title">Horizontal Logo</h2>
+            <div class="logo-grid">
+                <!-- White Background -->
+                <div class="logo-card white-bg">
+                    <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(20, 10)">
+                            <!-- Outer circle -->
+                            <circle cx="20" cy="20" r="18" fill="none" stroke="#000000" stroke-width="2.5"/>
+                            <!-- Inner circle -->
+                            <circle cx="20" cy="20" r="10" fill="none" stroke="#007ACC" stroke-width="1.5" opacity="0.7"/>
+                        </g>
+                        <!-- Text -->
+                        <text x="70" y="35" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#000000">ZeroUI</text>
+                    </svg>
+                </div>
+                
+                <!-- Dark Background -->
+                <div class="logo-card dark-bg">
+                    <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(20, 10)">
+                            <!-- Outer circle -->
+                            <circle cx="20" cy="20" r="18" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+                            <!-- Inner circle -->
+                            <circle cx="20" cy="20" r="10" fill="none" stroke="#007ACC" stroke-width="1.5"/>
+                        </g>
+                        <!-- Text -->
+                        <text x="70" y="35" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF">ZeroUI</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stacked Logo Variants -->
+        <div class="variant-section">
+            <h2 class="variant-title">Stacked Logo</h2>
+            <div class="logo-grid">
+                <!-- White Background -->
+                <div class="logo-card white-bg">
+                    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(60, 35)">
+                            <!-- Outer circle -->
+                            <circle cx="0" cy="0" r="25" fill="none" stroke="#000000" stroke-width="3"/>
+                            <!-- Inner circle -->
+                            <circle cx="0" cy="0" r="14" fill="none" stroke="#007ACC" stroke-width="2" opacity="0.7"/>
+                        </g>
+                        <!-- Text -->
+                        <text x="60" y="85" font-family="Inter, -apple-system, sans-serif" font-size="22" font-weight="800" fill="#000000" text-anchor="middle">ZeroUI</text>
+                        <!-- Tagline -->
+                        <text x="60" y="100" font-family="Inter, -apple-system, sans-serif" font-size="8" font-weight="400" fill="#007ACC" text-anchor="middle" letter-spacing="0.5">CONFIGURATION PERFECTED</text>
+                    </svg>
+                </div>
+                
+                <!-- Dark Background -->
+                <div class="logo-card dark-bg">
+                    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(60, 35)">
+                            <!-- Outer circle -->
+                            <circle cx="0" cy="0" r="25" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+                            <!-- Inner circle -->
+                            <circle cx="0" cy="0" r="14" fill="none" stroke="#007ACC" stroke-width="2"/>
+                        </g>
+                        <!-- Text -->
+                        <text x="60" y="85" font-family="Inter, -apple-system, sans-serif" font-size="22" font-weight="800" fill="#FFFFFF" text-anchor="middle">ZeroUI</text>
+                        <!-- Tagline -->
+                        <text x="60" y="100" font-family="Inter, -apple-system, sans-serif" font-size="8" font-weight="400" fill="#007ACC" text-anchor="middle" letter-spacing="0.5">CONFIGURATION PERFECTED</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Symbol Only Variants -->
+        <div class="variant-section">
+            <h2 class="variant-title">Symbol Only</h2>
+            <div class="logo-grid">
+                <!-- White Background -->
+                <div class="logo-card white-bg">
+                    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(40, 40)">
+                            <!-- Outer circle -->
+                            <circle cx="0" cy="0" r="35" fill="none" stroke="#000000" stroke-width="4"/>
+                            <!-- Inner circle -->
+                            <circle cx="0" cy="0" r="20" fill="none" stroke="#007ACC" stroke-width="2.5" opacity="0.7"/>
+                            <!-- Center dot (optional) -->
+                            <circle cx="0" cy="0" r="3" fill="#007ACC" opacity="0.5"/>
+                        </g>
+                    </svg>
+                </div>
+                
+                <!-- Dark Background -->
+                <div class="logo-card dark-bg">
+                    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol -->
+                        <g transform="translate(40, 40)">
+                            <!-- Outer circle -->
+                            <circle cx="0" cy="0" r="35" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+                            <!-- Inner circle -->
+                            <circle cx="0" cy="0" r="20" fill="none" stroke="#007ACC" stroke-width="2.5"/>
+                            <!-- Center dot (optional) -->
+                            <circle cx="0" cy="0" r="3" fill="#007ACC"/>
+                        </g>
+                    </svg>
+                </div>
+                
+                <!-- Gray Background Variant -->
+                <div class="logo-card gray-bg">
+                    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Zero Symbol with glow effect -->
+                        <defs>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g transform="translate(40, 40)">
+                            <!-- Outer circle with glow -->
+                            <circle cx="0" cy="0" r="35" fill="none" stroke="#FFFFFF" stroke-width="4" filter="url(#glow)" opacity="0.9"/>
+                            <!-- Inner circle -->
+                            <circle cx="0" cy="0" r="20" fill="none" stroke="#007ACC" stroke-width="2.5"/>
+                            <!-- Center dot -->
+                            <circle cx="0" cy="0" r="3" fill="#007ACC"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compact Variants -->
+        <div class="variant-section">
+            <h2 class="variant-title">Compact Variants</h2>
+            <div class="logo-grid">
+                <!-- 0UI White -->
+                <div class="logo-card white-bg">
+                    <svg width="100" height="60" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Integrated 0 -->
+                        <text x="50" y="38" font-family="Inter, -apple-system, sans-serif" font-size="32" font-weight="900" fill="#000000" text-anchor="middle">
+                            <tspan fill="#007ACC">0</tspan>UI
+                        </text>
+                    </svg>
+                </div>
+                
+                <!-- 0UI Dark -->
+                <div class="logo-card dark-bg">
+                    <svg width="100" height="60" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Integrated 0 -->
+                        <text x="50" y="38" font-family="Inter, -apple-system, sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">
+                            <tspan fill="#007ACC">0</tspan>UI
+                        </text>
+                    </svg>
+                </div>
+                
+                <!-- Z Mark -->
+                <div class="logo-card gray-bg">
+                    <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                        <text x="30" y="40" font-family="Inter, -apple-system, sans-serif" font-size="36" font-weight="900" fill="#FFFFFF" text-anchor="middle">Z</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+            <h3 class="download-title">SVG Code - Horizontal Logo (Light)</h3>
+            <pre class="svg-code" id="svg-code-1">&lt;svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;!-- ZeroUI Logo - Light Version --&gt;
+  &lt;g transform="translate(20, 10)"&gt;
+    &lt;circle cx="20" cy="20" r="18" fill="none" stroke="#000000" stroke-width="2.5"/&gt;
+    &lt;circle cx="20" cy="20" r="10" fill="none" stroke="#007ACC" stroke-width="1.5" opacity="0.7"/&gt;
+  &lt;/g&gt;
+  &lt;text x="70" y="35" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#000000"&gt;ZeroUI&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            <button class="copy-btn" onclick="copySVG('svg-code-1', this)">Copy SVG Code</button>
+        </div>
+
+        <div class="download-section">
+            <h3 class="download-title">SVG Code - Horizontal Logo (Dark)</h3>
+            <pre class="svg-code" id="svg-code-2">&lt;svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;!-- ZeroUI Logo - Dark Version --&gt;
+  &lt;g transform="translate(20, 10)"&gt;
+    &lt;circle cx="20" cy="20" r="18" fill="none" stroke="#FFFFFF" stroke-width="2.5"/&gt;
+    &lt;circle cx="20" cy="20" r="10" fill="none" stroke="#007ACC" stroke-width="1.5"/&gt;
+  &lt;/g&gt;
+  &lt;text x="70" y="35" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF"&gt;ZeroUI&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            <button class="copy-btn" onclick="copySVG('svg-code-2', this)">Copy SVG Code</button>
+        </div>
+
+        <div class="download-section">
+            <h3 class="download-title">SVG Code - Symbol Only (Light)</h3>
+            <pre class="svg-code" id="svg-code-3">&lt;svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;!-- ZeroUI Symbol - Light Version --&gt;
+  &lt;g transform="translate(40, 40)"&gt;
+    &lt;circle cx="0" cy="0" r="35" fill="none" stroke="#000000" stroke-width="4"/&gt;
+    &lt;circle cx="0" cy="0" r="20" fill="none" stroke="#007ACC" stroke-width="2.5" opacity="0.7"/&gt;
+    &lt;circle cx="0" cy="0" r="3" fill="#007ACC" opacity="0.5"/&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;</pre>
+            <button class="copy-btn" onclick="copySVG('svg-code-3', this)">Copy SVG Code</button>
+        </div>
+
+        <div class="download-section">
+            <h3 class="download-title">SVG Code - Symbol Only (Dark)</h3>
+            <pre class="svg-code" id="svg-code-4">&lt;svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;!-- ZeroUI Symbol - Dark Version --&gt;
+  &lt;g transform="translate(40, 40)"&gt;
+    &lt;circle cx="0" cy="0" r="35" fill="none" stroke="#FFFFFF" stroke-width="4"/&gt;
+    &lt;circle cx="0" cy="0" r="20" fill="none" stroke="#007ACC" stroke-width="2.5"/&gt;
+    &lt;circle cx="0" cy="0" r="3" fill="#007ACC"/&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;</pre>
+            <button class="copy-btn" onclick="copySVG('svg-code-4', this)">Copy SVG Code</button>
+        </div>
+    </div>
+
+    <script>
+        function copySVG(elementId, button) {
+            const svgCode = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(svgCode).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy SVG Code';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

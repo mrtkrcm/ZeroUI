@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroUI - Brand Identity 2025</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --pure-black: #000000;
+            --interface-white: #FFFFFF;
+            --code-gray: #1E1E1E;
+            --syntax-blue: #007ACC;
+            --success-green: #04B575;
+            --warning-amber: #FF8C00;
+            --error-red: #FF3B30;
+            --info-cyan: #5AC8FA;
+            --subtle-gray: #2A2A2A;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #0A0A0A 100%);
+            color: var(--interface-white);
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+        
+        /* Animated Background Grid */
+        .grid-bg {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 122, 204, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 122, 204, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 20s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Main Logo Animation */
+        .logo-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .logo-container:hover {
+            transform: scale(1.05);
+        }
+        
+        .zero-symbol {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .zero-outer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid var(--interface-white);
+            border-radius: 50%;
+            animation: rotate-slow 20s linear infinite;
+            box-shadow: 
+                0 0 80px rgba(0, 122, 204, 0.3),
+                inset 0 0 40px rgba(0, 122, 204, 0.1);
+        }
+        
+        .zero-inner {
+            position: absolute;
+            width: 60%;
+            height: 60%;
+            top: 20%;
+            left: 20%;
+            border: 2px solid var(--syntax-blue);
+            border-radius: 50%;
+            animation: rotate-reverse 15s linear infinite;
+            opacity: 0.6;
+        }
+        
+        .zero-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--syntax-blue);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes rotate-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes rotate-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+        
+        /* Typography */
+        .brand-name {
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--interface-white) 0%, var(--syntax-blue) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        
+        .tagline {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 300;
+            color: var(--syntax-blue);
+            margin-bottom: 60px;
+            opacity: 0;
+            animation: fade-in 1s ease-out 0.5s forwards;
+        }
+        
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+        
+        /* Section Container */
+        .section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 40px;
+        }
+        
+        .section-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            text-align: center;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: var(--syntax-blue);
+        }
+        
+        /* Color Palette */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+        
+        .color-card {
+            background: var(--code-gray);
+            border: 1px solid var(--subtle-gray);
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .color-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--color);
+            transition: height 0.3s ease;
+        }
+        
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 122, 204, 0.2);
+        }
+        
+        .color-card:hover::before {
+            height: 100%;
+            opacity: 0.1;
+        }
+        
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .color-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--interface-white);
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .color-hex {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--syntax-blue);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Typography Section */
+        .typography-showcase {
+            margin-top: 60px;
+        }
+        
+        .type-specimen {
+            background: var(--code-gray);
+            border: 1px solid var(--subtle-gray);
+            padding: 40px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .type-specimen:hover {
+            border-color: var(--syntax-blue);
+            box-shadow: 0 0 30px rgba(0, 122, 204, 0.1);
+        }
+        
+        .type-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--syntax-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        
+        .type-sample {
+            font-size: 48px;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+        
+        .mono-sample {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Logo Variations */
+        .logo-variations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+        
+        .logo-variant {
+            background: var(--code-gray);
+            border: 1px solid var(--subtle-gray);
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .logo-variant::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(0, 122, 204, 0.1) 0%, transparent 70%);
+            transition: all 0.5s ease;
+        }
+        
+        .logo-variant:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .logo-variant:hover {
+            transform: translateY(-5px);
+            border-color: var(--syntax-blue);
+        }
+        
+        .variant-logo {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .variant-desc {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--syntax-blue);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Interactive CLI Demo */
+        .cli-demo {
+            background: var(--pure-black);
+            border: 1px solid var(--subtle-gray);
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 60px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cli-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .cli-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .cli-dot.red { background: var(--error-red); }
+        .cli-dot.yellow { background: var(--warning-amber); }
+        .cli-dot.green { background: var(--success-green); }
+        
+        .cli-content {
+            color: var(--success-green);
+            line-height: 1.6;
+        }
+        
+        .cli-prompt {
+            color: var(--syntax-blue);
+        }
+        
+        .cli-command {
+            color: var(--interface-white);
+        }
+        
+        .cli-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: var(--success-green);
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 60px 40px;
+            border-top: 1px solid var(--subtle-gray);
+            margin-top: 100px;
+        }
+        
+        .footer-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--syntax-blue);
+            opacity: 0.6;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .brand-name {
+                font-size: 48px;
+            }
+            
+            .logo-container {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .section {
+                padding: 60px 20px;
+            }
+            
+            .section-title {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="logo-container">
+            <div class="zero-symbol">
+                <div class="zero-outer"></div>
+                <div class="zero-inner"></div>
+                <div class="zero-pulse"></div>
+            </div>
+        </div>
+        <h1 class="brand-name">ZeroUI</h1>
+        <p class="tagline">&lt; The interface that isn't there /&gt;</p>
+    </div>
+    
+    <!-- Color Palette Section -->
+    <div class="section">
+        <h2 class="section-title">Color Strategy</h2>
+        <div class="color-grid">
+            <div class="color-card" style="--color: #000000;">
+                <div class="color-swatch" style="background: #000000;"></div>
+                <div class="color-name">Pure Black</div>
+                <div class="color-hex">#000000</div>
+            </div>
+            <div class="color-card" style="--color: #FFFFFF;">
+                <div class="color-swatch" style="background: #FFFFFF;"></div>
+                <div class="color-name">Interface White</div>
+                <div class="color-hex">#FFFFFF</div>
+            </div>
+            <div class="color-card" style="--color: #1E1E1E;">
+                <div class="color-swatch" style="background: #1E1E1E;"></div>
+                <div class="color-name">Code Gray</div>
+                <div class="color-hex">#1E1E1E</div>
+            </div>
+            <div class="color-card" style="--color: #007ACC;">
+                <div class="color-swatch" style="background: #007ACC;"></div>
+                <div class="color-name">Syntax Blue</div>
+                <div class="color-hex">#007ACC</div>
+            </div>
+            <div class="color-card" style="--color: #04B575;">
+                <div class="color-swatch" style="background: #04B575;"></div>
+                <div class="color-name">Success Green</div>
+                <div class="color-hex">#04B575</div>
+            </div>
+            <div class="color-card" style="--color: #FF8C00;">
+                <div class="color-swatch" style="background: #FF8C00;"></div>
+                <div class="color-name">Warning Amber</div>
+                <div class="color-hex">#FF8C00</div>
+            </div>
+            <div class="color-card" style="--color: #FF3B30;">
+                <div class="color-swatch" style="background: #FF3B30;"></div>
+                <div class="color-name">Error Red</div>
+                <div class="color-hex">#FF3B30</div>
+            </div>
+            <div class="color-card" style="--color: #5AC8FA;">
+                <div class="color-swatch" style="background: #5AC8FA;"></div>
+                <div class="color-name">Info Cyan</div>
+                <div class="color-hex">#5AC8FA</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Typography Section -->
+    <div class="section">
+        <h2 class="section-title">Typography System</h2>
+        <div class="typography-showcase">
+            <div class="type-specimen">
+                <div class="type-title">Primary • Inter</div>
+                <div class="type-sample">Zero friction. Infinite possibilities.</div>
+                <div style="font-size: 16px; line-height: 1.6; color: #888;">
+                    Clean geometric letterforms optimized for screen rendering with perfect hierarchy scaling.
+                </div>
+            </div>
+            <div class="type-specimen">
+                <div class="type-title">Monospace • JetBrains Mono</div>
+                <div class="type-sample mono-sample">zeroui --configure</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6; color: #888;">
+                    Terminal-optimized character set with subtle tech details for CLI output and code examples.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Logo Variations -->
+    <div class="section">
+        <h2 class="section-title">Logo Architecture</h2>
+        <div class="logo-variations">
+            <div class="logo-variant">
+                <div class="variant-logo">ZeroUI</div>
+                <div class="variant-desc">PRIMARY • Full wordmark</div>
+            </div>
+            <div class="logo-variant">
+                <div class="variant-logo">0UI</div>
+                <div class="variant-desc">COMPACT • Small applications</div>
+            </div>
+            <div class="logo-variant">
+                <div class="variant-logo">Z</div>
+                <div class="variant-desc">MINIMAL • Icon contexts</div>
+            </div>
+            <div class="logo-variant">
+                <div class="variant-logo">⦰</div>
+                <div class="variant-desc">SYMBOL • Digital usage</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CLI Demo -->
+    <div class="section">
+        <h2 class="section-title">Terminal Experience</h2>
+        <div class="cli-demo">
+            <div class="cli-header">
+                <div class="cli-dot red"></div>
+                <div class="cli-dot yellow"></div>
+                <div class="cli-dot green"></div>
+            </div>
+            <div class="cli-content">
+                <div>
+                    <span class="cli-prompt">$</span>
+                    <span class="cli-command"> zeroui init</span>
+                </div>
+                <div style="margin-top: 10px;">
+    ⦰  ZeroUI v2.0.0 - Configuration Management Perfected
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    ✓ Analyzing project structure...
+    ✓ Zero-config detection enabled
+    ✓ Intelligent defaults applied
+    ✓ Ready in 0.003s
+                </div>
+                <div style="margin-top: 20px;">
+                    <span class="cli-prompt">$</span>
+                    <span class="cli-command"> </span>
+                    <span class="cli-cursor"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p class="footer-text">ZeroUI © 2025 • Where simplicity meets possibility</p>
+    </div>
+    
+    <script>
+        // Interactive color cards
+        document.querySelectorAll('.color-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const hex = this.querySelector('.color-hex').textContent;
+                navigator.clipboard.writeText(hex);
+                
+                // Visual feedback
+                const original = this.querySelector('.color-name').textContent;
+                this.querySelector('.color-name').textContent = 'Copied!';
+                setTimeout(() => {
+                    this.querySelector('.color-name').textContent = original;
+                }, 1000);
+            });
+        });
+        
+        // Logo hover effect
+        const logoContainer = document.querySelector('.logo-container');
+        logoContainer.addEventListener('mousemove', (e) => {
+            const rect = logoContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const angleX = (y - centerY) / 20;
+            const angleY = (centerX - x) / 20;
+            
+            logoContainer.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg)`;
+        });
+        
+        logoContainer.addEventListener('mouseleave', () => {
+            logoContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+        });
+        
+        // Parallax effect on scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.grid-bg');
+            parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+        });
+    </script>
+</body>
+</html>

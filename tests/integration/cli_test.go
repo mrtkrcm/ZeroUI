@@ -1,12 +1,12 @@
 package integration
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"io/ioutil"
 )
 
 // TestCLI_BasicCommands tests basic CLI functionality

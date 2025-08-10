@@ -114,7 +114,7 @@ func (op *Operation) WriteConfig(appConfig *config.AppConfig, configData map[str
 
 	// Create temporary file in same directory
 	tempPath := op.filePath + ".tmp." + fmt.Sprintf("%d", time.Now().UnixNano())
-	
+
 	// Ensure directory exists
 	dir := filepath.Dir(op.filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -213,12 +213,12 @@ func (rop *ReadOperation) Complete() {
 
 // Transaction represents a multi-operation transaction
 type Transaction struct {
-	manager     *Manager
-	operations  []*Operation
-	backupIds   []string
-	committed   bool
-	rolledBack  bool
-	mu          sync.Mutex
+	manager    *Manager
+	operations []*Operation
+	backupIds  []string
+	committed  bool
+	rolledBack bool
+	mu         sync.Mutex
 }
 
 // BeginTransaction starts a new transaction

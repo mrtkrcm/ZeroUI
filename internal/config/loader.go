@@ -5,21 +5,39 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
-	"github.com/knadh/koanf/v2"
+	"github.com/fsnotify/fsnotify"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	yamlv3 "gopkg.in/yaml.v3"
+
+	"github.com/mrtkrcm/ZeroUI/internal/security"
 )
 
-// Loader handles loading and parsing configuration files
+// Loader handles loading and parsing configuration files with caching
 type Loader struct {
-	configDir string
+	configDir     string
+	yamlValidator *security.YAMLValidator
+	
+	// Performance optimization: LRU cache for app configs
+	appConfigCache     *lru.Cache[string, *AppConfig]
+	cacheMutex         sync.RWMutex
+	
+	// File watching for cache invalidation
+	watcher            *fsnotify.Watcher
+	watcherInitOnce    sync.Once
+	
+	// Cache statistics for monitoring
+	cacheHits          uint64
+	cacheMisses        uint64
 }
 
-// NewLoader creates a new config loader
+// NewLoader creates a new config loader with caching
 func NewLoader() (*Loader, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -31,31 +49,53 @@ func NewLoader() (*Loader, error) {
 		return nil, fmt.Errorf("failed to create config directory: %w", err)
 	}
 
+	// Initialize YAML validator with security limits
+	yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
+	
+	// Initialize LRU cache with 1000 entry limit (same as toggle engine)
+	appCache, err := lru.New[string, *AppConfig](1000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create app config cache: %w", err)
+	}
+
 	return &Loader{
-		configDir: configDir,
+		configDir:      configDir,
+		yamlValidator:  yamlValidator,
+		appConfigCache: appCache,
 	}, nil
 }
 
 // SetConfigDir sets the config directory (for testing)
 func (l *Loader) SetConfigDir(dir string) {
 	l.configDir = dir
+	// Initialize YAML validator if not already set (for testing)
+	if l.yamlValidator == nil {
+		l.yamlValidator = security.NewYAMLValidator(security.DefaultYAMLLimits())
+	}
+	// Initialize cache if not already set (for testing)
+	if l.appConfigCache == nil {
+		cache, err := lru.New[string, *AppConfig](1000)
+		if err == nil {
+			l.appConfigCache = cache
+		}
+	}
 }
 
 // AppConfig represents the configuration for a single application
 type AppConfig struct {
-	Name        string                     `yaml:"name"`
-	Path        string                     `yaml:"path"`
-	Format      string                     `yaml:"format"`
-	Description string                     `yaml:"description,omitempty"`
-	Fields      map[string]FieldConfig     `yaml:"fields"`
-	Presets     map[string]PresetConfig    `yaml:"presets"`
-	Hooks       map[string]string          `yaml:"hooks,omitempty"`
-	Env         map[string]string          `yaml:"env,omitempty"`
+	Name        string                  `yaml:"name"`
+	Path        string                  `yaml:"path"`
+	Format      string                  `yaml:"format"`
+	Description string                  `yaml:"description,omitempty"`
+	Fields      map[string]FieldConfig  `yaml:"fields"`
+	Presets     map[string]PresetConfig `yaml:"presets"`
+	Hooks       map[string]string       `yaml:"hooks,omitempty"`
+	Env         map[string]string       `yaml:"env,omitempty"`
 }
 
 // FieldConfig represents a configurable field
 type FieldConfig struct {
-	Type        string      `yaml:"type"`        // choice, string, number, boolean
+	Type        string      `yaml:"type"` // choice, string, number, boolean
 	Values      []string    `yaml:"values,omitempty"`
 	Default     interface{} `yaml:"default,omitempty"`
 	Description string      `yaml:"description,omitempty"`
@@ -69,37 +109,59 @@ type PresetConfig struct {
 	Values      map[string]interface{} `yaml:"values"`
 }
 
-// LoadAppConfig loads configuration for a specific application
+// LoadAppConfig loads configuration for a specific application with caching
 func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
-	configPath := filepath.Join(l.configDir, "apps", appName+".yaml")
+	// Check cache first (fast path)
+	l.cacheMutex.RLock()
+	if cached, ok := l.appConfigCache.Get(appName); ok {
+		l.cacheHits++
+		l.cacheMutex.RUnlock()
+		return cached, nil
+	}
+	l.cacheMisses++
+	l.cacheMutex.RUnlock()
 	
+	// Cache miss - load from disk
+	configPath := filepath.Join(l.configDir, "apps", appName+".yaml")
+
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("app config not found: %s", appName)
 	}
 
-	// TODO: Implement lazy loading with file watchers (Week 3)
-	// TODO: Add in-memory caching to avoid repeated file reads
-	// TODO: Performance: File I/O on every operation causes 100ms+ latency
-	data, err := os.ReadFile(configPath)
+	// Initialize file watcher on first use
+	l.initFileWatcher()
+	
+	// Use secure YAML reading with complexity limits (Security hardening)
+	data, err := l.yamlValidator.SafeReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, fmt.Errorf("failed to securely read config file: %w", err)
 	}
 
-	// TODO: Add YAML complexity limits to prevent resource exhaustion (Security)
-	// TODO: Implement max file size, depth, and key count limits
+	// Parse YAML with validated content
 	var config AppConfig
 	if err := yamlv3.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	config.Name = appName
+	
+	// Update cache
+	l.cacheMutex.Lock()
+	l.appConfigCache.Add(appName, &config)
+	l.cacheMutex.Unlock()
+	
+	// Add file to watcher for automatic cache invalidation
+	if l.watcher != nil {
+		l.watcher.Add(configPath)
+	}
+	
 	return &config, nil
 }
 
 // ListApps returns a list of available applications
 func (l *Loader) ListApps() ([]string, error) {
 	appsDir := filepath.Join(l.configDir, "apps")
-	
+
 	entries, err := os.ReadDir(appsDir)
 	if os.IsNotExist(err) {
 		return []string{}, nil
@@ -233,6 +295,92 @@ func (l *Loader) loadCustomFormat(configPath string) (*koanf.Koanf, error) {
 func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
 	// Use the Ghostty custom parser to write back
 	return WriteGhosttyConfig(configPath, k, configPath)
+}
+
+// initFileWatcher initializes the file watcher for cache invalidation
+func (l *Loader) initFileWatcher() {
+	l.watcherInitOnce.Do(func() {
+		var err error
+		l.watcher, err = fsnotify.NewWatcher()
+		if err != nil {
+			// Log error but don't fail - caching will still work without file watching
+			return
+		}
+		
+		// Start watching for file changes
+		go l.watchFiles()
+	})
+}
+
+// watchFiles handles file system events for cache invalidation
+func (l *Loader) watchFiles() {
+	if l.watcher == nil {
+		return
+	}
+	
+	for {
+		select {
+		case event, ok := <-l.watcher.Events:
+			if !ok {
+				return
+			}
+			
+			// Invalidate cache on file changes
+			if event.Op&fsnotify.Write == fsnotify.Write || 
+			   event.Op&fsnotify.Remove == fsnotify.Remove ||
+			   event.Op&fsnotify.Rename == fsnotify.Rename {
+				l.invalidateCacheForPath(event.Name)
+			}
+			
+		case err, ok := <-l.watcher.Errors:
+			if !ok {
+				return
+			}
+			// Log error but continue watching
+			_ = err
+		}
+	}
+}
+
+// invalidateCacheForPath removes cached config for a specific file path
+func (l *Loader) invalidateCacheForPath(filePath string) {
+	// Extract app name from file path
+	fileName := filepath.Base(filePath)
+	if strings.HasSuffix(fileName, ".yaml") {
+		appName := strings.TrimSuffix(fileName, ".yaml")
+		
+		l.cacheMutex.Lock()
+		l.appConfigCache.Remove(appName)
+		l.cacheMutex.Unlock()
+	}
+}
+
+// ClearCache clears all cached configurations
+func (l *Loader) ClearCache() {
+	l.cacheMutex.Lock()
+	defer l.cacheMutex.Unlock()
+	l.appConfigCache.Purge()
+}
+
+// GetCacheStats returns cache statistics for monitoring
+func (l *Loader) GetCacheStats() map[string]interface{} {
+	l.cacheMutex.RLock()
+	defer l.cacheMutex.RUnlock()
+	
+	return map[string]interface{}{
+		"cache_hits":   l.cacheHits,
+		"cache_misses": l.cacheMisses,
+		"cache_size":   l.appConfigCache.Len(),
+		"hit_ratio":    float64(l.cacheHits) / float64(l.cacheHits + l.cacheMisses),
+	}
+}
+
+// Close closes the file watcher and cleans up resources
+func (l *Loader) Close() error {
+	if l.watcher != nil {
+		return l.watcher.Close()
+	}
+	return nil
 }
 
 // copyFile creates a copy of a file

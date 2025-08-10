@@ -8,10 +8,10 @@ import (
 
 // Build-time variables set via ldflags
 var (
-	Version   = "dev"      // Version is the semantic version
-	Commit    = "unknown"  // Commit is the git commit hash
-	BuildTime = "unknown"  // BuildTime is the build timestamp
-	GoVersion = "unknown"  // GoVersion is the Go version used to build
+	Version   = "dev"     // Version is the semantic version
+	Commit    = "unknown" // Commit is the git commit hash
+	BuildTime = "unknown" // BuildTime is the build timestamp
+	GoVersion = "unknown" // GoVersion is the Go version used to build
 )
 
 // Info contains version information

@@ -53,7 +53,7 @@ func TestOperation_Basic(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "test.json")
-	
+
 	// Create initial config file
 	initialConfig := `{"setting": "initial_value"}`
 	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
@@ -62,7 +62,7 @@ func TestOperation_Basic(t *testing.T) {
 
 	// Test atomic write operation
 	operation := manager.BeginOperation(configPath)
-	
+
 	// Create backup
 	err = operation.CreateBackup("test-app")
 	if err != nil {
@@ -74,7 +74,7 @@ func TestOperation_Basic(t *testing.T) {
 		Path:   configPath,
 		Format: "json",
 	}
-	
+
 	newConfigData := map[string]interface{}{
 		"setting": "new_value",
 		"added":   "additional_setting",
@@ -114,7 +114,7 @@ func TestOperation_Rollback(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "test.json")
-	
+
 	// Create initial config file
 	originalContent := `{"setting": "original_value"}`
 	if err := ioutil.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
@@ -123,7 +123,7 @@ func TestOperation_Rollback(t *testing.T) {
 
 	// Begin operation
 	operation := manager.BeginOperation(configPath)
-	
+
 	// Create backup
 	err = operation.CreateBackup("test-app")
 	if err != nil {
@@ -135,7 +135,7 @@ func TestOperation_Rollback(t *testing.T) {
 		Path:   configPath,
 		Format: "json",
 	}
-	
+
 	newConfigData := map[string]interface{}{
 		"setting": "modified_value",
 	}
@@ -187,7 +187,7 @@ func TestReadOperation(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "test.json")
-	
+
 	// Create config file
 	configContent := `{"setting1": "value1", "setting2": 42, "setting3": true}`
 	if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
@@ -196,7 +196,7 @@ func TestReadOperation(t *testing.T) {
 
 	// Test read operation
 	readOp := manager.BeginReadOperation(configPath)
-	
+
 	appConfig := &config.AppConfig{
 		Path:   configPath,
 		Format: "json",
@@ -235,7 +235,7 @@ func TestConcurrentOperations(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "concurrent.json")
-	
+
 	// Create initial config
 	initialConfig := `{"counter": 0}`
 	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
@@ -246,38 +246,38 @@ func TestConcurrentOperations(t *testing.T) {
 	t.Run("Concurrent reads", func(t *testing.T) {
 		var wg sync.WaitGroup
 		results := make([]map[string]interface{}, 5)
-		
+
 		for i := 0; i < 5; i++ {
 			wg.Add(1)
 			go func(index int) {
 				defer wg.Done()
-				
+
 				readOp := manager.BeginReadOperation(configPath)
 				defer readOp.Complete()
-				
+
 				appConfig := &config.AppConfig{
 					Path:   configPath,
 					Format: "json",
 				}
-				
+
 				data, err := readOp.ReadConfig(appConfig)
 				if err != nil {
 					t.Errorf("Failed to read config in goroutine %d: %v", index, err)
 					return
 				}
-				
+
 				results[index] = data
 			}(i)
 		}
-		
+
 		wg.Wait()
-		
+
 		// All reads should succeed and return the same data
 		for i, result := range results {
 			if result == nil {
 				continue // Error case already logged
 			}
-			
+
 			if result["counter"] != float64(0) {
 				t.Errorf("Read %d: expected counter 0, got %v", i, result["counter"])
 			}
@@ -289,49 +289,49 @@ func TestConcurrentOperations(t *testing.T) {
 		var wg sync.WaitGroup
 		writeCount := 0
 		var mu sync.Mutex
-		
+
 		for i := 0; i < 3; i++ {
 			wg.Add(1)
 			go func(index int) {
 				defer wg.Done()
-				
+
 				operation := manager.BeginOperation(configPath)
-				
+
 				// Simulate some work time
 				time.Sleep(10 * time.Millisecond)
-				
+
 				mu.Lock()
 				writeCount++
 				currentCount := writeCount
 				mu.Unlock()
-				
+
 				// Write the current count
 				appConfig := &config.AppConfig{
 					Path:   configPath,
 					Format: "json",
 				}
-				
+
 				configData := map[string]interface{}{
 					"counter": currentCount,
 					"writer":  index,
 				}
-				
+
 				if err := operation.WriteConfig(appConfig, configData); err != nil {
 					t.Errorf("Failed to write config in goroutine %d: %v", index, err)
 				}
-				
+
 				operation.Commit()
 			}(i)
 		}
-		
+
 		wg.Wait()
-		
+
 		// Final value should be consistent (last writer wins due to serialization)
 		content, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read final config: %v", err)
 		}
-		
+
 		if !containsString(string(content), "\"counter\": 3") {
 			t.Errorf("Expected counter to be 3 in final result, got: %s", string(content))
 		}
@@ -354,7 +354,7 @@ func TestTransaction(t *testing.T) {
 		filepath.Join(tmpDir, "config2.json"),
 		filepath.Join(tmpDir, "config3.json"),
 	}
-	
+
 	appNames := []string{"app1", "app2", "app3"}
 
 	// Create initial files
@@ -368,47 +368,47 @@ func TestTransaction(t *testing.T) {
 	// Test successful transaction
 	t.Run("Successful transaction", func(t *testing.T) {
 		tx := manager.BeginTransaction()
-		
+
 		// Add operations
 		operations := make([]*Operation, len(configPaths))
 		for i, configPath := range configPaths {
 			operations[i] = tx.AddOperation(configPath)
 		}
-		
+
 		// Create backups
 		if err := tx.CreateBackups(appNames); err != nil {
 			t.Fatalf("Failed to create backups: %v", err)
 		}
-		
+
 		// Write to all files
 		for i, op := range operations {
 			appConfig := &config.AppConfig{
 				Path:   configPaths[i],
 				Format: "json",
 			}
-			
+
 			configData := map[string]interface{}{
 				"id":    i + 1,
 				"value": "updated",
 			}
-			
+
 			if err := op.WriteConfig(appConfig, configData); err != nil {
 				t.Fatalf("Failed to write config %d: %v", i+1, err)
 			}
 		}
-		
+
 		// Commit transaction
 		if err := tx.Commit(); err != nil {
 			t.Fatalf("Failed to commit transaction: %v", err)
 		}
-		
+
 		// Verify all files were updated
 		for i, configPath := range configPaths {
 			content, err := ioutil.ReadFile(configPath)
 			if err != nil {
 				t.Fatalf("Failed to read updated config %d: %v", i+1, err)
 			}
-			
+
 			if !containsString(string(content), "\"value\": \"updated\"") {
 				t.Errorf("Config %d was not updated properly", i+1)
 			}
@@ -418,52 +418,52 @@ func TestTransaction(t *testing.T) {
 	// Test transaction rollback
 	t.Run("Transaction rollback", func(t *testing.T) {
 		tx := manager.BeginTransaction()
-		
+
 		// Add operations
 		operations := make([]*Operation, len(configPaths))
 		for i, configPath := range configPaths {
 			operations[i] = tx.AddOperation(configPath)
 		}
-		
+
 		// Create backups
 		if err := tx.CreateBackups(appNames); err != nil {
 			t.Fatalf("Failed to create backups: %v", err)
 		}
-		
+
 		// Write to some files
 		for i := 0; i < 2; i++ {
 			appConfig := &config.AppConfig{
 				Path:   configPaths[i],
 				Format: "json",
 			}
-			
+
 			configData := map[string]interface{}{
 				"id":    i + 1,
 				"value": "rolled_back",
 			}
-			
+
 			if err := operations[i].WriteConfig(appConfig, configData); err != nil {
 				t.Fatalf("Failed to write config %d: %v", i+1, err)
 			}
 		}
-		
+
 		// Rollback transaction
 		if err := tx.Rollback(); err != nil {
 			t.Fatalf("Failed to rollback transaction: %v", err)
 		}
-		
+
 		// Verify all files were restored to previous state
 		for i, configPath := range configPaths {
 			content, err := ioutil.ReadFile(configPath)
 			if err != nil {
 				t.Fatalf("Failed to read rolled back config %d: %v", i+1, err)
 			}
-			
+
 			// Should still contain "updated" from previous test, not "rolled_back"
 			if !containsString(string(content), "\"value\": \"updated\"") {
 				t.Errorf("Config %d was not properly rolled back", i+1)
 			}
-			
+
 			if containsString(string(content), "rolled_back") {
 				t.Errorf("Config %d still contains rolled back data", i+1)
 			}
@@ -482,7 +482,7 @@ func TestSafeOperation(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "safe.json")
-	
+
 	// Create initial config
 	initialConfig := `{"status": "original"}`
 	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
@@ -492,30 +492,30 @@ func TestSafeOperation(t *testing.T) {
 	// Test successful safe operation
 	t.Run("Successful operation", func(t *testing.T) {
 		safeOp := manager.NewSafeOperation(configPath)
-		
+
 		err := safeOp.Execute("test-app", func(op *Operation) error {
 			appConfig := &config.AppConfig{
 				Path:   configPath,
 				Format: "json",
 			}
-			
+
 			configData := map[string]interface{}{
 				"status": "success",
 			}
-			
+
 			return op.WriteConfig(appConfig, configData)
 		})
-		
+
 		if err != nil {
 			t.Fatalf("Safe operation failed: %v", err)
 		}
-		
+
 		// Verify file was updated
 		content, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
-		
+
 		if !containsString(string(content), "\"status\": \"success\"") {
 			t.Error("Expected config to contain success status")
 		}
@@ -524,40 +524,40 @@ func TestSafeOperation(t *testing.T) {
 	// Test failed safe operation (should rollback automatically)
 	t.Run("Failed operation with auto rollback", func(t *testing.T) {
 		safeOp := manager.NewSafeOperation(configPath)
-		
+
 		err := safeOp.Execute("test-app", func(op *Operation) error {
 			appConfig := &config.AppConfig{
 				Path:   configPath,
 				Format: "json",
 			}
-			
+
 			configData := map[string]interface{}{
 				"status": "failed",
 			}
-			
+
 			// Write the config first
 			if err := op.WriteConfig(appConfig, configData); err != nil {
 				return err
 			}
-			
+
 			// Then return an error to trigger rollback
 			return fmt.Errorf("simulated failure")
 		})
-		
+
 		if err == nil {
 			t.Fatal("Expected error from failed operation")
 		}
-		
+
 		// Verify file was rolled back
 		content, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read rolled back config: %v", err)
 		}
-		
+
 		if !containsString(string(content), "\"status\": \"success\"") {
 			t.Error("Expected config to be rolled back to success status")
 		}
-		
+
 		if containsString(string(content), "failed") {
 			t.Error("Expected failed data to be rolled back")
 		}
@@ -575,7 +575,7 @@ func TestLockManager(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "locktest.json")
-	
+
 	// Create initial config
 	initialConfig := `{"counter": 0}`
 	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
@@ -585,26 +585,26 @@ func TestLockManager(t *testing.T) {
 	// Test read lock
 	t.Run("Read lock", func(t *testing.T) {
 		var readValue interface{}
-		
+
 		err := lockManager.WithReadLock(configPath, func() error {
 			// Read the file
 			content, err := ioutil.ReadFile(configPath)
 			if err != nil {
 				return err
 			}
-			
+
 			// Simple parsing to get counter value
 			if containsString(string(content), "\"counter\": 0") {
 				readValue = 0
 			}
-			
+
 			return nil
 		})
-		
+
 		if err != nil {
 			t.Fatalf("Read lock operation failed: %v", err)
 		}
-		
+
 		if readValue != 0 {
 			t.Errorf("Expected to read counter value 0, got %v", readValue)
 		}
@@ -617,24 +617,24 @@ func TestLockManager(t *testing.T) {
 				Path:   configPath,
 				Format: "json",
 			}
-			
+
 			configData := map[string]interface{}{
 				"counter": 1,
 			}
-			
+
 			return op.WriteConfig(appConfig, configData)
 		})
-		
+
 		if err != nil {
 			t.Fatalf("Write lock operation failed: %v", err)
 		}
-		
+
 		// Verify file was updated
 		content, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
-		
+
 		if !containsString(string(content), "\"counter\": 1") {
 			t.Error("Expected counter to be updated to 1")
 		}
@@ -669,10 +669,10 @@ func TestHealthCheck(t *testing.T) {
 
 // Helper function for string containment check
 func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-			len(s) > len(substr) && 
-			(findSubstring(s, substr)))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			len(s) > len(substr) &&
+				(findSubstring(s, substr)))
 }
 
 func findSubstring(s, substr string) bool {

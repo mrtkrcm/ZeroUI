@@ -34,7 +34,7 @@ func setupLoggerTest(t *testing.T) (string, func()) {
 // TestNewLogger tests creating a new logger
 func TestNewLogger(t *testing.T) {
 	logger := NewLogger()
-	
+
 	if logger == nil {
 		t.Fatal("Expected non-nil logger")
 	}
@@ -80,7 +80,7 @@ func TestLoggerWithConfig(t *testing.T) {
 	}
 
 	logger := NewLoggerWithConfig(config)
-	
+
 	if logger == nil {
 		t.Fatal("Expected non-nil logger")
 	}
@@ -117,7 +117,7 @@ func TestLoggerWithConfig(t *testing.T) {
 // TestLoggerLevels tests different log levels
 func TestLoggerLevels(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	// Create logger that writes to buffer
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
@@ -134,7 +134,7 @@ func TestLoggerLevels(t *testing.T) {
 	logger.Error("Error message")
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "Debug message") {
 		t.Error("Expected debug message in output")
 	}
@@ -151,14 +151,14 @@ func TestLoggerLevels(t *testing.T) {
 	// Test level filtering
 	buf.Reset()
 	logger.SetLevel(LevelError)
-	
+
 	logger.Debug("Should not appear")
 	logger.Info("Should not appear")
 	logger.Warn("Should not appear")
 	logger.Error("Should appear")
 
 	output = buf.String()
-	
+
 	if strings.Contains(output, "Should not appear") {
 		t.Error("Expected filtered messages not to appear")
 	}
@@ -170,7 +170,7 @@ func TestLoggerLevels(t *testing.T) {
 // TestLoggerWithContext tests context functionality
 func TestLoggerWithContext(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -181,11 +181,11 @@ func TestLoggerWithContext(t *testing.T) {
 
 	// Add context
 	contextLogger := logger.WithContext("request_id", "12345").WithContext("user", "testuser")
-	
+
 	contextLogger.Info("Test with context")
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "request_id") {
 		t.Error("Expected request_id in output")
 	}
@@ -204,7 +204,7 @@ func TestLoggerWithContext(t *testing.T) {
 func TestLoggerHooks(t *testing.T) {
 	var buf bytes.Buffer
 	var hookCalls int
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -229,7 +229,7 @@ func TestLoggerHooks(t *testing.T) {
 // TestLogError tests structured error logging
 func TestLogError(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -250,7 +250,7 @@ func TestLogError(t *testing.T) {
 	logger.LogError(ctErr)
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "APP_NOT_FOUND") {
 		t.Error("Expected error type in output")
 	}
@@ -278,7 +278,7 @@ func TestLogError(t *testing.T) {
 // TestLogOperation tests operation logging
 func TestLogOperation(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -294,7 +294,7 @@ func TestLogOperation(t *testing.T) {
 	})
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "toggle") {
 		t.Error("Expected operation name in output")
 	}
@@ -315,7 +315,7 @@ func TestLogOperation(t *testing.T) {
 	})
 
 	output = buf.String()
-	
+
 	if !strings.Contains(output, "false") {
 		t.Error("Expected failure flag in output")
 	}
@@ -327,7 +327,7 @@ func TestLogOperation(t *testing.T) {
 // TestLogConfigChange tests configuration change logging
 func TestLogConfigChange(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -339,7 +339,7 @@ func TestLogConfigChange(t *testing.T) {
 	logger.LogConfigChange("myapp", "theme", "dark", "light", "testuser")
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "Configuration changed") {
 		t.Error("Expected config change message in output")
 	}
@@ -363,7 +363,7 @@ func TestLogConfigChange(t *testing.T) {
 // TestLogHook tests hook execution logging
 func TestLogHook(t *testing.T) {
 	var buf bytes.Buffer
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -375,7 +375,7 @@ func TestLogHook(t *testing.T) {
 	logger.LogHook("post-toggle", "echo 'test'", true, "test", 25*time.Millisecond)
 
 	output := buf.String()
-	
+
 	if !strings.Contains(output, "Hook executed") {
 		t.Error("Expected hook execution message in output")
 	}
@@ -446,7 +446,7 @@ func TestMetrics(t *testing.T) {
 	// Test reset
 	metrics.Reset()
 	statsAfterReset := metrics.GetStats()
-	
+
 	countersAfterReset := statsAfterReset["counters"].(map[string]int64)
 	if len(countersAfterReset) != 0 {
 		t.Error("Expected counters to be reset")
@@ -457,7 +457,7 @@ func TestMetrics(t *testing.T) {
 func TestMetricsHook(t *testing.T) {
 	var buf bytes.Buffer
 	metrics := NewMetrics()
-	
+
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
 		logger:  slog.New(handler),
@@ -504,7 +504,7 @@ func TestAuditHook(t *testing.T) {
 	defer cleanup()
 
 	auditFile := filepath.Join(tmpDir, "audit.log")
-	
+
 	var buf bytes.Buffer
 	handler := slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := &Logger{
@@ -551,7 +551,7 @@ func TestAuditHook(t *testing.T) {
 
 	// Log a non-audited operation
 	logger.Info("Regular log message")
-	
+
 	// Audit file should not grow
 	newContent, err := ioutil.ReadFile(auditFile)
 	if err != nil {

@@ -46,21 +46,21 @@ func (b *DefaultButtonStyle) Disabled() lipgloss.Style {
 // Global button styles for direct use
 var (
 	ButtonPrimaryStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("#7D56F4")).
-		Foreground(lipgloss.Color("#F8F8F2")).
-		Padding(0, 1).
-		Bold(true)
+				Background(lipgloss.Color("#7D56F4")).
+				Foreground(lipgloss.Color("#F8F8F2")).
+				Padding(0, 1).
+				Bold(true)
 
 	ButtonSecondaryStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Foreground(lipgloss.Color("#7D56F4")).
-		Padding(0, 1)
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color("#7D56F4")).
+				Foreground(lipgloss.Color("#7D56F4")).
+				Padding(0, 1)
 
 	ButtonDisabledStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("#44475A")).
-		Foreground(lipgloss.Color("#6272A4")).
-		Padding(0, 1)
+				Background(lipgloss.Color("#44475A")).
+				Foreground(lipgloss.Color("#6272A4")).
+				Padding(0, 1)
 )
 
 // ButtonComponent represents a button with state
@@ -74,7 +74,7 @@ type ButtonComponent struct {
 // NewButtonComponent creates a new button component
 func NewButtonComponent(text string, variant string) *ButtonComponent {
 	var style lipgloss.Style
-	
+
 	switch variant {
 	case "primary":
 		style = ButtonPrimaryStyle
@@ -98,14 +98,14 @@ func (b *ButtonComponent) Render() string {
 	if b.Disabled {
 		return ButtonDisabledStyle.Render(b.Text)
 	}
-	
+
 	if b.Active {
 		// Add visual feedback for active state
 		activeStyle := b.Style.Copy().
 			Background(lipgloss.Color("#9575FF"))
 		return activeStyle.Render(b.Text)
 	}
-	
+
 	return b.Style.Render(b.Text)
 }
 

@@ -14,9 +14,9 @@ import (
 
 // App represents the TUI application
 type App struct {
-	engine      *toggle.Engine
-	initialApp  string
-	program     *tea.Program
+	engine     *toggle.Engine
+	initialApp string
+	program    *tea.Program
 }
 
 // NewApp creates a new TUI application
@@ -40,7 +40,7 @@ func (a *App) Run() error {
 	}
 
 	a.program = tea.NewProgram(model, tea.WithAltScreen())
-	
+
 	if _, err := a.program.Run(); err != nil {
 		return fmt.Errorf("TUI application error: %w", err)
 	}
@@ -83,12 +83,37 @@ type AppConfigView struct {
 
 // FieldView represents a configuration field in the TUI
 type FieldView struct {
-	Key         string
-	Type        string
+	Key          string
+	Type         string
 	CurrentValue string
-	Values      []string
-	Description string
-	cursor      int
+	Values       []string
+	Description  string
+	cursor       int
+	
+	// Performance optimization: value->index mapping for O(1) lookups
+	valueLookup  map[string]int
+}
+
+// GetValueIndex returns the index of a value using O(1) lookup
+func (fv *FieldView) GetValueIndex(value string) (int, bool) {
+	if fv.valueLookup == nil {
+		// Fallback to linear search if lookup map not available
+		for i, v := range fv.Values {
+			if v == value {
+				return i, true
+			}
+		}
+		return 0, false
+	}
+	
+	idx, exists := fv.valueLookup[value]
+	return idx, exists
+}
+
+// HasValue checks if a value exists using O(1) lookup
+func (fv *FieldView) HasValue(value string) bool {
+	_, exists := fv.GetValueIndex(value)
+	return exists
 }
 
 // PresetView represents a preset in the TUI
@@ -157,11 +182,11 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Go back to app selection from other views
 		m.state = AppSelectionView
 		return m, nil
-		
+
 	case "?":
 		m.state = HelpView
 		return m, nil
-		
+
 	case "esc":
 		switch m.state {
 		case ConfigEditView, PresetSelectionView, HelpView:
@@ -443,7 +468,7 @@ func (m *Model) renderPresetSelection() string {
 				cursor = ">"
 				name = selectedStyle.Render(name)
 			}
-			
+
 			line := fmt.Sprintf("%s %s", cursor, name)
 			if preset.Description != "" {
 				line += " - " + preset.Description
@@ -517,15 +542,16 @@ func (m *Model) loadAppConfig(appName string) error {
 			currentValue = fmt.Sprintf("%v", fieldConfig.Default)
 		}
 
-		// Find cursor position for current value
+		// Build O(1) lookup map for field values (performance optimization)
+		valueLookup := make(map[string]int)
+		for i, value := range fieldConfig.Values {
+			valueLookup[value] = i
+		}
+		
+		// Find cursor position using O(1) lookup instead of O(n) search
 		cursor := 0
-		if len(fieldConfig.Values) > 0 {
-			for i, value := range fieldConfig.Values {
-				if value == currentValue {
-					cursor = i
-					break
-				}
-			}
+		if idx, exists := valueLookup[currentValue]; exists {
+			cursor = idx
 		}
 
 		fields = append(fields, FieldView{
@@ -535,6 +561,7 @@ func (m *Model) loadAppConfig(appName string) error {
 			Values:       fieldConfig.Values,
 			Description:  fieldConfig.Description,
 			cursor:       cursor,
+			valueLookup:  valueLookup,
 		})
 	}
 

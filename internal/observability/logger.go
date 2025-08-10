@@ -17,12 +17,12 @@ import (
 
 // Logger provides structured logging with observability features
 type Logger struct {
-	logger    *slog.Logger
-	level     slog.Level
-	outputs   []io.Writer
-	hooks     []Hook
-	context   map[string]interface{}
-	mu        sync.RWMutex
+	logger  *slog.Logger
+	level   slog.Level
+	outputs []io.Writer
+	hooks   []Hook
+	context map[string]interface{}
+	mu      sync.RWMutex
 }
 
 // Hook represents a logging hook function
@@ -130,11 +130,11 @@ func NewLoggerWithConfig(config *LogConfig) *Logger {
 
 // LogConfig represents logger configuration
 type LogConfig struct {
-	Level          LogLevel                   `json:"level"`
-	Console        ConsoleConfig              `json:"console"`
-	File           FileConfig                 `json:"file"`
-	DefaultContext map[string]interface{}     `json:"default_context,omitempty"`
-	Hooks          []string                   `json:"hooks,omitempty"`
+	Level          LogLevel               `json:"level"`
+	Console        ConsoleConfig          `json:"console"`
+	File           FileConfig             `json:"file"`
+	DefaultContext map[string]interface{} `json:"default_context,omitempty"`
+	Hooks          []string               `json:"hooks,omitempty"`
 }
 
 // ConsoleConfig configures console output
@@ -513,12 +513,12 @@ func (m *BasicMetrics) GetStats() map[string]interface{} {
 		avg := total / time.Duration(len(durations))
 
 		timers[name] = map[string]interface{}{
-			"count":      len(durations),
-			"total_ms":   total.Milliseconds(),
-			"avg_ms":     avg.Milliseconds(),
-			"min_ms":     min.Milliseconds(),
-			"max_ms":     max.Milliseconds(),
-			"last_run":   m.lastOperations[name],
+			"count":    len(durations),
+			"total_ms": total.Milliseconds(),
+			"avg_ms":   avg.Milliseconds(),
+			"min_ms":   min.Milliseconds(),
+			"max_ms":   max.Milliseconds(),
+			"last_run": m.lastOperations[name],
 		}
 	}
 	stats["timers"] = timers

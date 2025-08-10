@@ -17,10 +17,10 @@ func TestLoader_CoverageEnhancement(t *testing.T) {
 	// Test NewLoader error path
 	originalHome := os.Getenv("HOME")
 	os.Unsetenv("HOME")
-	
+
 	_, err := NewLoader()
 	assert.Error(t, err, "Should fail when HOME is not set")
-	
+
 	// Restore HOME
 	os.Setenv("HOME", originalHome)
 }
@@ -29,7 +29,7 @@ func TestLoader_ConfigDirectoryAccess(t *testing.T) {
 	loader, err := NewLoader()
 	require.NoError(t, err)
 
-	// Test ListApps with empty directory  
+	// Test ListApps with empty directory
 	apps, err := loader.ListApps()
 	require.NoError(t, err)
 	assert.IsType(t, []string{}, apps)
@@ -294,11 +294,11 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			verify: func(t *testing.T, filePath string) {
 				content, err := ioutil.ReadFile(filePath)
 				require.NoError(t, err)
-				
+
 				var data map[string]interface{}
 				err = json.Unmarshal(content, &data)
 				require.NoError(t, err)
-				
+
 				assert.Equal(t, "test_value", data["test_key"])
 				assert.Equal(t, float64(123), data["number_key"])
 			},
@@ -309,11 +309,11 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			verify: func(t *testing.T, filePath string) {
 				content, err := ioutil.ReadFile(filePath)
 				require.NoError(t, err)
-				
+
 				var data map[string]interface{}
 				err = yamlv3.Unmarshal(content, &data)
 				require.NoError(t, err)
-				
+
 				assert.Equal(t, "test_value", data["test_key"])
 				assert.Equal(t, 123, data["number_key"])
 			},
@@ -324,7 +324,7 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			verify: func(t *testing.T, filePath string) {
 				content, err := ioutil.ReadFile(filePath)
 				require.NoError(t, err)
-				
+
 				contentStr := string(content)
 				assert.Contains(t, contentStr, "test_key = test_value")
 				assert.Contains(t, contentStr, "number_key = 123")
@@ -335,7 +335,7 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 	for _, format := range formats {
 		t.Run(format.name, func(t *testing.T) {
 			configFile := filepath.Join(tmpDir, "save_test_"+format.name)
-			
+
 			appConfig := &AppConfig{
 				Name:   "save-test",
 				Path:   configFile,

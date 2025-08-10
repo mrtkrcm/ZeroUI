@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"io"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 )
 
 // ImprovedApp represents the improved TUI application using better patterns
@@ -33,7 +33,7 @@ func NewImprovedApp(configService *service.ConfigService, log *logger.Logger) *I
 func (a *ImprovedApp) Run() error {
 	model := newImprovedModel(a.configService, a.logger)
 	a.program = tea.NewProgram(model, tea.WithAltScreen())
-	
+
 	if _, err := a.program.Run(); err != nil {
 		return fmt.Errorf("TUI application error: %w", err)
 	}
@@ -48,17 +48,17 @@ type ImprovedModel struct {
 	logger        *logger.Logger
 
 	// UI Components
-	appList     list.Model
-	viewport    viewport.Model
-	spinner     spinner.Model
-	textInput   textinput.Model
+	appList   list.Model
+	viewport  viewport.Model
+	spinner   spinner.Model
+	textInput textinput.Model
 
 	// State
-	state       ViewState
-	currentApp  string
-	loading     bool
-	error       error
-	
+	state      ViewState
+	currentApp string
+	loading    bool
+	error      error
+
 	// Layout
 	width  int
 	height int
@@ -73,7 +73,7 @@ func newImprovedModel(configService *service.ConfigService, log *logger.Logger) 
 	appList.SetFilteringEnabled(false)
 
 	vp := viewport.New(0, 0)
-	
+
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
@@ -131,7 +131,7 @@ func (m *ImprovedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case appsLoadedMsg:
 		return m.handleAppsLoaded(msg)
-	
+
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -263,7 +263,7 @@ func (m *ImprovedModel) updateLayout() {
 
 	m.appList.SetWidth(m.width)
 	m.appList.SetHeight(availableHeight)
-	
+
 	m.viewport.Width = m.width
 	m.viewport.Height = availableHeight
 }
@@ -272,7 +272,7 @@ func (m *ImprovedModel) updateLayout() {
 func (m *ImprovedModel) renderError() string {
 	content := improvedErrorStyle.Render(fmt.Sprintf("Error: %s", m.error.Error()))
 	help := improvedHelpStyle.Render("Press 'q' to quit or any key to continue.")
-	
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		improvedTitleStyle.Render("ZeroUI - Error"),

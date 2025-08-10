@@ -78,65 +78,65 @@ func (l *DefaultLayoutStyles) Container() lipgloss.Style {
 var (
 	// Sidebar and navigation styles
 	SidebarStyle = lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Padding(1)
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			Padding(1)
 
 	// Content area styles
 	ContentBoxStyle = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Padding(2)
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			Padding(2)
 
 	// Component container styles
 	ComponentBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#6272A4")).
-		Padding(1).
-		Width(30).
-		Height(8)
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("#6272A4")).
+				Padding(1).
+				Width(30).
+				Height(8)
 
 	LayoutBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#44475A")).
-		Padding(1).
-		Width(25).
-		Height(10)
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("#44475A")).
+			Padding(1).
+			Width(25).
+			Height(10)
 
 	// Container styles
 	ContainerStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("#44475A")).
-		Foreground(lipgloss.Color("#F8F8F2")).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#6272A4")).
-		Padding(1)
+			Background(lipgloss.Color("#44475A")).
+			Foreground(lipgloss.Color("#F8F8F2")).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#6272A4")).
+			Padding(1)
 )
 
 // BoxDrawingStyles defines different border styles
 var (
 	BoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#F8F8F2")).
-		Padding(1).
-		Align(lipgloss.Center)
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("#F8F8F2")).
+			Padding(1).
+			Align(lipgloss.Center)
 
 	RoundedBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Padding(1).
-		Align(lipgloss.Center)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			Padding(1).
+			Align(lipgloss.Center)
 
 	ThickBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder()).
-		BorderForeground(lipgloss.Color("#FF79C6")).
-		Padding(1).
-		Align(lipgloss.Center)
+			Border(lipgloss.ThickBorder()).
+			BorderForeground(lipgloss.Color("#FF79C6")).
+			Padding(1).
+			Align(lipgloss.Center)
 
 	DoubleBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.DoubleBorder()).
-		BorderForeground(lipgloss.Color("#8BE9FD")).
-		Padding(1).
-		Align(lipgloss.Center)
+			Border(lipgloss.DoubleBorder()).
+			BorderForeground(lipgloss.Color("#8BE9FD")).
+			Padding(1).
+			Align(lipgloss.Center)
 )
 
 // LayoutComponent represents a layout container
@@ -172,7 +172,7 @@ func (l *LayoutComponent) SetSpacing(padding, margin int) {
 // Render renders the layout component
 func (l *LayoutComponent) Render() string {
 	style := l.Style
-	
+
 	if l.Width > 0 {
 		style = style.Width(l.Width)
 	}
@@ -185,7 +185,7 @@ func (l *LayoutComponent) Render() string {
 	if l.Margin > 0 {
 		style = style.Margin(l.Margin)
 	}
-	
+
 	return style.Render(l.Content)
 }
 
@@ -242,7 +242,7 @@ func GetBoxDrawingDemo() (string, string, string, string) {
 	roundedBox := RoundedBoxStyle.Width(20).Height(5).Render("Rounded Box")
 	thickBox := ThickBoxStyle.Width(20).Height(5).Render("Thick Border")
 	doubleBox := DoubleBoxStyle.Width(20).Height(5).Render("Double Border")
-	
+
 	return basicBox, roundedBox, thickBox, doubleBox
 }
 
@@ -286,18 +286,18 @@ func (g *Grid) Render() string {
 	if len(g.Items) == 0 {
 		return ""
 	}
-	
+
 	var rows []string
 	for i := 0; i < len(g.Items); i += g.Columns {
 		end := i + g.Columns
 		if end > len(g.Items) {
 			end = len(g.Items)
 		}
-		
+
 		rowItems := g.Items[i:end]
 		row := lipgloss.JoinHorizontal(lipgloss.Top, rowItems...)
 		rows = append(rows, row)
 	}
-	
+
 	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }

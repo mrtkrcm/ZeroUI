@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	cfgFile string
+	cfgFile      string
 	appContainer *container.Container
 )
 
@@ -38,13 +38,13 @@ func Execute() {
 		LogLevel:  "info",
 		LogFormat: "console",
 	}
-	
+
 	var err error
 	appContainer, err = container.New(containerConfig)
 	if err != nil {
 		logger.Fatal("Failed to initialize application container", err)
 	}
-	
+
 	defer func() {
 		if err := appContainer.Close(); err != nil {
 			logger.Error("Failed to close application container", err)

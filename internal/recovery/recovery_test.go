@@ -263,7 +263,7 @@ func TestBackupManager_CleanupOldBackups(t *testing.T) {
 	// Create multiple backup files with different timestamps
 	backupNames := []string{
 		"app1_20230101_120000.backup",
-		"app1_20230101_130000.backup", 
+		"app1_20230101_130000.backup",
 		"app1_20230101_140000.backup",
 		"app1_20230101_150000.backup",
 		"app1_20230101_160000.backup",

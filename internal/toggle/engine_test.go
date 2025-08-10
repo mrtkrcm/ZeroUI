@@ -349,7 +349,7 @@ func BenchmarkEngine_Toggle(b *testing.B) {
 		if i%2 == 1 {
 			theme = "light"
 		}
-		
+
 		err := engine.Toggle("test-app", "theme", theme)
 		if err != nil {
 			b.Fatalf("Failed to toggle: %v", err)
@@ -369,7 +369,7 @@ func BenchmarkEngine_ApplyPreset(b *testing.B) {
 		if i%2 == 1 {
 			preset = "light-mode"
 		}
-		
+
 		err := engine.ApplyPreset("test-app", preset)
 		if err != nil {
 			b.Fatalf("Failed to apply preset: %v", err)
@@ -445,19 +445,19 @@ func TestEngine_ConvertValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := engine.convertValue(tt.value, tt.fieldType)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if result != tt.expected {
 				t.Errorf("Expected %v (%T), got %v (%T)", tt.expected, tt.expected, result, result)
 			}

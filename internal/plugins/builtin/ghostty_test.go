@@ -93,7 +93,7 @@ func TestGhosttyPlugin_DetectConfigPath(t *testing.T) {
 
 	// Test with macOS config
 	os.Remove(linuxConfigPath) // Remove Linux config
-	
+
 	macOSConfigDir := filepath.Join(tmpDir, "Library", "Application Support", "com.mitchellh.ghostty")
 	if err := os.MkdirAll(macOSConfigDir, 0755); err != nil {
 		t.Fatalf("Failed to create macOS config dir: %v", err)
@@ -374,10 +374,10 @@ window-height = 40
 
 		updatePath := filepath.Join(tmpDir, "updated.conf")
 		updateConfig := map[string]interface{}{
-			"theme":       "GruvboxDark",  // Update existing
+			"theme":       "GruvboxDark",    // Update existing
 			"font-family": "JetBrains Mono", // Update existing
-			"font-size":   14,              // Update existing
-			"new-setting": "new-value",     // Add new
+			"font-size":   14,               // Update existing
+			"new-setting": "new-value",      // Add new
 		}
 
 		err := plugin.WriteConfig(updatePath, updateConfig)
@@ -392,7 +392,7 @@ window-height = 40
 		}
 
 		contentStr := string(content)
-		
+
 		// Check updated values
 		if !strings.Contains(contentStr, "theme = GruvboxDark") {
 			t.Error("Expected updated theme value")
@@ -403,12 +403,12 @@ window-height = 40
 		if !strings.Contains(contentStr, "font-size = 14") {
 			t.Error("Expected updated font-size value")
 		}
-		
+
 		// Check new value added
 		if !strings.Contains(contentStr, "new-setting = new-value") {
 			t.Error("Expected new setting to be added")
 		}
-		
+
 		// Check preserved values
 		if !strings.Contains(contentStr, "window-width = 120") {
 			t.Error("Expected unchanged values to be preserved")
@@ -435,16 +435,16 @@ window-height = 40
 		}
 
 		contentStr := string(content)
-		
+
 		// Check that array values are written as multiple lines
 		ligaCount := strings.Count(contentStr, "font-feature = liga")
 		caltCount := strings.Count(contentStr, "font-feature = calt")
 		kernCount := strings.Count(contentStr, "font-feature = kern")
-		
+
 		if ligaCount != 1 || caltCount != 1 || kernCount != 1 {
 			t.Error("Expected each font-feature value to appear once")
 		}
-		
+
 		// Check keybinds
 		if !strings.Contains(contentStr, "keybind = cmd+c=copy") {
 			t.Error("Expected first keybind")
@@ -452,7 +452,7 @@ window-height = 40
 		if !strings.Contains(contentStr, "keybind = cmd+v=paste") {
 			t.Error("Expected second keybind")
 		}
-		
+
 		// Check regular value
 		if !strings.Contains(contentStr, "theme = GruvboxDark") {
 			t.Error("Expected theme value")
@@ -530,7 +530,7 @@ func TestGhosttyPlugin_GetPresets(t *testing.T) {
 	}
 
 	expectedPresets := []string{"dark-mode", "light-mode", "cyberpunk", "minimal"}
-	
+
 	for _, presetName := range expectedPresets {
 		preset, exists := presets[presetName]
 		if !exists {
@@ -671,7 +671,7 @@ func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
 	configPath := filepath.Join(tmpDir, "bench.conf")
 	var content strings.Builder
 	content.WriteString("# Large Ghostty config for benchmarking\n")
-	
+
 	// Add many settings
 	for i := 0; i < 100; i++ {
 		content.WriteString(fmt.Sprintf("setting-%d = value-%d\n", i, i))
@@ -679,7 +679,7 @@ func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
 			content.WriteString("# Comment line\n")
 		}
 	}
-	
+
 	// Add array values
 	for i := 0; i < 20; i++ {
 		content.WriteString("font-feature = liga\n")
@@ -692,7 +692,7 @@ func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
 	}
 
 	plugin := NewGhosttyPlugin()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := plugin.ParseConfig(configPath)
@@ -711,7 +711,7 @@ func BenchmarkGhosttyPlugin_WriteConfig(b *testing.B) {
 	defer os.RemoveAll(tmpDir)
 
 	plugin := NewGhosttyPlugin()
-	
+
 	// Create config data
 	config := map[string]interface{}{
 		"theme":              "GruvboxDark",

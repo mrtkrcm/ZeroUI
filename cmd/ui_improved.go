@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
+	"github.com/spf13/cobra"
 )
 
 // uiImprovedCmd represents the improved ui command
@@ -34,7 +34,7 @@ Examples:
 
 		// Create improved TUI app with injected dependencies
 		app := tui.NewImprovedApp(container.ConfigService(), container.Logger())
-		
+
 		// Set initial app if provided
 		if initialApp != "" {
 			container.Logger().Debug("Starting TUI with initial app", map[string]interface{}{

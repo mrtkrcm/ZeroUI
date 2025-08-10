@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/spf13/cobra"
 )
 
 // presetCmd represents the preset command

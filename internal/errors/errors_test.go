@@ -1,8 +1,8 @@
 package errors
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 // TestZeroUIError_Error tests error message formatting
@@ -286,11 +286,11 @@ func TestGetZeroUIError(t *testing.T) {
 
 // Helper function to check if string contains substring
 func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-		    s[:len(substr)] == substr ||
-		    s[len(s)-len(substr):] == substr ||
-		    containsSubstring(s, substr))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			s[:len(substr)] == substr ||
+			s[len(s)-len(substr):] == substr ||
+			containsSubstring(s, substr))
 }
 
 func containsSubstring(s, substr string) bool {

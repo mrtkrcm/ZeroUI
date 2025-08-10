@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/spf13/cobra"
 	"github.com/mrtkrcm/ZeroUI/pkg/reference"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -48,31 +48,31 @@ Uses curated static configuration files instead of fragile web scraping.`,
 
 	// Styles for improved output
 	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("12")).
-		Margin(0, 0, 1, 0)
+			Bold(true).
+			Foreground(lipgloss.Color("12")).
+			Margin(0, 0, 1, 0)
 
 	headerStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("14"))
+			Bold(true).
+			Foreground(lipgloss.Color("14"))
 
 	successStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("10")).
-		Bold(true)
+			Foreground(lipgloss.Color("10")).
+			Bold(true)
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("9")).
-		Bold(true)
+			Foreground(lipgloss.Color("9")).
+			Bold(true)
 
 	dimStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("8"))
+			Foreground(lipgloss.Color("8"))
 
 	keyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("6")).
-		Bold(true)
+			Foreground(lipgloss.Color("6")).
+			Bold(true)
 
 	valueStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("7"))
+			Foreground(lipgloss.Color("7"))
 )
 
 func init() {
@@ -91,7 +91,7 @@ func setupImprovedManager() *reference.ReferenceManager {
 
 func runRefList(cmd *cobra.Command, args []string) error {
 	manager := setupImprovedManager()
-	
+
 	apps, err := manager.ListApps()
 	if err != nil {
 		return fmt.Errorf("failed to list applications: %w", err)
@@ -103,14 +103,14 @@ func runRefList(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println(titleStyle.Render("📋 Available Applications"))
-	
+
 	for _, app := range apps {
 		ref, err := manager.GetReference(app)
 		if err != nil {
 			continue
 		}
-		
-		fmt.Printf("  %s %s\n", 
+
+		fmt.Printf("  %s %s\n",
 			keyStyle.Render("•"),
 			formatAppInfo(ref))
 	}
@@ -121,7 +121,7 @@ func runRefList(cmd *cobra.Command, args []string) error {
 func runRefShow(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	manager := setupImprovedManager()
-	
+
 	ref, err := manager.GetReference(appName)
 	if err != nil {
 		return fmt.Errorf("failed to get reference for %s: %w", appName, err)
@@ -137,7 +137,7 @@ func runRefShow(cmd *cobra.Command, args []string) error {
 	setting, exists := ref.Settings[settingName]
 	if !exists {
 		suggestions := findSimilarSettings(ref, settingName)
-		fmt.Printf("%s Setting '%s' not found in %s\n", 
+		fmt.Printf("%s Setting '%s' not found in %s\n",
 			errorStyle.Render("✗"), settingName, appName)
 		if len(suggestions) > 0 {
 			fmt.Printf("Did you mean: %s\n", strings.Join(suggestions, ", "))
@@ -154,22 +154,22 @@ func runRefValidate(cmd *cobra.Command, args []string) error {
 	valueStr := args[2]
 
 	manager := setupImprovedManager()
-	
+
 	// Parse value based on context
 	value := parseValue(valueStr)
-	
+
 	result, err := manager.ValidateConfiguration(appName, settingName, value)
 	if err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
 	if result.Valid {
-		fmt.Printf("%s Valid: %s.%s = %s\n", 
+		fmt.Printf("%s Valid: %s.%s = %s\n",
 			successStyle.Render("✓"), appName, settingName, valueStr)
 	} else {
-		fmt.Printf("%s Invalid: %s.%s = %s\n", 
+		fmt.Printf("%s Invalid: %s.%s = %s\n",
 			errorStyle.Render("✗"), appName, settingName, valueStr)
-		
+
 		for _, error := range result.Errors {
 			fmt.Printf("  Error: %s\n", error)
 		}
@@ -187,7 +187,7 @@ func runRefSearch(cmd *cobra.Command, args []string) error {
 	query := args[1]
 
 	manager := setupImprovedManager()
-	
+
 	results, err := manager.SearchSettings(appName, query)
 	if err != nil {
 		return fmt.Errorf("search failed: %w", err)
@@ -199,7 +199,7 @@ func runRefSearch(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println(titleStyle.Render(fmt.Sprintf("🔍 Found %d settings matching '%s'", len(results), query)))
-	
+
 	for _, setting := range results {
 		showSettingBrief(setting)
 		fmt.Println()
@@ -209,7 +209,7 @@ func runRefSearch(cmd *cobra.Command, args []string) error {
 }
 
 func formatAppInfo(ref *reference.ConfigReference) string {
-	return fmt.Sprintf("%s (%s, %d settings)", 
+	return fmt.Sprintf("%s (%s, %d settings)",
 		keyStyle.Render(ref.AppName),
 		dimStyle.Render(ref.ConfigType),
 		len(ref.Settings))
@@ -239,14 +239,14 @@ func showAllSettings(ref *reference.ConfigReference) error {
 
 	for _, categoryName := range categoryNames {
 		settings := categories[categoryName]
-		
+
 		fmt.Println(headerStyle.Render(fmt.Sprintf("📁 %s", categoryName)))
-		
+
 		// Sort settings by name
 		sort.Slice(settings, func(i, j int) bool {
 			return settings[i].Name < settings[j].Name
 		})
-		
+
 		for _, setting := range settings {
 			showSettingBrief(setting)
 		}
@@ -258,25 +258,25 @@ func showAllSettings(ref *reference.ConfigReference) error {
 
 func showSetting(appName string, setting reference.ConfigSetting) error {
 	fmt.Println(titleStyle.Render(fmt.Sprintf("⚙️  %s.%s", appName, setting.Name)))
-	
+
 	fmt.Printf("%s %s\n", keyStyle.Render("Type:"), valueStyle.Render(string(setting.Type)))
-	
+
 	if setting.Category != "" {
 		fmt.Printf("%s %s\n", keyStyle.Render("Category:"), valueStyle.Render(setting.Category))
 	}
-	
+
 	if setting.Description != "" {
 		fmt.Printf("%s %s\n", keyStyle.Render("Description:"), valueStyle.Render(setting.Description))
 	}
-	
+
 	if setting.DefaultValue != nil {
 		fmt.Printf("%s %v\n", keyStyle.Render("Default:"), valueStyle.Render(fmt.Sprintf("%v", setting.DefaultValue)))
 	}
-	
+
 	if setting.Example != nil {
 		fmt.Printf("%s %v\n", keyStyle.Render("Example:"), valueStyle.Render(fmt.Sprintf("%v", setting.Example)))
 	}
-	
+
 	if len(setting.ValidValues) > 0 {
 		fmt.Printf("%s %s\n", keyStyle.Render("Valid values:"), valueStyle.Render(strings.Join(setting.ValidValues, ", ")))
 	}
@@ -290,13 +290,13 @@ func showSetting(appName string, setting reference.ConfigSetting) error {
 
 func showSettingBrief(setting reference.ConfigSetting) {
 	typeStr := dimStyle.Render(fmt.Sprintf("(%s)", setting.Type))
-	
+
 	if setting.DefaultValue != nil {
 		typeStr += dimStyle.Render(fmt.Sprintf(" = %v", setting.DefaultValue))
 	}
-	
+
 	fmt.Printf("  %s %s\n", keyStyle.Render(setting.Name), typeStr)
-	
+
 	if setting.Description != "" {
 		desc := setting.Description
 		if len(desc) > 80 {
@@ -315,17 +315,17 @@ func parseValue(valueStr string) interface{} {
 	if valueStr == "false" {
 		return false
 	}
-	
+
 	// Try integer
 	if intVal, err := strconv.Atoi(valueStr); err == nil {
 		return intVal
 	}
-	
+
 	// Try float
 	if floatVal, err := strconv.ParseFloat(valueStr, 64); err == nil {
 		return floatVal
 	}
-	
+
 	// Default to string
 	return valueStr
 }
@@ -333,7 +333,7 @@ func parseValue(valueStr string) interface{} {
 func findSimilarSettings(ref *reference.ConfigReference, target string) []string {
 	var suggestions []string
 	targetLower := strings.ToLower(target)
-	
+
 	for name := range ref.Settings {
 		nameLower := strings.ToLower(name)
 		if strings.Contains(nameLower, targetLower) || strings.Contains(targetLower, nameLower) {
@@ -343,6 +343,6 @@ func findSimilarSettings(ref *reference.ConfigReference, target string) []string
 			}
 		}
 	}
-	
+
 	return suggestions
 }
