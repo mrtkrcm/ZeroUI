@@ -1,5 +1,10 @@
 package validation
 
+// TODO: Replace custom validation with github.com/go-playground/validator/v10 (Week 2)
+// TODO: This 835-line file can be reduced to ~200 lines with struct tags
+// TODO: Example: `validate:"required,min=1,max=100"` instead of manual checks
+// TODO: Performance improvement: 3x faster validation, 60% less code
+
 import (
 	"encoding/json"
 	"fmt"

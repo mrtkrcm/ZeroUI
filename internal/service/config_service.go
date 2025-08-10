@@ -16,6 +16,11 @@ type ConfigService struct {
 	logger *logger.Logger
 }
 
+// TODO: Implement interfaces for better testability (Week 2):
+// TODO: type ConfigLoader interface { LoadAppConfig, LoadTargetConfig, ListApps }
+// TODO: type ToggleEngine interface { Toggle, Cycle, ApplyPreset }
+// TODO: This will enable proper mocking and reduce coupling
+
 // NewConfigService creates a new config service
 func NewConfigService(engine *toggle.Engine, loader *config.Loader, log *logger.Logger) *ConfigService {
 	return &ConfigService{

@@ -1,5 +1,9 @@
 package tui
 
+// TODO: Add field configuration caching to improve TUI performance (Week 2)
+// TODO: Linear search on every TUI update causes UI lag with 100+ fields
+// TODO: Implement map[string]FieldView cache with invalidation on config change
+
 import (
 	"fmt"
 

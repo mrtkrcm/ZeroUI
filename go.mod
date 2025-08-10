@@ -1,5 +1,11 @@
 module github.com/mrtkrcm/ZeroUI
 
+// TODO: Update dependencies for security and performance (Week 2):
+// TODO: - Add github.com/go-playground/validator/v10 for validation
+// TODO: - Add github.com/hashicorp/golang-lru for LRU caching  
+// TODO: - Consider github.com/spf13/cast for type conversions
+// TODO: - Add github.com/fsnotify/fsnotify for file watching
+
 go 1.23.0
 
 toolchain go1.24.0

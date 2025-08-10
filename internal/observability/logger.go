@@ -441,17 +441,19 @@ func (l *Logger) logZeroUIError(ctErr *errors.ZeroUIError) {
 	l.log(level, "ZeroUI error occurred", args...)
 }
 
-// Metrics provides basic metrics collection
-type Metrics struct {
+// TODO: Remove duplicate metrics systems - standardize on OpenTelemetry only (Week 2)
+// TODO: This BasicMetrics conflicts with metrics.go and adds complexity
+// BasicMetrics provides simple metrics collection (deprecated: use observability.Metrics)
+type BasicMetrics struct {
 	mu             sync.RWMutex
 	counters       map[string]int64
 	timers         map[string][]time.Duration
 	lastOperations map[string]time.Time
 }
 
-// NewMetrics creates a new metrics collector
-func NewMetrics() *Metrics {
-	return &Metrics{
+// NewBasicMetrics creates a new basic metrics collector
+func NewBasicMetrics() *BasicMetrics {
+	return &BasicMetrics{
 		counters:       make(map[string]int64),
 		timers:         make(map[string][]time.Duration),
 		lastOperations: make(map[string]time.Time),
@@ -459,14 +461,14 @@ func NewMetrics() *Metrics {
 }
 
 // IncrementCounter increments a named counter
-func (m *Metrics) IncrementCounter(name string) {
+func (m *BasicMetrics) IncrementCounter(name string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.counters[name]++
 }
 
 // RecordTimer records a duration for a named timer
-func (m *Metrics) RecordTimer(name string, duration time.Duration) {
+func (m *BasicMetrics) RecordTimer(name string, duration time.Duration) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.timers[name] = append(m.timers[name], duration)
@@ -474,7 +476,7 @@ func (m *Metrics) RecordTimer(name string, duration time.Duration) {
 }
 
 // GetStats returns current metrics
-func (m *Metrics) GetStats() map[string]interface{} {
+func (m *BasicMetrics) GetStats() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -525,7 +527,7 @@ func (m *Metrics) GetStats() map[string]interface{} {
 }
 
 // Reset clears all metrics
-func (m *Metrics) Reset() {
+func (m *BasicMetrics) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

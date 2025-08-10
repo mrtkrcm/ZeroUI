@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 )
 
@@ -48,7 +48,7 @@ type MetricsConfig struct {
 // DefaultMetricsConfig returns default metrics configuration
 func DefaultMetricsConfig() *MetricsConfig {
 	return &MetricsConfig{
-		ServiceName:    "configtoggle",
+		ServiceName:    "zeroui",
 		ServiceVersion: "unknown",
 		Environment:    "development",
 		EnableMetrics:  true,
@@ -72,7 +72,7 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 	}
 
 	// Create meter provider
-	provider := metric.NewMeterProvider(metric.WithReader(exporter))
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
 	otel.SetMeterProvider(provider)
 
 	// Get meter
@@ -83,21 +83,21 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// Operation counters
 	if m.toggleOperations, err = meter.Int64Counter(
-		"configtoggle_toggle_operations_total",
+		"zeroui_toggle_operations_total",
 		metric.WithDescription("Total number of toggle operations"),
 	); err != nil {
 		return nil, err
 	}
 
 	if m.cycleOperations, err = meter.Int64Counter(
-		"configtoggle_cycle_operations_total",
+		"zeroui_cycle_operations_total",
 		metric.WithDescription("Total number of cycle operations"),
 	); err != nil {
 		return nil, err
 	}
 
 	if m.presetOperations, err = meter.Int64Counter(
-		"configtoggle_preset_operations_total",
+		"zeroui_preset_operations_total",
 		metric.WithDescription("Total number of preset operations"),
 	); err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// Duration histogram
 	if m.operationDuration, err = meter.Float64Histogram(
-		"configtoggle_operation_duration_seconds",
+		"zeroui_operation_duration_seconds",
 		metric.WithDescription("Duration of operations in seconds"),
 		metric.WithUnit("s"),
 	); err != nil {
@@ -114,7 +114,7 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// Error counter
 	if m.operationErrors, err = meter.Int64Counter(
-		"configtoggle_operation_errors_total",
+		"zeroui_operation_errors_total",
 		metric.WithDescription("Total number of operation errors"),
 	); err != nil {
 		return nil, err
@@ -122,14 +122,14 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// Application metrics
 	if m.activeApps, err = meter.Int64UpDownCounter(
-		"configtoggle_active_apps",
+		"zeroui_active_apps",
 		metric.WithDescription("Number of active applications"),
 	); err != nil {
 		return nil, err
 	}
 
 	if m.configChanges, err = meter.Int64Counter(
-		"configtoggle_config_changes_total",
+		"zeroui_config_changes_total",
 		metric.WithDescription("Total number of configuration changes"),
 	); err != nil {
 		return nil, err
@@ -137,14 +137,14 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// TUI metrics
 	if m.tuiSessions, err = meter.Int64Counter(
-		"configtoggle_tui_sessions_total",
+		"zeroui_tui_sessions_total",
 		metric.WithDescription("Total number of TUI sessions"),
 	); err != nil {
 		return nil, err
 	}
 
 	if m.tuiDuration, err = meter.Float64Histogram(
-		"configtoggle_tui_session_duration_seconds",
+		"zeroui_tui_session_duration_seconds",
 		metric.WithDescription("Duration of TUI sessions in seconds"),
 		metric.WithUnit("s"),
 	); err != nil {

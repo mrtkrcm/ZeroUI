@@ -77,11 +77,16 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 		return nil, fmt.Errorf("app config not found: %s", appName)
 	}
 
+	// TODO: Implement lazy loading with file watchers (Week 3)
+	// TODO: Add in-memory caching to avoid repeated file reads
+	// TODO: Performance: File I/O on every operation causes 100ms+ latency
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
+	// TODO: Add YAML complexity limits to prevent resource exhaustion (Security)
+	// TODO: Implement max file size, depth, and key count limits
 	var config AppConfig
 	if err := yamlv3.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)

@@ -1,5 +1,9 @@
 package plugins
 
+// TODO: Consider hashicorp/go-plugin for robust plugin architecture (Week 2)
+// TODO: Current implementation lacks isolation and security boundaries
+// TODO: Plugin system needs standardized interface and lifecycle management
+
 import (
 	"fmt"
 	"os"

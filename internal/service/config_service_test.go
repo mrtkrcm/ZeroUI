@@ -1,9 +1,11 @@
 package service_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+	"io/ioutil"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	
@@ -13,250 +15,149 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
-// MockToggleEngine is a mock implementation of toggle.Engine
-type MockToggleEngine struct {
-	ctrl     *gomock.Controller
-	recorder *MockToggleEngineMockRecorder
-}
+func TestConfigService_Integration(t *testing.T) {
+	// Create temporary directory for test
+	tmpDir, err := ioutil.TempDir("", "zeroui-service-test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
 
-// MockToggleEngineMockRecorder is the mock recorder for MockToggleEngine
-type MockToggleEngineMockRecorder struct {
-	mock *MockToggleEngine
-}
+	// Create test config structure
+	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
+	require.NoError(t, os.MkdirAll(appsDir, 0755))
 
-// NewMockToggleEngine creates a new mock instance
-func NewMockToggleEngine(ctrl *gomock.Controller) *MockToggleEngine {
-	mock := &MockToggleEngine{ctrl: ctrl}
-	mock.recorder = &MockToggleEngineMockRecorder{mock}
-	return mock
-}
+	// Create test app config
+	testAppConfig := `name: test-app
+path: ` + filepath.Join(tmpDir, "test-config.json") + `
+format: json
+description: Test application
 
-// MockConfigLoader is a mock implementation of config.Loader
-type MockConfigLoader struct {
-	ctrl     *gomock.Controller
-	recorder *MockConfigLoaderMockRecorder
-}
+fields:
+  theme:
+    type: choice
+    values: ["dark", "light"]
+    default: "dark"
+    description: "Application theme"
+`
 
-// MockConfigLoaderMockRecorder is the mock recorder for MockConfigLoader
-type MockConfigLoaderMockRecorder struct {
-	mock *MockConfigLoader
-}
+	configPath := filepath.Join(appsDir, "test-app.yaml")
+	require.NoError(t, ioutil.WriteFile(configPath, []byte(testAppConfig), 0644))
 
-// NewMockConfigLoader creates a new mock instance
-func NewMockConfigLoader(ctrl *gomock.Controller) *MockConfigLoader {
-	mock := &MockConfigLoader{ctrl: ctrl}
-	mock.recorder = &MockConfigLoaderMockRecorder{mock}
-	return mock
-}
+	// Create target config file
+	targetConfig := `{"theme": "dark"}`
+	targetPath := filepath.Join(tmpDir, "test-config.json")
+	require.NoError(t, ioutil.WriteFile(targetPath, []byte(targetConfig), 0644))
 
-func TestConfigService_ListApplications(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEngine := NewMockToggleEngine(ctrl)
-	mockLoader := NewMockConfigLoader(ctrl)
-	mockLogger := logger.New(logger.DefaultConfig())
-
-	service := service.NewConfigService(mockEngine, mockLoader, mockLogger)
-
-	// Test successful case
-	expectedApps := []string{"app1", "app2", "app3"}
-	// mockLoader.EXPECT().ListApps().Return(expectedApps, nil)
-
-	// For now, we'll create a simple test
-	apps, err := service.ListApplications()
+	// Set up service components
+	configLoader, err := config.NewLoader()
+	require.NoError(t, err)
+	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 	
-	// Since we can't easily mock the loader without interfaces, 
-	// we'll just test that the service doesn't crash
-	assert.NoError(t, err)
-	assert.NotNil(t, apps)
+	testLogger := logger.New(logger.DefaultConfig())
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	
+	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
+
+	t.Run("ListApplications", func(t *testing.T) {
+		apps, err := service.ListApplications()
+		require.NoError(t, err)
+		assert.Contains(t, apps, "test-app")
+	})
+
+	t.Run("ToggleConfiguration", func(t *testing.T) {
+		err := service.ToggleConfiguration("test-app", "theme", "light")
+		require.NoError(t, err)
+		
+		// Verify the change was applied
+		content, err := ioutil.ReadFile(targetPath)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "light")
+	})
+
+	t.Run("CycleConfiguration", func(t *testing.T) {
+		// Reset to known state
+		err := service.ToggleConfiguration("test-app", "theme", "dark")
+		require.NoError(t, err)
+		
+		// Cycle should change to next value
+		err = service.CycleConfiguration("test-app", "theme")
+		require.NoError(t, err)
+		
+		// Verify the change was applied
+		content, err := ioutil.ReadFile(targetPath)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "light")
+	})
 }
 
-func TestConfigService_ToggleConfiguration(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestConfigService_ErrorHandling(t *testing.T) {
+	// Create empty service for error testing
+	tmpDir, err := ioutil.TempDir("", "zeroui-service-error-test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
 
-	mockEngine := NewMockToggleEngine(ctrl)
-	mockLoader := NewMockConfigLoader(ctrl)
-	mockLogger := logger.New(logger.DefaultConfig())
+	configLoader, err := config.NewLoader()
+	require.NoError(t, err)
+	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
+	
+	testLogger := logger.New(logger.DefaultConfig())
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	
+	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
-	service := service.NewConfigService(mockEngine, mockLoader, mockLogger)
+	t.Run("NonexistentApp", func(t *testing.T) {
+		err := service.ToggleConfiguration("nonexistent-app", "theme", "dark")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
 
-	app := "testapp"
-	key := "theme"
-	value := "dark"
+	t.Run("EmptyAppName", func(t *testing.T) {
+		err := service.ToggleConfiguration("", "key", "value")
+		assert.Error(t, err)
+	})
 
-	// Mock expectations
-	// mockEngine.EXPECT().Toggle(app, key, value).Return(nil)
-
-	err := service.ToggleConfiguration(app, key, value)
-
-	// For now, we expect this to fail since we don't have proper mocks
-	// In a real implementation, we'd need to create interfaces
-	assert.Error(t, err) // Expected to fail without proper setup
+	t.Run("EmptyKey", func(t *testing.T) {
+		err := service.CycleConfiguration("app", "")
+		assert.Error(t, err)
+	})
 }
 
-func TestConfigService_ValidateConfiguration(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockEngine := NewMockToggleEngine(ctrl)
-	mockLoader := NewMockConfigLoader(ctrl)
-	mockLogger := logger.New(logger.DefaultConfig())
-
-	service := service.NewConfigService(mockEngine, mockLoader, mockLogger)
-
-	tests := []struct {
-		name     string
-		app      string
-		key      string
-		value    string
-		wantErr  bool
-	}{
-		{
-			name:    "valid configuration",
-			app:     "testapp",
-			key:     "theme",
-			value:   "dark",
-			wantErr: true, // Expected to fail without proper app config
-		},
-		{
-			name:    "invalid app",
-			app:     "nonexistent",
-			key:     "theme", 
-			value:   "dark",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := service.ValidateConfiguration(tt.app, tt.key, tt.value)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-// Benchmark tests
+// Benchmark tests for performance
 func BenchmarkConfigService_ListApplications(b *testing.B) {
-	ctrl := gomock.NewController(b)
-	defer ctrl.Finish()
+	tmpDir, err := ioutil.TempDir("", "zeroui-service-bench")
+	require.NoError(b, err)
+	defer os.RemoveAll(tmpDir)
 
-	mockEngine := NewMockToggleEngine(ctrl)
-	mockLoader := NewMockConfigLoader(ctrl)
-	mockLogger := logger.New(logger.DefaultConfig())
+	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
+	require.NoError(b, os.MkdirAll(appsDir, 0755))
 
-	service := service.NewConfigService(mockEngine, mockLoader, mockLogger)
+	// Create multiple test apps
+	for i := 0; i < 10; i++ {
+		testAppConfig := `name: test-app-` + string(rune('0'+i)) + `
+path: /tmp/test-config.json
+format: json
+description: Test application
+
+fields:
+  theme:
+    type: choice
+    values: ["dark", "light"]
+    default: "dark"
+`
+		configPath := filepath.Join(appsDir, "test-app-"+string(rune('0'+i))+".yaml")
+		require.NoError(b, ioutil.WriteFile(configPath, []byte(testAppConfig), 0644))
+	}
+
+	configLoader, err := config.NewLoader()
+	require.NoError(b, err)
+	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
+	
+	testLogger := logger.New(logger.DefaultConfig())
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	
+	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = service.ListApplications()
 	}
-}
-
-// Example test showing how to structure integration tests
-func TestConfigService_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
-	// This would be a real integration test with temporary files
-	t.Skip("Integration test not implemented yet - would require file system setup")
-
-	// Example of what an integration test might look like:
-	/*
-	tempDir := t.TempDir()
-	
-	// Create test config files
-	appConfigPath := filepath.Join(tempDir, "testapp.yaml")
-	appConfig := &config.AppConfig{
-		Name: "testapp",
-		Path: filepath.Join(tempDir, "testapp-config.json"),
-		Format: "json",
-		Fields: map[string]config.FieldConfig{
-			"theme": {
-				Type: "choice",
-				Values: []string{"light", "dark"},
-				Default: "light",
-			},
-		},
-	}
-	
-	// Write config files and test real functionality
-	*/
-}
-
-// Table-driven test example
-func TestConfigService_TableDriven(t *testing.T) {
-	testCases := []struct {
-		name        string
-		setup       func(t *testing.T) (*service.ConfigService, func())
-		operation   func(*service.ConfigService) error
-		expectError bool
-		errorType   string
-	}{
-		{
-			name: "toggle valid configuration",
-			setup: func(t *testing.T) (*service.ConfigService, func()) {
-				ctrl := gomock.NewController(t)
-				mockEngine := NewMockToggleEngine(ctrl)
-				mockLoader := NewMockConfigLoader(ctrl)
-				mockLogger := logger.New(logger.DefaultConfig())
-				
-				svc := service.NewConfigService(mockEngine, mockLoader, mockLogger)
-				return svc, func() { ctrl.Finish() }
-			},
-			operation: func(svc *service.ConfigService) error {
-				return svc.ToggleConfiguration("testapp", "theme", "dark")
-			},
-			expectError: true, // Will error without proper setup
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			svc, cleanup := tc.setup(t)
-			defer cleanup()
-
-			err := tc.operation(svc)
-
-			if tc.expectError {
-				require.Error(t, err)
-				if tc.errorType != "" {
-					assert.Contains(t, err.Error(), tc.errorType)
-				}
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-// Test helper functions
-func createTestService(t *testing.T) (*service.ConfigService, *MockToggleEngine, *MockConfigLoader) {
-	ctrl := gomock.NewController(t)
-	mockEngine := NewMockToggleEngine(ctrl)
-	mockLoader := NewMockConfigLoader(ctrl)
-	mockLogger := logger.New(logger.DefaultConfig())
-	
-	t.Cleanup(func() {
-		ctrl.Finish()
-	})
-
-	return service.NewConfigService(mockEngine, mockLoader, mockLogger), mockEngine, mockLoader
-}
-
-func TestConfigService_ErrorHandling(t *testing.T) {
-	svc, _, _ := createTestService(t)
-
-	// Test error cases
-	err := svc.ToggleConfiguration("", "key", "value")
-	assert.Error(t, err, "empty app name should return error")
-
-	err = svc.CycleConfiguration("app", "")
-	assert.Error(t, err, "empty key should return error")
 }

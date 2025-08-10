@@ -1,5 +1,8 @@
 package cmd
 
+// TODO: Add backup path validation to prevent directory traversal (Security)
+// TODO: Ensure backup paths stay within ~/.config/zeroui/backups/
+
 import (
 	"fmt"
 	"os"

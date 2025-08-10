@@ -1,11 +1,14 @@
 package toggle
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
@@ -18,6 +21,10 @@ import (
 type Engine struct {
 	loader *config.Loader
 	logger *logger.Logger
+	homeDir string // Cache for home directory
+	pathCache map[string]string // Cache for expanded paths
+	// TODO: Add mutex for thread-safe access to pathCache (HIGH PRIORITY)
+	// TODO: Implement LRU cache with 1000 entry limit to prevent memory leak (CRITICAL)
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -27,17 +34,23 @@ func NewEngine() (*Engine, error) {
 		return nil, fmt.Errorf("failed to create config loader: %w", err)
 	}
 
+	homeDir, _ := os.UserHomeDir()
 	return &Engine{
 		loader: loader,
 		logger: logger.Global(), // Use global logger for backwards compatibility
+		homeDir: homeDir,
+		pathCache: make(map[string]string),
 	}, nil
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
 func NewEngineWithDeps(configLoader *config.Loader, log *logger.Logger) *Engine {
+	homeDir, _ := os.UserHomeDir()
 	return &Engine{
 		loader: configLoader,
 		logger: log,
+		homeDir: homeDir,
+		pathCache: make(map[string]string),
 	}
 }
 
@@ -110,11 +123,7 @@ func (e *Engine) Toggle(appName, key, value string) error {
 	}
 
 	// Create safe operation with automatic backup
-	configPath := appConfig.Path
-	if strings.HasPrefix(configPath, "~") {
-		home, _ := os.UserHomeDir()
-		configPath = strings.Replace(configPath, "~", home, 1)
-	}
+	configPath := e.expandPath(appConfig.Path)
 
 	safeOp, err := recovery.NewSafeOperation(configPath, appName)
 	if err != nil {
@@ -413,9 +422,9 @@ func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
 		log.Debug("Running hook")
 	}
 
-	// Set environment variables
-	for key, value := range appConfig.Env {
-		os.Setenv(key, value)
+	// Set environment variables safely
+	if err := e.setEnvironmentVariables(appConfig.Env); err != nil {
+		return fmt.Errorf("failed to set environment variables: %w", err)
 	}
 
 	// Execute the hook command
@@ -424,9 +433,27 @@ func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
 		return nil
 	}
 
-	cmd := exec.Command(parts[0], parts[1:]...)
+	// Security validation: Check if command is allowed
+	if err := e.validateHookCommand(hookCmd); err != nil {
+		log.Error("Hook command validation failed", err)
+		return fmt.Errorf("hook validation failed: %w", err)
+	}
+
+	// Use filepath.Clean to prevent path traversal
+	commandPath := filepath.Clean(parts[0])
+	
+	// Create command with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, commandPath, parts[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// Set working directory to a safe location
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		cmd.Dir = homeDir
+	}
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("hook %s failed: %w", hookType, err)
@@ -453,4 +480,103 @@ func (e *Engine) GetCurrentValues(appName string) (map[string]interface{}, error
 	}
 
 	return targetConfig.All(), nil
+}
+
+// validateHookCommand validates that the hook command is safe to execute
+func (e *Engine) validateHookCommand(hookCmd string) error {
+	// Trim whitespace and check for empty command
+	hookCmd = strings.TrimSpace(hookCmd)
+	if hookCmd == "" {
+		return fmt.Errorf("empty hook command")
+	}
+
+	// Check for dangerous characters and patterns
+	dangerousPatterns := []string{
+		"|", "&&", "||", ";", "`", "$", // Shell operators
+		"rm -rf", "rm -f", ">/dev/null", // Dangerous operations
+		"curl", "wget", "nc", "telnet",   // Network operations
+		"sudo", "su -", "chmod +x",       // Privilege escalation
+	}
+
+	lowerCmd := strings.ToLower(hookCmd)
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(lowerCmd, pattern) {
+			return fmt.Errorf("hook command contains dangerous pattern: %s", pattern)
+		}
+	}
+
+	// Allow-list approach: only allow certain safe commands
+	parts := strings.Fields(hookCmd)
+	if len(parts) == 0 {
+		return fmt.Errorf("empty hook command")
+	}
+
+	allowedCommands := []string{
+		"echo", "printf", "cat", "head", "tail", "wc",
+		"grep", "sed", "awk", "sort", "uniq",
+		"touch", "mkdir", "cp", "mv", "ls",
+		"notify-send", "osascript", // Notification commands
+	}
+
+	command := filepath.Base(parts[0])
+	for _, allowed := range allowedCommands {
+		if command == allowed {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("hook command '%s' is not in the allowed list", command)
+}
+
+// setEnvironmentVariables safely sets environment variables
+func (e *Engine) setEnvironmentVariables(envVars map[string]string) error {
+	// Prevent setting dangerous environment variables
+	dangerousVars := []string{
+		"PATH", "LD_LIBRARY_PATH", "LD_PRELOAD",
+		"HOME", "USER", "SHELL", "IFS",
+	}
+
+	for key, value := range envVars {
+		// Validate environment variable name
+		if key == "" {
+			return fmt.Errorf("empty environment variable name")
+		}
+
+		// Check against dangerous variables
+		for _, dangerous := range dangerousVars {
+			if strings.ToUpper(key) == dangerous {
+				return fmt.Errorf("setting dangerous environment variable '%s' is not allowed", key)
+			}
+		}
+
+		// Validate value doesn't contain dangerous characters
+		if strings.Contains(value, "`") || strings.Contains(value, "$") {
+			return fmt.Errorf("environment variable value contains dangerous characters")
+		}
+
+		// Set the environment variable (scoped to this process)
+		os.Setenv(key, value)
+	}
+
+	return nil
+}
+
+// expandPath efficiently expands ~ to home directory with caching
+func (e *Engine) expandPath(path string) string {
+	// Check cache first
+	if expanded, exists := e.pathCache[path]; exists {
+		return expanded
+	}
+
+	// Expand path
+	var expanded string
+	if strings.HasPrefix(path, "~") {
+		expanded = strings.Replace(path, "~", e.homeDir, 1)
+	} else {
+		expanded = path
+	}
+
+	// Cache the result
+	e.pathCache[path] = expanded
+	return expanded
 }

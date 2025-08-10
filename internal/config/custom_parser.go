@@ -61,6 +61,9 @@ func ParseGhosttyConfig(configPath string) (*koanf.Koanf, error) {
 	return k, nil
 }
 
+// TODO: Replace custom format parsers with koanf providers ecosystem (Week 2)
+// TODO: Use github.com/knadh/koanf/providers for standardized parsing
+// TODO: This will reduce complexity and improve reliability
 // WriteGhosttyConfig writes config back in Ghostty's format
 func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) error {
 	// Read original file to preserve structure and comments
@@ -149,8 +152,11 @@ func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) 
 
 	writer := bufio.NewWriter(file)
 	for _, line := range output {
-		if _, err := writer.WriteString(line + "\n"); err != nil {
+		if _, err := writer.WriteString(line); err != nil {
 			return fmt.Errorf("failed to write line: %w", err)
+		}
+		if _, err := writer.WriteString("\n"); err != nil {
+			return fmt.Errorf("failed to write newline: %w", err)
 		}
 	}
 

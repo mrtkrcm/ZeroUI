@@ -1,5 +1,14 @@
 package tui
 
+// TODO: CRITICAL - This file is 1,257 lines and needs decomposition into:
+// TODO: - components/buttons.go (button styles and interactions)
+// TODO: - components/forms.go (input fields and validation)
+// TODO: - components/layout.go (spacing, margins, containers)
+// TODO: - themes/colors.go (color schemes and palettes)
+// TODO: - themes/typography.go (fonts, sizes, weights)
+// TODO: - showcase/examples.go (demo implementations)
+// TODO: Target: 8 files of ~150 lines each for maintainability
+
 import (
 	"fmt"
 	"io"
