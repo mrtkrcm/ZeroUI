@@ -6,6 +6,7 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,10 +25,25 @@ UI configurations, themes, and settings across development tools and application
 Built for speed and simplicity with both CLI and interactive TUI interfaces.
 
 Examples:
+  zeroui                              # Launch interactive app grid
   zeroui toggle ghostty theme dark
   zeroui cycle alacritty font
-  zeroui ui
+  zeroui ui ghostty
   zeroui preset vscode minimal`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// If no subcommand is provided, launch the UI
+		if len(args) == 0 && cmd.Flags().NFlag() == 0 {
+			// Launch the UI without a specific app (show grid)
+			// Import the functionality directly instead of calling uiCmd
+			tuiApp, err := tui.NewApp("")
+			if err != nil {
+				return fmt.Errorf("failed to create TUI app: %w", err)
+			}
+			return tuiApp.Run()
+		}
+		// Show help if arguments are provided but no valid subcommand
+		return cmd.Help()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

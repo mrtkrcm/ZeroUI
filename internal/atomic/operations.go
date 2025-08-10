@@ -97,7 +97,7 @@ func (op *Operation) CreateBackup(appName string) error {
 		return nil
 	}
 
-	backupId, err := op.manager.recovery.CreateBackup(appName, op.filePath)
+	backupId, err := op.manager.recovery.CreateBackup(op.filePath, appName)
 	if err != nil {
 		return fmt.Errorf("failed to create backup: %w", err)
 	}
@@ -172,7 +172,8 @@ func (op *Operation) Rollback() error {
 		return nil
 	}
 
-	// Restore from backup
+	// The backupId is actually the full backup path returned by CreateBackup
+	// Restore from backup (backupId is the backup path)
 	if err := op.manager.recovery.RestoreBackup(op.backupId, op.filePath); err != nil {
 		return fmt.Errorf("failed to rollback: %w", err)
 	}

@@ -1,0 +1,38 @@
+ ZeroUI - ghostty Configuration                                                                                         
+                                                                                                                        
+  > background-blur-radius: 0 [0, 10, 20, 30, 40, 50]                                                                   
+    Background blur radius                                                                                              
+    cursor-style: bar                                                                                                   
+    theme: GruvboxDark                                                                                                  
+    font-family: Berkeley Mono                                                                                          
+    font-size: 16                                                                                                       
+    background-opacity: 1.0                                                                                             
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+Status: Ready • Theme: Default                                                                                          
+q quit • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up • →/l move right/next value                 

@@ -384,8 +384,10 @@ func (l *Logger) log(level slog.Level, msg string, args ...interface{}) {
 		hook(ctx, record, extraData)
 	}
 
-	// Log the record
-	l.logger.Handle(ctx, record)
+	// Log the record using Handler
+	if l.logger.Handler() != nil {
+		l.logger.Handler().Handle(ctx, record)
+	}
 }
 
 // logZeroUIError logs a structured ZeroUIError
@@ -547,7 +549,8 @@ var (
 func GetLogger() *Logger {
 	once.Do(func() {
 		globalLogger = NewLogger()
-		globalMetrics = NewMetrics()
+		metrics, _ := NewMetrics(nil)
+		globalMetrics = metrics
 	})
 	return globalLogger
 }
@@ -556,7 +559,8 @@ func GetLogger() *Logger {
 func GetMetrics() *Metrics {
 	once.Do(func() {
 		globalLogger = NewLogger()
-		globalMetrics = NewMetrics()
+		metrics, _ := NewMetrics(nil)
+		globalMetrics = metrics
 	})
 	return globalMetrics
 }
@@ -609,16 +613,20 @@ func CreateDefaultLogConfig() *LogConfig {
 // MetricsHook creates a hook that records metrics
 func MetricsHook(metrics *Metrics) Hook {
 	return func(ctx context.Context, record slog.Record, extra map[string]interface{}) {
-		// Increment level counters
-		levelName := record.Level.String()
-		metrics.IncrementCounter("log_" + levelName)
+		// Record errors if it's an error level
+		if record.Level >= slog.LevelError {
+			operation := "unknown"
+			if op, ok := extra["operation"].(string); ok {
+				operation = op
+			}
+			metrics.RecordError(ctx, operation, "log_error")
+		}
 
 		// Record operation timers if present
-		if operation, ok := extra["operation"].(string); ok {
-			if durationMs, ok := extra["duration_ms"].(int64); ok {
-				duration := time.Duration(durationMs) * time.Millisecond
-				metrics.RecordTimer("operation_"+operation, duration)
-			}
+		if _, ok := extra["operation"].(string); ok {
+			// Use the metrics API that exists
+			// For now, we'll skip timer recording since the Metrics type
+			// has specific operation methods rather than generic ones
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package atomic
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -332,8 +333,15 @@ func TestConcurrentOperations(t *testing.T) {
 			t.Fatalf("Failed to read final config: %v", err)
 		}
 
-		if !containsString(string(content), "\"counter\": 3") {
-			t.Errorf("Expected counter to be 3 in final result, got: %s", string(content))
+		// Parse JSON to check the counter value
+		var result map[string]interface{}
+		if err := json.Unmarshal(content, &result); err != nil {
+			t.Fatalf("Failed to parse final JSON: %v", err)
+		}
+		
+		counter, ok := result["counter"].(float64)
+		if !ok || int(counter) != 3 {
+			t.Errorf("Expected counter to be 3 in final result, got: %v", result)
 		}
 	})
 }

@@ -1,0 +1,28 @@
+ ZeroUI - ghostty Configuration                                                                     
+                                                                                                    
+  No configuration fields available                                                                 
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+Status: Ready • Apps: 1 • Theme: Default                                                            
+? toggle help • esc go back • q quit                                                                

@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(go build:*)",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(./build/zeroui toggle:*)",
+      "Bash(go mod:*)",
+      "Bash(go list:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

@@ -143,9 +143,11 @@ hooks:
 	loader := &config.Loader{}
 	loader.SetConfigDir(tmpDir) // Assume we add this method
 
-	engine := &Engine{
-		loader: loader,
+	engine, err := NewEngine()
+	if err != nil {
+		t.Fatalf("Failed to create engine: %v", err)
 	}
+	engine.loader = loader
 
 	cleanup := func() {
 		os.RemoveAll(tmpDir)
