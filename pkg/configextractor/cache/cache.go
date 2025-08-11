@@ -3,8 +3,6 @@ package cache
 import (
 	"sync"
 	"time"
-
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 )
 
 // LRUCache implements an LRU cache with TTL for configuration data
@@ -19,7 +17,7 @@ type LRUCache struct {
 // entry represents a cache entry
 type entry struct {
 	key       string
-	config    *configextractor.Config
+	config    *Config
 	timestamp time.Time
 	ttl       time.Duration
 	listNode  *node // Reference to position in LRU list
@@ -47,7 +45,7 @@ func NewLRU(maxSize int, defaultTTL time.Duration) *LRUCache {
 }
 
 // Get retrieves a cached configuration
-func (c *LRUCache) Get(key string) (*configextractor.Config, bool) {
+func (c *LRUCache) Get(key string) (*Config, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	
@@ -69,7 +67,7 @@ func (c *LRUCache) Get(key string) (*configextractor.Config, bool) {
 }
 
 // Set stores a configuration in cache with specified TTL
-func (c *LRUCache) Set(key string, config *configextractor.Config, ttl time.Duration) {
+func (c *LRUCache) Set(key string, config *Config, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	
@@ -248,7 +246,7 @@ type InMemoryCache struct {
 }
 
 type simpleEntry struct {
-	config    *configextractor.Config
+	config    *Config
 	timestamp time.Time
 	ttl       time.Duration
 }
@@ -261,7 +259,7 @@ func NewInMemory() *InMemoryCache {
 }
 
 // Get retrieves a cached configuration
-func (c *InMemoryCache) Get(key string) (*configextractor.Config, bool) {
+func (c *InMemoryCache) Get(key string) (*Config, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	
@@ -279,7 +277,7 @@ func (c *InMemoryCache) Get(key string) (*configextractor.Config, bool) {
 }
 
 // Set stores a configuration in cache
-func (c *InMemoryCache) Set(key string, config *configextractor.Config, ttl time.Duration) {
+func (c *InMemoryCache) Set(key string, config *Config, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	
@@ -312,12 +310,12 @@ func NewNoOp() *NoOpCache {
 }
 
 // Get always returns cache miss
-func (c *NoOpCache) Get(key string) (*configextractor.Config, bool) {
+func (c *NoOpCache) Get(key string) (*Config, bool) {
 	return nil, false
 }
 
 // Set does nothing
-func (c *NoOpCache) Set(key string, config *configextractor.Config, ttl time.Duration) {
+func (c *NoOpCache) Set(key string, config *Config, ttl time.Duration) {
 	// No-op
 }
 

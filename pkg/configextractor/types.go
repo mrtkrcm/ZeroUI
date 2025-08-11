@@ -85,7 +85,7 @@ type Cache interface {
 	Get(key string) (*Config, bool)
 	
 	// Set stores config with TTL
-	Set(key string, config *Config, ttl time.Duration)
+	Set(key string, config *Config)
 	
 	// Clear removes expired entries
 	Clear()
@@ -101,6 +101,21 @@ type AppRegistry interface {
 	
 	// Register adds new app definition
 	Register(def *AppDef)
+}
+
+// Cache provides caching interface for configurations
+type Cache interface {
+	// Get retrieves a config from cache
+	Get(key string) (*Config, bool)
+	
+	// Set stores a config in cache
+	Set(key string, config *Config)
+	
+	// Delete removes a config from cache
+	Delete(key string)
+	
+	// Clear removes all entries
+	Clear()
 }
 
 // AppDef defines application extraction metadata

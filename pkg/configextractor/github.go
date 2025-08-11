@@ -1,4 +1,4 @@
-package strategies
+package configextractor
 
 import (
 	"bufio"
@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 )
 
 // GitHub strategy extracts configuration from GitHub repositories
@@ -90,7 +88,7 @@ func (g *GitHub) CanExtract(app string) bool {
 }
 
 // Extract performs GitHub-based config extraction
-func (g *GitHub) Extract(ctx context.Context, app string) (*configextractor.Config, error) {
+func (g *GitHub) Extract(ctx context.Context, app string) (*Config, error) {
 	repo, exists := g.repos[app]
 	if !exists {
 		return nil, fmt.Errorf("no GitHub repository configured for %s", app)
@@ -115,7 +113,7 @@ func (g *GitHub) Priority() int {
 }
 
 // extractFromPath attempts extraction from a specific GitHub file path
-func (g *GitHub) extractFromPath(ctx context.Context, app string, repo RepoInfo, path string) (*configextractor.Config, error) {
+func (g *GitHub) extractFromPath(ctx context.Context, app string, repo RepoInfo, path string) (*Config, error) {
 	// Try main branch first, then master
 	branches := []string{"main", "master"}
 	if repo.Branch != "" {
@@ -173,12 +171,12 @@ func (g *GitHub) fetchFile(ctx context.Context, owner, repo, branch, path string
 }
 
 // parseContent parses the fetched content based on format and path
-func (g *GitHub) parseContent(app string, repo RepoInfo, path string, content []byte) (*configextractor.Config, error) {
-	config := &configextractor.Config{
+func (g *GitHub) parseContent(app string, repo RepoInfo, path string, content []byte) (*Config, error) {
+	config := &Config{
 		App:      app,
 		Format:   repo.Format,
-		Settings: make(map[string]configextractor.Setting),
-		Source: configextractor.ExtractionSource{
+		Settings: make(map[string]Setting),
+		Source: ExtractionSource{
 			Method:     "github",
 			Location:   fmt.Sprintf("%s/%s/%s", repo.Owner, repo.Repo, path),
 			Confidence: repo.Confidence,
@@ -207,7 +205,7 @@ func (g *GitHub) parseContent(app string, repo RepoInfo, path string, content []
 }
 
 // parseJSON parses JSON configuration files
-func (g *GitHub) parseJSON(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseJSON(config *Config, content []byte) (*Config, error) {
 	// Fast line-by-line JSON parsing to avoid full unmarshaling
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
@@ -227,7 +225,7 @@ func (g *GitHub) parseJSON(config *configextractor.Config, content []byte) (*con
 				value := strings.TrimSpace(strings.Trim(parts[1], `,`))
 				
 				if key != "" && !strings.HasPrefix(key, "_") && !strings.HasPrefix(key, "$") {
-					config.Settings[key] = configextractor.Setting{
+					config.Settings[key] = Setting{
 						Name: key,
 						Type: inferTypeFromJSON(value),
 						Cat:  inferCategory(key),
@@ -241,7 +239,7 @@ func (g *GitHub) parseJSON(config *configextractor.Config, content []byte) (*con
 }
 
 // parseYAML parses YAML configuration files
-func (g *GitHub) parseYAML(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseYAML(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
 	var currentSection string
@@ -272,7 +270,7 @@ func (g *GitHub) parseYAML(config *configextractor.Config, content []byte) (*con
 					fullKey = currentSection + "." + key
 				}
 				
-				config.Settings[fullKey] = configextractor.Setting{
+				config.Settings[fullKey] = Setting{
 					Name: fullKey,
 					Type: inferType(value),
 					Cat:  inferCategory(fullKey),
@@ -285,7 +283,7 @@ func (g *GitHub) parseYAML(config *configextractor.Config, content []byte) (*con
 }
 
 // parseMarkdown parses markdown documentation for config options
-func (g *GitHub) parseMarkdown(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
 	var inCodeBlock bool
@@ -333,9 +331,9 @@ func (g *GitHub) parseMarkdown(config *configextractor.Config, content []byte) (
 				}
 				
 				currentSetting = key
-				config.Settings[key] = configextractor.Setting{
+				config.Settings[key] = Setting{
 					Name: key,
-					Type: configextractor.TypeString, // Default type
+					Type: TypeString, // Default type
 					Cat:  inferCategory(key),
 				}
 				description.Reset()
@@ -361,7 +359,7 @@ func (g *GitHub) parseMarkdown(config *configextractor.Config, content []byte) (
 }
 
 // parseRustSource parses Rust source files for config definitions
-func (g *GitHub) parseRustSource(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseRustSource(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
 	for scanner.Scan() {
@@ -375,9 +373,9 @@ func (g *GitHub) parseRustSource(config *configextractor.Config, content []byte)
 				if part == "pub" && i+1 < len(parts) {
 					fieldName := strings.TrimSuffix(parts[i+1], ":")
 					if fieldName != "" {
-						config.Settings[fieldName] = configextractor.Setting{
+						config.Settings[fieldName] = Setting{
 							Name: fieldName,
-							Type: configextractor.TypeString,
+							Type: TypeString,
 							Cat:  inferCategory(fieldName),
 						}
 					}
@@ -391,7 +389,7 @@ func (g *GitHub) parseRustSource(config *configextractor.Config, content []byte)
 }
 
 // parseCSource parses C source files for config definitions
-func (g *GitHub) parseCSource(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseCSource(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
 	for scanner.Scan() {
@@ -406,9 +404,9 @@ func (g *GitHub) parseCSource(config *configextractor.Config, content []byte) (*
 				if end >= 0 {
 					optionName := line[start+1 : start+1+end]
 					if optionName != "" && !strings.Contains(optionName, " ") {
-						config.Settings[optionName] = configextractor.Setting{
+						config.Settings[optionName] = Setting{
 							Name: optionName,
-							Type: configextractor.TypeString,
+							Type: TypeString,
 							Cat:  inferCategory(optionName),
 						}
 					}
@@ -421,7 +419,7 @@ func (g *GitHub) parseCSource(config *configextractor.Config, content []byte) (*
 }
 
 // parseText parses generic text files (like man pages or help text)
-func (g *GitHub) parseText(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseText(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
 	
 	for scanner.Scan() {
@@ -436,9 +434,9 @@ func (g *GitHub) parseText(config *configextractor.Config, content []byte) (*con
 					optionName := strings.TrimPrefix(field, "--")
 					optionName = strings.Trim(optionName, ".,;")
 					if optionName != "" {
-						config.Settings[optionName] = configextractor.Setting{
+						config.Settings[optionName] = Setting{
 							Name: optionName,
-							Type: configextractor.TypeString,
+							Type: TypeString,
 							Cat:  inferCategory(optionName),
 						}
 					}
@@ -451,7 +449,7 @@ func (g *GitHub) parseText(config *configextractor.Config, content []byte) (*con
 }
 
 // parseGeneric attempts to parse content with unknown format
-func (g *GitHub) parseGeneric(config *configextractor.Config, content []byte) (*configextractor.Config, error) {
+func (g *GitHub) parseGeneric(config *Config, content []byte) (*Config, error) {
 	// Try different parsing strategies
 	contentStr := string(content)
 	

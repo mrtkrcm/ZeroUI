@@ -57,18 +57,19 @@ func NewAppGrid() *AppGridModel {
 		cards[i] = NewAppCard(status)
 	}
 	
-	// Select first card if available
+	// Select first card if available and set selectedIdx
 	if len(cards) > 0 {
 		cards[0].SetSelected(true)
 	}
 	
-	// Initialize viewport for scrollable content
+	// Viewport disabled - was causing border alignment issues
 	vp := viewport.New(80, 24)
 	vp.YPosition = 0
 	
 	return &AppGridModel{
 		cards:         cards,
 		statuses:      statuses,
+		selectedIdx:   0,  // Initialize to 0 to fix double press issue
 		columns:       4,  // Default to 4 columns (production standard)
 		cardSize:      30, // Width of cards (rectangular)
 		cardHeight:    10, // Height of cards (shorter than width for rectangular)
@@ -348,18 +349,11 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 	content = append(content, "")
 	content = append(content, footer)
 	
-	// Update viewport content
-	viewportContent := lipgloss.JoinVertical(lipgloss.Left, content...)
-	m.viewport.SetContent(viewportContent)
+	// Removed viewport content update - not using viewport for main grid
 	
-	// Create full screen container with viewport
-	fullScreen := lipgloss.NewStyle().
-		Width(m.width).
-		Height(m.height).
-		Align(lipgloss.Left, lipgloss.Top).
-		Render(m.viewport.View())
-	
-	return fullScreen
+	// Return the content directly without viewport
+	// The viewport was causing alignment issues with borders
+	return lipgloss.JoinVertical(lipgloss.Left, content...)
 }
 
 // renderHeader creates the responsive header with enhanced logo
@@ -479,6 +473,11 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 	// Clear current selection
 	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) {
 		m.cards[m.selectedIdx].SetSelected(false)
+	}
+	
+	// Initialize selectedIdx if it's unset (fixes double press issue)
+	if m.selectedIdx < 0 && len(visibleCards) > 0 {
+		m.selectedIdx = 0
 	}
 	
 	// Calculate new index with bounds checking

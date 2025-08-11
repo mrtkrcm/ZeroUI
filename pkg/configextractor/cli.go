@@ -1,4 +1,4 @@
-package strategies
+package configextractor
 
 import (
 	"bufio"
@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 )
 
 // CLI strategy extracts configuration from command-line tools
@@ -21,7 +19,7 @@ type CLI struct {
 type CLICommand struct {
 	Command     string                                     // Command to execute
 	Args        []string                                   // Command arguments
-	Parser      func(app, output string) *configextractor.Config // Custom parser
+	Parser      func(app, output string) *Config // Custom parser
 	Timeout     time.Duration                              // Execution timeout
 	Confidence  float64                                    // Confidence score (0-1)
 }
@@ -81,7 +79,7 @@ func (c *CLI) CanExtract(app string) bool {
 }
 
 // Extract performs CLI-based config extraction
-func (c *CLI) Extract(ctx context.Context, app string) (*configextractor.Config, error) {
+func (c *CLI) Extract(ctx context.Context, app string) (*Config, error) {
 	cmd, exists := c.commands[app]
 	if !exists {
 		return nil, fmt.Errorf("no CLI command defined for %s", app)
@@ -105,7 +103,7 @@ func (c *CLI) Extract(ctx context.Context, app string) (*configextractor.Config,
 	}
 
 	// Set extraction source information
-	config.Source = configextractor.ExtractionSource{
+	config.Source = ExtractionSource{
 		Method:     "cli",
 		Location:   fmt.Sprintf("%s %s", cmd.Command, strings.Join(cmd.Args, " ")),
 		Confidence: cmd.Confidence,
@@ -123,11 +121,11 @@ func (c *CLI) Priority() int {
 // Parser functions for different CLI outputs
 
 // parseGhosttyOutput parses Ghostty's config output format
-func parseGhosttyOutput(app, output string) *configextractor.Config {
-	config := &configextractor.Config{
+func parseGhosttyOutput(app, output string) *Config {
+	config := &Config{
 		App:      app,
 		Format:   "custom",
-		Settings: make(map[string]configextractor.Setting),
+		Settings: make(map[string]Setting),
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -170,7 +168,7 @@ func parseGhosttyOutput(app, output string) *configextractor.Config {
 			currentSetting = matches[1]
 			value := strings.TrimSpace(matches[2])
 
-			config.Settings[currentSetting] = configextractor.Setting{
+			config.Settings[currentSetting] = Setting{
 				Name:    currentSetting,
 				Type:    inferType(value),
 				Default: parseValue(value),
@@ -193,12 +191,12 @@ func parseGhosttyOutput(app, output string) *configextractor.Config {
 }
 
 // parseJSONOutput parses JSON configuration output
-func parseJSONOutput(app, output string) *configextractor.Config {
+func parseJSONOutput(app, output string) *Config {
 	// Simple JSON parsing without full unmarshaling for performance
-	config := &configextractor.Config{
+	config := &Config{
 		App:      app,
 		Format:   "json",
-		Settings: make(map[string]configextractor.Setting),
+		Settings: make(map[string]Setting),
 	}
 
 	// Line-by-line parsing to avoid full JSON unmarshaling
@@ -214,7 +212,7 @@ func parseJSONOutput(app, output string) *configextractor.Config {
 				value := strings.TrimSpace(strings.Trim(parts[1], `,`))
 				
 				if key != "" && !strings.HasPrefix(key, "_") {
-					config.Settings[key] = configextractor.Setting{
+					config.Settings[key] = Setting{
 						Name: key,
 						Type: inferTypeFromJSON(value),
 						Cat:  inferCategory(key),
@@ -228,11 +226,11 @@ func parseJSONOutput(app, output string) *configextractor.Config {
 }
 
 // parseLuaOutput parses Lua configuration output
-func parseLuaOutput(app, output string) *configextractor.Config {
-	config := &configextractor.Config{
+func parseLuaOutput(app, output string) *Config {
+	config := &Config{
 		App:      app,
 		Format:   "lua",
-		Settings: make(map[string]configextractor.Setting),
+		Settings: make(map[string]Setting),
 	}
 
 	// Simple Lua config parsing
@@ -251,7 +249,7 @@ func parseLuaOutput(app, output string) *configextractor.Config {
 				if strings.HasPrefix(keyPart, "config.") {
 					key := strings.TrimPrefix(keyPart, "config.")
 					
-					config.Settings[key] = configextractor.Setting{
+					config.Settings[key] = Setting{
 						Name: key,
 						Type: inferTypeFromLua(value),
 						Cat:  inferCategory(key),
@@ -265,11 +263,11 @@ func parseLuaOutput(app, output string) *configextractor.Config {
 }
 
 // parseTmuxOutput parses tmux show-options output
-func parseTmuxOutput(app, output string) *configextractor.Config {
-	config := &configextractor.Config{
+func parseTmuxOutput(app, output string) *Config {
+	config := &Config{
 		App:      app,
 		Format:   "custom",
-		Settings: make(map[string]configextractor.Setting),
+		Settings: make(map[string]Setting),
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -282,7 +280,7 @@ func parseTmuxOutput(app, output string) *configextractor.Config {
 			key := parts[0]
 			value := parts[1]
 			
-			config.Settings[key] = configextractor.Setting{
+			config.Settings[key] = Setting{
 				Name:    key,
 				Type:    inferType(value),
 				Default: parseValue(value),
@@ -295,11 +293,11 @@ func parseTmuxOutput(app, output string) *configextractor.Config {
 }
 
 // parseGitOutput parses git config output
-func parseGitOutput(app, output string) *configextractor.Config {
-	config := &configextractor.Config{
+func parseGitOutput(app, output string) *Config {
+	config := &Config{
 		App:      app,
 		Format:   "gitconfig",
-		Settings: make(map[string]configextractor.Setting),
+		Settings: make(map[string]Setting),
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -321,7 +319,7 @@ func parseGitOutput(app, output string) *configextractor.Config {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
 				
-				config.Settings[key] = configextractor.Setting{
+				config.Settings[key] = Setting{
 					Name:    key,
 					Type:    inferType(value),
 					Default: parseValue(value),
@@ -337,56 +335,56 @@ func parseGitOutput(app, output string) *configextractor.Config {
 // Helper functions for type inference and parsing
 
 // inferType determines setting type from value string
-func inferType(value string) configextractor.SettingType {
+func inferType(value string) SettingType {
 	value = strings.TrimSpace(value)
 	
 	switch {
 	case value == "true" || value == "false":
-		return configextractor.TypeBoolean
+		return TypeBoolean
 	case isNumeric(value):
-		return configextractor.TypeNumber
+		return TypeNumber
 	case strings.HasPrefix(value, "[") || strings.HasPrefix(value, "{"):
-		return configextractor.TypeArray
+		return TypeArray
 	default:
-		return configextractor.TypeString
+		return TypeString
 	}
 }
 
 // inferTypeFromJSON determines type from JSON value
-func inferTypeFromJSON(value string) configextractor.SettingType {
+func inferTypeFromJSON(value string) SettingType {
 	value = strings.TrimSpace(strings.Trim(value, `,`))
 	
 	switch {
 	case value == "true" || value == "false":
-		return configextractor.TypeBoolean
+		return TypeBoolean
 	case strings.HasPrefix(value, `"`):
-		return configextractor.TypeString
+		return TypeString
 	case strings.HasPrefix(value, "["):
-		return configextractor.TypeArray
+		return TypeArray
 	case strings.HasPrefix(value, "{"):
-		return configextractor.TypeString // Simplified
+		return TypeString // Simplified
 	case isNumeric(value):
-		return configextractor.TypeNumber
+		return TypeNumber
 	default:
-		return configextractor.TypeString
+		return TypeString
 	}
 }
 
 // inferTypeFromLua determines type from Lua value
-func inferTypeFromLua(value string) configextractor.SettingType {
+func inferTypeFromLua(value string) SettingType {
 	value = strings.TrimSpace(value)
 	
 	switch {
 	case value == "true" || value == "false":
-		return configextractor.TypeBoolean
+		return TypeBoolean
 	case strings.HasPrefix(value, `"`):
-		return configextractor.TypeString
+		return TypeString
 	case strings.HasPrefix(value, "{"):
-		return configextractor.TypeArray
+		return TypeArray
 	case isNumeric(value):
-		return configextractor.TypeNumber
+		return TypeNumber
 	default:
-		return configextractor.TypeString
+		return TypeString
 	}
 }
 

@@ -6,9 +6,6 @@ import (
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor/cache"
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor/strategies"
 )
 
 // Extractor is the main configuration extractor
@@ -28,7 +25,7 @@ func New(opts ...Option) *Extractor {
 	e := &Extractor{
 		strategies:  make([]Strategy, 0),
 		parsers:     make(map[string]Parser),
-		cache:       cache.NewLRU(100, 24*time.Hour), // 100 entries, 24h TTL
+		cache:       NewLRUCache(100, 24*time.Hour), // 100 entries, 24h TTL
 		timeout:     30 * time.Second,
 		concurrency: 8,
 	}
