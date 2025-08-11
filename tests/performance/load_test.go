@@ -237,7 +237,7 @@ func BenchmarkEngine_LoadManyApps(b *testing.B) {
 
 	for _, size := range sizes {
 		b.Run(fmt.Sprintf("Apps_%d_Fields_%d", size.numApps, size.fieldsPerApp), func(b *testing.B) {
-			tmpDir, cleanup := setupLargeConfigTest(b, size.numApps, size.fieldsPerApp)
+			_, cleanup := setupLargeConfigTest(b, size.numApps, size.fieldsPerApp)
 			defer cleanup()
 
 			// Create engine with custom config dir
@@ -262,7 +262,7 @@ func BenchmarkEngine_LoadManyApps(b *testing.B) {
 
 // BenchmarkEngine_ToggleOperations benchmarks toggle operations on large configs
 func BenchmarkEngine_ToggleOperations(b *testing.B) {
-	tmpDir, cleanup := setupLargeConfigTest(b, 10, 50) // 10 apps, 50 fields each
+	_, cleanup := setupLargeConfigTest(b, 10, 50) // 10 apps, 50 fields each
 	defer cleanup()
 
 	engine, err := toggle.NewEngine()
@@ -302,7 +302,7 @@ func BenchmarkEngine_ToggleOperations(b *testing.B) {
 
 // BenchmarkEngine_PresetOperations benchmarks preset operations
 func BenchmarkEngine_PresetOperations(b *testing.B) {
-	tmpDir, cleanup := setupLargeConfigTest(b, 20, 30) // 20 apps, 30 fields each
+	_, cleanup := setupLargeConfigTest(b, 20, 30) // 20 apps, 30 fields each
 	defer cleanup()
 
 	engine, err := toggle.NewEngine()
@@ -400,7 +400,7 @@ func BenchmarkCustomParser_WriteOperations(b *testing.B) {
 
 // TestConcurrentOperations tests concurrent access to configurations
 func TestConcurrentOperations(t *testing.T) {
-	tmpDir, cleanup := setupLargeConfigTest(t, 5, 10) // 5 apps, 10 fields each
+	_, cleanup := setupLargeConfigTest(t, 5, 10) // 5 apps, 10 fields each
 	defer cleanup()
 
 	engine, err := toggle.NewEngine()
@@ -488,7 +488,7 @@ func TestMemoryUsage(t *testing.T) {
 		t.Skip("Skipping memory usage test in short mode")
 	}
 
-	tmpDir, cleanup := setupLargeConfigTest(t, 100, 100) // 100 apps, 100 fields each
+	_, cleanup := setupLargeConfigTest(t, 100, 100) // 100 apps, 100 fields each
 	defer cleanup()
 
 	engine, err := toggle.NewEngine()

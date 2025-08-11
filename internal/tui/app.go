@@ -253,9 +253,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		// Only update if size actually changed (performance optimization)
 		if m.width != msg.Width || m.height != msg.Height {
+			oldWidth, oldHeight := m.width, m.height
 			m.width = msg.Width
 			m.height = msg.Height
-			cmds = append(cmds, m.updateComponentSizes())
+			
+			// Only trigger expensive size updates if significant change (>5% or >10 pixels)
+			widthDiff := abs(msg.Width - oldWidth)
+			heightDiff := abs(msg.Height - oldHeight)
+			
+			if widthDiff > 10 || heightDiff > 10 || 
+			   (oldWidth > 0 && widthDiff*100/oldWidth > 5) ||
+			   (oldHeight > 0 && heightDiff*100/oldHeight > 5) {
+				cmds = append(cmds, m.updateComponentSizes())
+			}
 		}
 
 	case tea.KeyMsg:
@@ -348,15 +358,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lastMessage = msg
 		
 	case components.AnimationTickMsg:
-		// Handle animation updates for smooth UI
+		// Handle animation updates for smooth UI - batch updates to reduce overhead
 		if m.state == AppGridView {
-			// Update app grid animations
-			updatedGrid, cmd := m.appGrid.Update(msg)
-			m.appGrid = updatedGrid
-			if cmd != nil {
-				cmds = append(cmds, cmd)
+			// Only update animations if component is actually visible and focused
+			if m.appGrid != nil {
+				updatedGrid, cmd := m.appGrid.Update(msg)
+				m.appGrid = updatedGrid
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 		}
+		
+		// Reduce animation frequency for better performance
+		cmds = append(cmds, tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
+			return components.AnimationTickMsg{}
+		}))
 	}
 
 	// Update components based on current state (performance optimized)
@@ -826,6 +843,14 @@ func (m *Model) loadAppConfig(appName string) error {
 	m.huhConfigEditor.SetFields(fields)
 
 	return nil
+}
+
+// abs returns the absolute value of an integer
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Ensure Model implements tea.Model

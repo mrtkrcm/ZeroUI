@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/keys"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/registry"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
@@ -267,11 +268,12 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 		leftMargin = 2 // Minimum padding
 	}
 	
-	for i := 0; i < len(visibleCards); i += m.columns {
+	visibleLen := len(visibleCards)
+	for i := 0; i < visibleLen; i += m.columns {
 		var rowCards []string
 		
-		// Build row with rectangular cards
-		for j := 0; j < m.columns && i+j < len(visibleCards); j++ {
+		// Build row with rectangular cards  
+		for j := 0; j < m.columns && i+j < visibleLen; j++ {
 			idx := i + j
 			card := visibleCards[idx]
 			
@@ -296,23 +298,30 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 			}
 		}
 		
-		// Add perfect spacing between cards
-		var spacedCards []string
+		// Add perfect spacing between cards - optimized with string builder
+		builder := performance.GetBuilder()
+		
+		// Pre-calculate total row capacity for efficiency
+		estimatedSize := len(rowCards)*m.cardSize + (len(rowCards)-1)*m.cardSpacing + leftMargin
+		builder.Grow(estimatedSize)
+		
+		// Add left margin
+		builder.WriteString(performance.GetSpacer(leftMargin))
+		
+		// Build row with cards and spacing
 		for k, card := range rowCards {
-			spacedCards = append(spacedCards, card)
+			builder.WriteString(card)
 			if k < len(rowCards)-1 {
-				// Consistent spacing
-				spacer := strings.Repeat(" ", m.cardSpacing)
-				spacedCards = append(spacedCards, spacer)
+				builder.WriteString(performance.GetSpacer(m.cardSpacing))
 			}
 		}
 		
-		// Create row with left margin for centering
-		row := strings.Repeat(" ", leftMargin) + lipgloss.JoinHorizontal(lipgloss.Top, spacedCards...)
+		row := builder.String()
+		performance.PutBuilder(builder)
 		rows = append(rows, row)
 		
 		// Add consistent vertical spacing between rows
-		if i+m.columns < len(visibleCards) {
+		if i+m.columns < visibleLen {
 			for s := 0; s < 2; s++ {
 				rows = append(rows, "")
 			}

@@ -103,20 +103,6 @@ type AppRegistry interface {
 	Register(def *AppDef)
 }
 
-// Cache provides caching interface for configurations
-type Cache interface {
-	// Get retrieves a config from cache
-	Get(key string) (*Config, bool)
-	
-	// Set stores a config in cache
-	Set(key string, config *Config)
-	
-	// Delete removes a config from cache
-	Delete(key string)
-	
-	// Clear removes all entries
-	Clear()
-}
 
 // AppDef defines application extraction metadata
 type AppDef struct {

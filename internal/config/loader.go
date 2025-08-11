@@ -35,6 +35,10 @@ type Loader struct {
 	// Cache statistics for monitoring
 	cacheHits          uint64
 	cacheMisses        uint64
+	
+	// Memory pools for reusable buffers
+	bufferPool         sync.Pool
+	stringBuilderPool  sync.Pool
 }
 
 // NewLoader creates a new config loader with caching
@@ -62,6 +66,19 @@ func NewLoader() (*Loader, error) {
 		configDir:      configDir,
 		yamlValidator:  yamlValidator,
 		appConfigCache: appCache,
+		// Initialize memory pools for better allocation patterns
+		bufferPool: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, 0, 4096) // 4KB buffer
+			},
+		},
+		stringBuilderPool: sync.Pool{
+			New: func() interface{} {
+				var sb strings.Builder
+				sb.Grow(1024) // Pre-allocate 1KB
+				return &sb
+			},
+		},
 	}, nil
 }
 

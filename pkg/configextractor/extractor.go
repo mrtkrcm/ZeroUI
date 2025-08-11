@@ -93,7 +93,7 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 		case res := <-resultChan:
 			if res.err == nil && res.config != nil {
 				// Success! Cache and return
-				e.cache.Set(cacheKey, res.config, 24*time.Hour)
+				e.cache.Set(cacheKey, res.config)
 				return res.config, nil
 			}
 			lastErr = res.err
@@ -101,7 +101,7 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 	}
 	
 	if bestConfig != nil {
-		e.cache.Set(cacheKey, bestConfig, 24*time.Hour)
+		e.cache.Set(cacheKey, bestConfig)
 		return bestConfig, nil
 	}
 	
@@ -164,7 +164,7 @@ func (e *Extractor) SupportedApps() []string {
 	
 	// Fallback: collect from strategies
 	appSet := make(map[string]bool)
-	for _, strategy := range e.strategies {
+	for _ = range e.strategies {
 		// This would need to be enhanced based on strategy implementation
 		// For now, return common apps
 	}
@@ -204,10 +204,10 @@ func (e *Extractor) getStrategiesForApp(app string) []Strategy {
 func (e *Extractor) registerDefaultStrategies() {
 	// Order matters - higher priority strategies first
 	e.strategies = []Strategy{
-		strategies.NewCLI(),      // Fastest, most reliable
-		strategies.NewLocal(),    // Fast, cached locally
-		strategies.NewBuiltin(),  // Always available fallback
-		strategies.NewGitHub(),   // Network dependent, slower
+		NewCLI(),      // Fastest, most reliable
+		// NewLocal(),    // Fast, cached locally
+		// NewBuiltin(),  // Always available fallback
+		NewGitHub(),   // Network dependent, slower
 	}
 }
 

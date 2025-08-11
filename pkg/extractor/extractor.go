@@ -99,18 +99,28 @@ func WithStrategy(strategy Strategy) Option {
 
 // New creates a new extractor with default configuration
 func New(opts ...Option) *Extractor {
+	// Optimized HTTP client with better connection pooling and timeouts
+	transport := &http.Transport{
+		MaxIdleConns:          100,              // Increased total idle connections
+		MaxIdleConnsPerHost:   20,               // Increased per-host idle connections
+		MaxConnsPerHost:       50,               // Limit concurrent connections per host
+		IdleConnTimeout:       90 * time.Second, // Keep connections alive longer
+		TLSHandshakeTimeout:   10 * time.Second, // Reasonable TLS timeout
+		ExpectContinueTimeout: 1 * time.Second,  // Faster expect-continue
+		DisableCompression:    false,            // Enable compression for better bandwidth
+		ForceAttemptHTTP2:     true,             // Prefer HTTP/2 when available
+	}
+	
 	httpClient := &DefaultHTTPClient{
 		client: &http.Client{
-			Timeout: 10 * time.Second,
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost: 10,
-			},
+			Timeout:   30 * time.Second, // Increased timeout for large configs
+			Transport: transport,
 		},
 	}
 
 	e := &Extractor{
 		cache:   NewLRUCache(100, 24*time.Hour),
-		pool:    make(chan struct{}, 8),
+		pool:    make(chan struct{}, 16), // Increased worker pool for better parallelism
 		timeout: 30 * time.Second,
 		client:  httpClient,
 	}

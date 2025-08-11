@@ -65,7 +65,15 @@ func runExtract(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Extracting %d apps using %d workers...\n", len(apps), runtime.NumCPU())
 
 	// Extract all in parallel
-	configs := ext.ExtractAll(ctx, apps)
+	configs := make(map[string]*extractor.Config)
+	for _, app := range apps {
+		cfg, err := ext.Extract(ctx, app)
+		if err != nil {
+			fmt.Printf("Failed to extract %s: %v\n", app, err)
+			continue
+		}
+		configs[app] = cfg
+	}
 
 	// Save results
 	saved := 0

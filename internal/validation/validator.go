@@ -44,6 +44,10 @@ type FieldRule struct {
 	ConflictsWith []string    `json:"conflicts_with,omitempty"` // Fields that cannot be set together
 	Format        string      `json:"format,omitempty"`         // Format specification (email, url, etc.)
 	Custom        *CustomRule `json:"custom,omitempty"`         // Custom validation rule
+	
+	// Performance optimization: cached enum map for O(1) lookups
+	enumMap       map[string]struct{} `json:"-"` // Cached for fast validation
+	compiledRegex *regexp.Regexp      `json:"-"` // Pre-compiled regex
 }
 
 // GlobalRules defines global validation rules
@@ -154,6 +158,11 @@ func (v *Validator) LoadSchema(schemaPath string) error {
 		schema.Name = strings.TrimSuffix(filepath.Base(schemaPath), filepath.Ext(schemaPath))
 	}
 
+	// Optimize schema for performance
+	if err := optimizeSchema(&schema); err != nil {
+		return fmt.Errorf("failed to optimize schema: %w", err)
+	}
+	
 	v.schemas[schema.Name] = &schema
 	return nil
 }
@@ -183,7 +192,29 @@ func (v *Validator) LoadSchemasFromDir(dir string) error {
 
 // RegisterSchema registers a schema programmatically
 func (v *Validator) RegisterSchema(schema *Schema) {
+	// Optimize the schema by pre-computing expensive operations
+	v.optimizeSchema(schema)
 	v.schemas[schema.Name] = schema
+}
+
+// optimizeSchema pre-computes expensive operations for better performance
+func (v *Validator) optimizeSchema(schema *Schema) {
+	for _, rule := range schema.Fields {
+		// Pre-build enum map for O(1) lookups
+		if len(rule.Enum) > 0 {
+			rule.enumMap = make(map[string]struct{}, len(rule.Enum))
+			for _, enum := range rule.Enum {
+				rule.enumMap[enum] = struct{}{}
+			}
+		}
+		
+		// Pre-compile regex patterns
+		if rule.Pattern != "" {
+			if compiled, err := regexp.Compile(rule.Pattern); err == nil {
+				rule.compiledRegex = compiled
+			}
+		}
+	}
 }
 
 // ValidateAppConfig validates an application configuration
@@ -261,7 +292,12 @@ func (v *Validator) ValidateField(appName string, fieldName string, value interf
 
 // validateBasic performs basic validation without schema
 func (v *Validator) validateBasic(appConfig *config.AppConfig) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	// Pre-allocate error slice for better performance
+	result := &ValidationResult{
+		Valid:    true,
+		Errors:   make([]*ValidationError, 0, 8),   // Pre-allocate for common error count
+		Warnings: make([]*ValidationError, 0, 4),   // Pre-allocate for warnings
+	}
 
 	// Check required fields
 	if appConfig.Name == "" {
@@ -532,17 +568,20 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 		return result // Don't continue if type is wrong
 	}
 
-	// Enum validation for choice types
+	// Enum validation for choice types - optimized with pre-built hashmap O(1) lookup
 	if rule.Type == "choice" && len(rule.Enum) > 0 {
 		strValue := fmt.Sprintf("%v", value)
-		valid := false
-		for _, enum := range rule.Enum {
-			if enum == strValue {
-				valid = true
-				break
+		
+		// Use pre-built enumMap for O(1) lookup, fallback to building if not cached
+		enumMap := rule.enumMap
+		if enumMap == nil {
+			enumMap = make(map[string]struct{}, len(rule.Enum))
+			for _, enum := range rule.Enum {
+				enumMap[enum] = struct{}{}
 			}
 		}
-		if !valid {
+		
+		if _, valid := enumMap[strValue]; !valid {
 			result.Errors = append(result.Errors, &ValidationError{
 				Field:   fieldName,
 				Value:   value,
@@ -578,9 +617,19 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 			result.Valid = false
 		}
 
-		// Pattern validation
+		// Pattern validation - optimized with pre-compiled regex
 		if rule.Pattern != "" {
-			matched, err := regexp.MatchString(rule.Pattern, strValue)
+			var matched bool
+			var err error
+			
+			// Use pre-compiled regex if available for better performance
+			if rule.compiledRegex != nil {
+				matched = rule.compiledRegex.MatchString(strValue)
+			} else {
+				// Fallback to runtime compilation (slower)
+				matched, err = regexp.MatchString(rule.Pattern, strValue)
+			}
+			
 			if err != nil {
 				result.Warnings = append(result.Warnings, &ValidationError{
 					Field:   fieldName,
@@ -1319,4 +1368,32 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 	}
 	
 	return result
+}
+
+
+// optimizeSchema pre-processes schema for optimal validation performance
+func optimizeSchema(schema *Schema) error {
+	for fieldName, rule := range schema.Fields {
+		// Pre-build enum map for O(1) lookups
+		if len(rule.Enum) > 0 {
+			rule.enumMap = make(map[string]struct{}, len(rule.Enum))
+			for _, val := range rule.Enum {
+				rule.enumMap[val] = struct{}{}
+			}
+		}
+		
+		// Pre-compile regex patterns
+		if rule.Pattern \!= "" {
+			compiled, err := regexp.Compile(rule.Pattern)
+			if err \!= nil {
+				return fmt.Errorf("invalid regex pattern for field %s: %w", fieldName, err)
+			}
+			rule.compiledRegex = compiled
+		}
+		
+		// Update the rule in the schema
+		schema.Fields[fieldName] = rule
+	}
+	
+	return nil
 }

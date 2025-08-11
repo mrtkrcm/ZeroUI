@@ -80,12 +80,17 @@ func (m *HuhGridModel) buildGridForm() {
 			statusText = fmt.Sprintf("[%s]", strings.Join(statusIcons, ""))
 		}
 		
-		// Multi-line label for better grid presentation
-		label := fmt.Sprintf("%s %s\n%s %s", 
-			status.Definition.Logo, 
-			status.Definition.Name,
-			statusText,
-			status.Definition.Category)
+		// Multi-line label for better grid presentation with string builder
+		var labelBuilder strings.Builder
+		labelBuilder.Grow(64) // Pre-allocate space to reduce allocations
+		labelBuilder.WriteString(status.Definition.Logo)
+		labelBuilder.WriteByte(' ')
+		labelBuilder.WriteString(status.Definition.Name)
+		labelBuilder.WriteByte('\n')
+		labelBuilder.WriteString(statusText)
+		labelBuilder.WriteByte(' ')
+		labelBuilder.WriteString(status.Definition.Category)
+		label := labelBuilder.String()
 		
 		options = append(options, huh.NewOption(label, status.Definition.Name))
 	}

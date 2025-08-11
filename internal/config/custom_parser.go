@@ -20,7 +20,20 @@ func ParseGhosttyConfig(configPath string) (*koanf.Koanf, error) {
 	}
 	defer file.Close()
 
+	// Optimize buffer size based on file size for better I/O performance
+	fileInfo, _ := file.Stat()
 	scanner := bufio.NewScanner(file)
+	
+	if fileInfo != nil {
+		// Use adaptive buffer sizing: quarter of file size, max 64KB, min 4KB
+		bufSize := int(fileInfo.Size() / 4)
+		if bufSize > 64*1024 {
+			bufSize = 64 * 1024
+		} else if bufSize < 4*1024 {
+			bufSize = 4 * 1024
+		}
+		scanner.Buffer(make([]byte, 0, bufSize), bufSize)
+	}
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 

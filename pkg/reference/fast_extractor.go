@@ -193,7 +193,15 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 	}
 
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024) // 64KB initial, 1MB max
+	// Use buffer pool to reduce allocations
+	buf := e.bufferPool.Get().([]byte)
+	defer func() {
+		// Reset buffer before returning to pool
+		buf = buf[:0]
+		e.bufferPool.Put(buf)
+	}()
+	
+	scanner.Buffer(buf[:cap(buf)], 2*1024*1024) // Use pooled buffer, 2MB max for large configs
 
 	var currentKey string
 	var descBuilder strings.Builder
