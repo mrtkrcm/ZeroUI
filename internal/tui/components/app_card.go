@@ -43,8 +43,8 @@ func NewAppCard(status registry.AppStatus) *AppCardModel {
 	
 	return &AppCardModel{
 		Status:        status,
-		Width:         28,
-		Height:        12,
+		Width:         30, // Rectangular: 30 wide (default)
+		Height:        10, // Rectangular: 10 tall (default)
 		styles:        styles.GetStyles(),
 		cacheDuration: 100 * time.Millisecond, // Cache for 100ms for 60fps
 		spinner:       s,
@@ -107,13 +107,13 @@ func (m *AppCardModel) View() string {
 
 // renderCard performs the actual rendering with advanced effects
 func (m *AppCardModel) renderCard() string {
-	// Ensure perfect square dimensions
+	// Get advanced card styling for rectangular cards
 	cardStyle := m.getAdvancedCardStyle()
 	
-	// Build card content with perfect spacing
+	// Build card content with perfect spacing optimized for rectangular shape
 	var lines []string
 	
-	// Top spacing for perfect centering
+	// Top spacing - less for rectangular cards
 	lines = append(lines, "")
 	
 	// Loading spinner or logo
@@ -124,13 +124,13 @@ func (m *AppCardModel) renderCard() string {
 			Render(m.spinner.View())
 		lines = append(lines, spinnerLine)
 	} else {
-		// Enhanced logo with size scaling
+		// Enhanced logo with size scaling for rectangular cards
 		logoStyle := m.getLogoStyle().
 			Bold(true).
 			Width(m.Width - 4).
 			Align(lipgloss.Center)
 			
-		// Scale logo size based on card dimensions
+		// Scale logo size based on card width (rectangular optimization)
 		logoText := m.Status.Definition.Logo
 		if m.Width > 32 {
 			logoText = logoText + " " + logoText // Double for larger cards
@@ -139,9 +139,7 @@ func (m *AppCardModel) renderCard() string {
 		lines = append(lines, logoStyle.Render(logoText))
 	}
 	
-	lines = append(lines, "")
-	
-	// App name with gradient effect
+	// App name with gradient effect - more prominent for rectangular cards
 	nameStyle := m.getNameStyle().
 		Bold(true).
 		Width(m.Width - 4).
@@ -154,7 +152,7 @@ func (m *AppCardModel) renderCard() string {
 	
 	lines = append(lines, nameStyle.Render(m.Status.Definition.Name))
 	
-	// Category with improved styling
+	// Category with improved styling - compact for rectangular cards
 	categoryStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("242")).
 		Italic(true).
@@ -166,19 +164,18 @@ func (m *AppCardModel) renderCard() string {
 	}
 	
 	lines = append(lines, categoryStyle.Render(m.Status.Definition.Category))
-	lines = append(lines, "")
 	
 	// Status indicators with icons
 	statusLine := m.buildEnhancedStatusLine()
 	lines = append(lines, statusLine)
 	
-	// Bottom spacing for perfect centering
+	// Bottom spacing - minimal for rectangular cards
 	lines = append(lines, "")
 	
-	// Join all lines with perfect spacing
+	// Join all lines with optimized spacing for rectangular shape
 	content := lipgloss.JoinVertical(lipgloss.Center, lines...)
 	
-	// Apply advanced card styling with exact dimensions
+	// Apply advanced card styling with exact rectangular dimensions
 	card := cardStyle.
 		Width(m.Width).
 		Height(m.Height).
@@ -188,9 +185,9 @@ func (m *AppCardModel) renderCard() string {
 	return card
 }
 
-// getAdvancedCardStyle returns enhanced styling with effects and perfect dimensions
+// getAdvancedCardStyle returns enhanced styling with effects and perfect rectangular dimensions
 func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
-	// Base style with perfect square enforcement
+	// Base style with rectangular card optimization
 	baseStyle := lipgloss.NewStyle().
 		Padding(1, 2).
 		Border(lipgloss.RoundedBorder()).
@@ -313,21 +310,19 @@ func (m *AppCardModel) SetFocused(focused bool) {
 	m.Focused = focused
 }
 
-// SetSize sets the card dimensions and enforces perfect squares
+// SetSize sets the card dimensions as rectangular (width x height)
 func (m *AppCardModel) SetSize(width, height int) {
-	// Enforce perfect square dimensions
-	size := width
-	if height < width {
-		size = height
-	}
+	// Use provided dimensions directly for rectangular cards
+	m.Width = width
+	m.Height = height
 	
 	// Ensure minimum viable size
-	if size < 12 {
-		size = 12
+	if m.Width < 24 {
+		m.Width = 24
 	}
-	
-	m.Width = size
-	m.Height = size
+	if m.Height < 8 {
+		m.Height = 8
+	}
 	
 	// Invalidate cache when size changes
 	m.invalidateCache()

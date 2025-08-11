@@ -56,9 +56,11 @@ func (s *StaticConfigLoader) parseConfigFile(appName, filename string, data []by
 		return nil, fmt.Errorf("failed to parse %s: %w", filename, err)
 	}
 
-	// Set metadata
-	ref.AppName = appName
+	// Set timestamp and ensure app name is set (in case YAML didn't have it)
 	ref.LastUpdated = time.Now()
+	if ref.AppName == "" {
+		ref.AppName = appName
+	}
 
 	return &ref, nil
 }

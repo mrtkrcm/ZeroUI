@@ -9,15 +9,21 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
+// ConfigLoader interface to support different loader types
+type ConfigLoader interface {
+	LoadAppConfig(appName string) (*config.AppConfig, error)
+	ListApps() ([]string, error)
+}
+
 // ConfigService provides high-level configuration management operations
 type ConfigService struct {
 	engine *toggle.Engine
-	loader *config.Loader
+	loader ConfigLoader
 	logger *logger.Logger
 }
 
 // NewConfigService creates a new config service
-func NewConfigService(engine *toggle.Engine, loader *config.Loader, log *logger.Logger) *ConfigService {
+func NewConfigService(engine *toggle.Engine, loader ConfigLoader, log *logger.Logger) *ConfigService {
 	return &ConfigService{
 		engine: engine,
 		loader: loader,

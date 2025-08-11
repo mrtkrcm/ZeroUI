@@ -3,153 +3,1075 @@ config_path: "~/.config/zed/settings.json"
 config_type: "json"
 
 settings:
-  theme:
-    name: "theme"
+  # Theme and Appearance
+  theme.mode:
+    name: "theme.mode"
+    type: "choice"
+    description: "Theme mode selection"
+    valid_values: ["system", "light", "dark"]
+    default_value: "system"
+    category: "appearance"
+  
+  theme.light:
+    name: "theme.light"
     type: "string"
-    description: "The color theme for the editor interface."
-    example: "One Dark"
+    description: "Light theme name"
+    default_value: "One Light"
+    category: "appearance"
+  
+  theme.dark:
+    name: "theme.dark"
+    type: "string"
+    description: "Dark theme name"
+    default_value: "One Dark"
+    category: "appearance"
+  
+  icon_theme:
+    name: "icon_theme"
+    type: "string"
+    description: "Icon theme for the editor"
+    default_value: "Zed (Default)"
     category: "appearance"
 
+  # Font Settings
   buffer_font_family:
     name: "buffer_font_family"
     type: "string"
-    description: "The font family for editor text."
+    description: "The font family for editor text"
     default_value: "Zed Plex Mono"
-    example: "JetBrains Mono"
     category: "font"
-
+  
   buffer_font_size:
     name: "buffer_font_size"
     type: "number"
-    description: "The font size for editor text in pixels."
+    description: "The font size for editor text in pixels"
     default_value: 15
-    example: 16
+    category: "font"
+  
+  buffer_font_weight:
+    name: "buffer_font_weight"
+    type: "number"
+    description: "The weight of the editor font (100-900)"
+    default_value: 400
+    category: "font"
+  
+  buffer_line_height:
+    name: "buffer_line_height"
+    type: "choice"
+    description: "Line height for editor text"
+    valid_values: ["comfortable", "standard", "custom"]
+    default_value: "comfortable"
+    category: "font"
+  
+  buffer_font_features:
+    name: "buffer_font_features"
+    type: "object"
+    description: "OpenType features for editor font"
+    category: "font"
+  
+  buffer_font_fallbacks:
+    name: "buffer_font_fallbacks"
+    type: "array"
+    description: "Fallback fonts for editor text"
     category: "font"
 
+  ui_font_family:
+    name: "ui_font_family"
+    type: "string"
+    description: "The font family for UI elements"
+    default_value: "Zed Plex Sans"
+    category: "font"
+  
   ui_font_size:
     name: "ui_font_size"
     type: "number"
-    description: "The font size for UI elements in pixels."
+    description: "The font size for UI elements in pixels"
     default_value: 16
-    example: 18
+    category: "font"
+  
+  ui_font_weight:
+    name: "ui_font_weight"
+    type: "number"
+    description: "The weight of the UI font (100-900)"
+    default_value: 400
+    category: "font"
+  
+  ui_font_features:
+    name: "ui_font_features"
+    type: "object"
+    description: "OpenType features for UI font"
+    category: "font"
+  
+  agent_font_size:
+    name: "agent_font_size"
+    type: "number"
+    description: "The font size for agent panel text"
+    default_value: 16
     category: "font"
 
+  # Editor Behavior
   base_keymap:
     name: "base_keymap"
-    type: "string"
-    description: "Base keymap to use for key bindings."
+    type: "choice"
+    description: "Base keymap to use for key bindings"
     valid_values: ["VSCode", "Atom", "JetBrains", "None", "SublimeText", "TextMate"]
     default_value: "VSCode"
-    category: "keybinds"
-
+    category: "keybindings"
+  
   vim_mode:
     name: "vim_mode"
     type: "boolean"
-    description: "Enable Vim key bindings."
+    description: "Enable Vim key bindings"
     default_value: false
-    category: "behavior"
+    category: "keybindings"
+  
+  helix_mode:
+    name: "helix_mode"
+    type: "boolean"
+    description: "Enable Helix key bindings"
+    default_value: false
+    category: "keybindings"
 
-  autosave:
-    name: "autosave"
-    type: "string"
-    description: "When to automatically save files."
-    valid_values: ["off", "on_focus_change", "on_window_change", "after_delay"]
-    default_value: "off"
-    category: "behavior"
-
-  tab_size:
-    name: "tab_size"
-    type: "number"
-    description: "Number of spaces per tab."
-    default_value: 4
-    example: 2
+  # Cursor and Editing
+  cursor_blink:
+    name: "cursor_blink"
+    type: "boolean"
+    description: "Whether the cursor blinks in the editor"
+    default_value: true
+    category: "editor"
+  
+  cursor_shape:
+    name: "cursor_shape"
+    type: "choice"
+    description: "Cursor shape for the editor"
+    valid_values: ["bar", "block", "underline", "hollow"]
+    category: "editor"
+  
+  hide_mouse:
+    name: "hide_mouse"
+    type: "choice"
+    description: "When to hide the mouse cursor"
+    valid_values: ["never", "on_typing", "on_typing_and_movement"]
+    default_value: "on_typing_and_movement"
+    category: "editor"
+  
+  current_line_highlight:
+    name: "current_line_highlight"
+    type: "choice"
+    description: "How to highlight the current line"
+    valid_values: ["none", "gutter", "line", "all"]
+    default_value: "all"
+    category: "editor"
+  
+  selection_highlight:
+    name: "selection_highlight"
+    type: "boolean"
+    description: "Highlight all occurrences of selected text"
+    default_value: true
     category: "editor"
 
+  # Completion and Language Support
+  show_completions_on_input:
+    name: "show_completions_on_input"
+    type: "boolean"
+    description: "Show completions while typing"
+    default_value: true
+    category: "language"
+  
+  show_completion_documentation:
+    name: "show_completion_documentation"
+    type: "boolean"
+    description: "Show documentation in completions menu"
+    default_value: true
+    category: "language"
+  
+  auto_signature_help:
+    name: "auto_signature_help"
+    type: "boolean"
+    description: "Show method signatures in parentheses"
+    default_value: false
+    category: "language"
+  
+  show_signature_help_after_edits:
+    name: "show_signature_help_after_edits"
+    type: "boolean"
+    description: "Show signature help after completion"
+    default_value: false
+    category: "language"
+  
+  inline_code_actions:
+    name: "inline_code_actions"
+    type: "boolean"
+    description: "Show code action button at start of line"
+    default_value: true
+    category: "language"
+  
+  snippet_sort_order:
+    name: "snippet_sort_order"
+    type: "choice"
+    description: "How to sort snippets in completions"
+    valid_values: ["top", "inline", "bottom", "none"]
+    default_value: "inline"
+    category: "language"
+
+  # Inlay Hints
+  inlay_hints.enabled:
+    name: "inlay_hints.enabled"
+    type: "boolean"
+    description: "Global switch for inlay hints"
+    default_value: false
+    category: "language"
+  
+  inlay_hints.show_type_hints:
+    name: "inlay_hints.show_type_hints"
+    type: "boolean"
+    description: "Show type hints"
+    default_value: true
+    category: "language"
+  
+  inlay_hints.show_parameter_hints:
+    name: "inlay_hints.show_parameter_hints"
+    type: "boolean"
+    description: "Show parameter hints"
+    default_value: true
+    category: "language"
+  
+  inlay_hints.show_other_hints:
+    name: "inlay_hints.show_other_hints"
+    type: "boolean"
+    description: "Show other hints"
+    default_value: true
+    category: "language"
+  
+  inlay_hints.show_background:
+    name: "inlay_hints.show_background"
+    type: "boolean"
+    description: "Show background for inlay hints"
+    default_value: false
+    category: "language"
+  
+  inlay_hints.edit_debounce_ms:
+    name: "inlay_hints.edit_debounce_ms"
+    type: "number"
+    description: "Debounce time for hint requests after editing"
+    default_value: 700
+    category: "language"
+
+  # Formatting
+  format_on_save:
+    name: "format_on_save"
+    type: "choice"
+    description: "Format buffer before saving"
+    valid_values: ["on", "off", "prettier", "language_server"]
+    default_value: "on"
+    category: "formatting"
+  
+  formatter:
+    name: "formatter"
+    type: "choice"
+    description: "How to perform buffer format"
+    valid_values: ["auto", "language_server", "prettier", "external"]
+    default_value: "auto"
+    category: "formatting"
+  
+  remove_trailing_whitespace_on_save:
+    name: "remove_trailing_whitespace_on_save"
+    type: "boolean"
+    description: "Remove trailing whitespace on save"
+    default_value: true
+    category: "formatting"
+  
+  ensure_final_newline_on_save:
+    name: "ensure_final_newline_on_save"
+    type: "boolean"
+    description: "Ensure file ends with newline"
+    default_value: true
+    category: "formatting"
+  
+  extend_comment_on_newline:
+    name: "extend_comment_on_newline"
+    type: "boolean"
+    description: "Continue comments on new lines"
+    default_value: true
+    category: "formatting"
+  
   hard_tabs:
     name: "hard_tabs"
     type: "boolean"
-    description: "Use tab characters instead of spaces."
+    description: "Use tabs instead of spaces"
+    default_value: false
+    category: "formatting"
+  
+  tab_size:
+    name: "tab_size"
+    type: "number"
+    description: "Number of spaces per tab"
+    default_value: 4
+    category: "formatting"
+  
+  soft_wrap:
+    name: "soft_wrap"
+    type: "choice"
+    description: "How to soft-wrap long lines"
+    valid_values: ["none", "editor_width", "preferred_line_length", "bounded"]
+    default_value: "none"
+    category: "formatting"
+  
+  preferred_line_length:
+    name: "preferred_line_length"
+    type: "number"
+    description: "Preferred line length for wrapping"
+    default_value: 80
+    category: "formatting"
+
+  # Auto Features
+  use_autoclose:
+    name: "use_autoclose"
+    type: "boolean"
+    description: "Auto-close brackets and quotes"
+    default_value: true
+    category: "editor"
+  
+  use_auto_surround:
+    name: "use_auto_surround"
+    type: "boolean"
+    description: "Auto-surround selected text"
+    default_value: true
+    category: "editor"
+  
+  auto_indent_on_paste:
+    name: "auto_indent_on_paste"
+    type: "boolean"
+    description: "Adjust indentation when pasting"
+    default_value: true
+    category: "editor"
+  
+  always_treat_brackets_as_autoclosed:
+    name: "always_treat_brackets_as_autoclosed"
+    type: "boolean"
+    description: "Always skip over closing brackets"
+    default_value: false
+    category: "editor"
+  
+  use_on_type_format:
+    name: "use_on_type_format"
+    type: "boolean"
+    description: "Format on trigger characters"
+    default_value: true
+    category: "formatting"
+
+  # Scrolling
+  scroll_beyond_last_line:
+    name: "scroll_beyond_last_line"
+    type: "choice"
+    description: "Scroll beyond the last line"
+    valid_values: ["one_page", "off"]
+    default_value: "one_page"
+    category: "editor"
+  
+  vertical_scroll_margin:
+    name: "vertical_scroll_margin"
+    type: "number"
+    description: "Lines to keep above/below cursor"
+    default_value: 3
+    category: "editor"
+  
+  horizontal_scroll_margin:
+    name: "horizontal_scroll_margin"
+    type: "number"
+    description: "Characters to keep on sides when scrolling"
+    default_value: 5
+    category: "editor"
+  
+  scroll_sensitivity:
+    name: "scroll_sensitivity"
+    type: "number"
+    description: "Scroll sensitivity multiplier"
+    default_value: 1.0
+    category: "editor"
+  
+  fast_scroll_sensitivity:
+    name: "fast_scroll_sensitivity"
+    type: "number"
+    description: "Fast scroll sensitivity (with Alt)"
+    default_value: 4.0
+    category: "editor"
+  
+  autoscroll_on_clicks:
+    name: "autoscroll_on_clicks"
+    type: "boolean"
+    description: "Scroll when clicking near edge"
     default_value: false
     category: "editor"
 
-  show_whitespaces:
-    name: "show_whitespaces"
-    type: "string"
-    description: "When to show whitespace characters."
-    valid_values: ["none", "selection", "all"]
-    default_value: "none"
-    category: "editor"
-
-  wrap_guides:
-    name: "wrap_guides"
-    type: "array"
-    description: "Column positions to show wrap guides."
-    example: [80, 120]
-    category: "editor"
-
-  auto_update:
-    name: "auto_update"
+  # Git Integration
+  git.git_gutter:
+    name: "git.git_gutter"
+    type: "choice"
+    description: "Show git gutter"
+    valid_values: ["tracked_files", "hide"]
+    default_value: "tracked_files"
+    category: "git"
+  
+  git.inline_blame.enabled:
+    name: "git.inline_blame.enabled"
     type: "boolean"
-    description: "Enable automatic updates."
+    description: "Show inline git blame"
     default_value: true
-    category: "behavior"
-
-  telemetry:
-    name: "telemetry"
+    category: "git"
+  
+  git.inline_blame.delay_ms:
+    name: "git.inline_blame.delay_ms"
+    type: "number"
+    description: "Delay before showing inline blame"
+    default_value: 0
+    category: "git"
+  
+  git.inline_blame.show_commit_summary:
+    name: "git.inline_blame.show_commit_summary"
     type: "boolean"
-    description: "Enable telemetry data collection."
-    default_value: true
-    category: "behavior"
+    description: "Show commit summary in inline blame"
+    default_value: false
+    category: "git"
+  
+  git.hunk_style:
+    name: "git.hunk_style"
+    type: "choice"
+    description: "How to display git hunks"
+    valid_values: ["staged_hollow", "unstaged_hollow"]
+    default_value: "staged_hollow"
+    category: "git"
 
-  project_panel:
-    name: "project_panel"
-    type: "object"
-    description: "Configuration for the project panel."
+  # Panels
+  project_panel.button:
+    name: "project_panel.button"
+    type: "boolean"
+    description: "Show project panel button in status bar"
+    default_value: true
+    category: "ui"
+  
+  project_panel.dock:
+    name: "project_panel.dock"
+    type: "choice"
+    description: "Where to dock the project panel"
+    valid_values: ["left", "right"]
+    default_value: "left"
+    category: "ui"
+  
+  project_panel.default_width:
+    name: "project_panel.default_width"
+    type: "number"
+    description: "Default width of project panel"
+    default_value: 240
+    category: "ui"
+  
+  project_panel.file_icons:
+    name: "project_panel.file_icons"
+    type: "boolean"
+    description: "Show file icons in project panel"
+    default_value: true
+    category: "ui"
+  
+  project_panel.folder_icons:
+    name: "project_panel.folder_icons"
+    type: "boolean"
+    description: "Show folder icons in project panel"
+    default_value: true
+    category: "ui"
+  
+  project_panel.git_status:
+    name: "project_panel.git_status"
+    type: "boolean"
+    description: "Show git status in project panel"
+    default_value: true
+    category: "ui"
+  
+  project_panel.auto_reveal_entries:
+    name: "project_panel.auto_reveal_entries"
+    type: "boolean"
+    description: "Auto-reveal active file in project panel"
+    default_value: true
+    category: "ui"
+  
+  project_panel.auto_fold_dirs:
+    name: "project_panel.auto_fold_dirs"
+    type: "boolean"
+    description: "Auto-fold single-child directories"
+    default_value: true
     category: "ui"
 
-  terminal:
-    name: "terminal"
-    type: "object"
-    description: "Integrated terminal configuration."
-    category: "terminal"
-
-  lsp:
-    name: "lsp"
-    type: "object"
-    description: "Language server configuration."
-    category: "language"
-
-  file_scan_exclusions:
-    name: "file_scan_exclusions"
-    type: "array"
-    description: "Patterns for files to exclude from scanning."
-    example: ["**/.git", "**/node_modules"]
-    category: "files"
-
-  format_on_save:
-    name: "format_on_save"
+  outline_panel.button:
+    name: "outline_panel.button"
     type: "boolean"
-    description: "Format files automatically on save."
+    description: "Show outline panel button in status bar"
+    default_value: true
+    category: "ui"
+  
+  outline_panel.dock:
+    name: "outline_panel.dock"
+    type: "choice"
+    description: "Where to dock the outline panel"
+    valid_values: ["left", "right"]
+    default_value: "left"
+    category: "ui"
+  
+  outline_panel.default_width:
+    name: "outline_panel.default_width"
+    type: "number"
+    description: "Default width of outline panel"
+    default_value: 300
+    category: "ui"
+
+  chat_panel.button:
+    name: "chat_panel.button"
+    type: "choice"
+    description: "When to show chat panel button"
+    valid_values: ["never", "always", "when_in_call"]
+    default_value: "when_in_call"
+    category: "ui"
+  
+  chat_panel.dock:
+    name: "chat_panel.dock"
+    type: "choice"
+    description: "Where to dock the chat panel"
+    valid_values: ["left", "right"]
+    default_value: "right"
+    category: "ui"
+
+  # Agent/AI
+  agent.enabled:
+    name: "agent.enabled"
+    type: "boolean"
+    description: "Enable AI agent features"
+    default_value: true
+    category: "ai"
+  
+  agent.button:
+    name: "agent.button"
+    type: "boolean"
+    description: "Show agent button in status bar"
+    default_value: true
+    category: "ai"
+  
+  agent.dock:
+    name: "agent.dock"
+    type: "choice"
+    description: "Where to dock the agent panel"
+    valid_values: ["left", "right", "bottom"]
+    default_value: "right"
+    category: "ai"
+  
+  agent.default_width:
+    name: "agent.default_width"
+    type: "number"
+    description: "Default width of agent panel"
+    default_value: 640
+    category: "ai"
+  
+  agent.default_height:
+    name: "agent.default_height"
+    type: "number"
+    description: "Default height when docked to bottom"
+    default_value: 320
+    category: "ai"
+  
+  agent.stream_edits:
+    name: "agent.stream_edits"
+    type: "boolean"
+    description: "Stream agent edits"
+    default_value: false
+    category: "ai"
+  
+  agent.single_file_review:
+    name: "agent.single_file_review"
+    type: "boolean"
+    description: "Display edits in single-file editors"
+    default_value: true
+    category: "ai"
+  
+  disable_ai:
+    name: "disable_ai"
+    type: "boolean"
+    description: "Disable all AI features"
+    default_value: false
+    category: "ai"
+
+  # Tabs
+  tab_bar.show:
+    name: "tab_bar.show"
+    type: "boolean"
+    description: "Show the tab bar"
+    default_value: true
+    category: "ui"
+  
+  tab_bar.show_nav_history_buttons:
+    name: "tab_bar.show_nav_history_buttons"
+    type: "boolean"
+    description: "Show navigation history buttons"
+    default_value: true
+    category: "ui"
+  
+  tabs.git_status:
+    name: "tabs.git_status"
+    type: "boolean"
+    description: "Show git status colors in tabs"
+    default_value: false
+    category: "ui"
+  
+  tabs.close_position:
+    name: "tabs.close_position"
+    type: "choice"
+    description: "Position of close button on tabs"
+    valid_values: ["right", "left", "hidden"]
+    default_value: "right"
+    category: "ui"
+  
+  tabs.file_icons:
+    name: "tabs.file_icons"
+    type: "boolean"
+    description: "Show file icons in tabs"
+    default_value: false
+    category: "ui"
+  
+  tabs.show_close_button:
+    name: "tabs.show_close_button"
+    type: "choice"
+    description: "When to show tab close button"
+    valid_values: ["hover", "always", "hidden"]
+    default_value: "hover"
+    category: "ui"
+  
+  max_tabs:
+    name: "max_tabs"
+    type: "number"
+    description: "Maximum tabs per pane (null for unlimited)"
+    category: "ui"
+
+  preview_tabs.enabled:
+    name: "preview_tabs.enabled"
+    type: "boolean"
+    description: "Enable preview tabs"
+    default_value: true
+    category: "ui"
+  
+  preview_tabs.enable_preview_from_file_finder:
+    name: "preview_tabs.enable_preview_from_file_finder"
+    type: "boolean"
+    description: "Open file finder results as preview"
+    default_value: false
+    category: "ui"
+  
+  preview_tabs.enable_preview_from_code_navigation:
+    name: "preview_tabs.enable_preview_from_code_navigation"
+    type: "boolean"
+    description: "Open navigation results as preview"
+    default_value: false
+    category: "ui"
+
+  # Scrollbar
+  scrollbar.show:
+    name: "scrollbar.show"
+    type: "choice"
+    description: "When to show scrollbar"
+    valid_values: ["auto", "system", "always", "never"]
+    default_value: "auto"
+    category: "ui"
+  
+  scrollbar.cursors:
+    name: "scrollbar.cursors"
+    type: "boolean"
+    description: "Show cursor positions in scrollbar"
+    default_value: true
+    category: "ui"
+  
+  scrollbar.git_diff:
+    name: "scrollbar.git_diff"
+    type: "boolean"
+    description: "Show git diff in scrollbar"
+    default_value: true
+    category: "ui"
+  
+  scrollbar.search_results:
+    name: "scrollbar.search_results"
+    type: "boolean"
+    description: "Show search results in scrollbar"
+    default_value: true
+    category: "ui"
+  
+  scrollbar.selected_text:
+    name: "scrollbar.selected_text"
+    type: "boolean"
+    description: "Show selected text in scrollbar"
+    default_value: true
+    category: "ui"
+  
+  scrollbar.diagnostics:
+    name: "scrollbar.diagnostics"
+    type: "choice"
+    description: "Which diagnostics to show in scrollbar"
+    valid_values: ["none", "error", "warning", "information", "all"]
+    default_value: "all"
+    category: "ui"
+
+  # Minimap
+  minimap.show:
+    name: "minimap.show"
+    type: "choice"
+    description: "When to show minimap"
+    valid_values: ["never", "auto", "always"]
+    default_value: "never"
+    category: "ui"
+  
+  minimap.display_in:
+    name: "minimap.display_in"
+    type: "choice"
+    description: "Where to show minimap"
+    valid_values: ["active_editor", "all_editors"]
+    default_value: "active_editor"
+    category: "ui"
+  
+  minimap.thumb:
+    name: "minimap.thumb"
+    type: "choice"
+    description: "When to show minimap thumb"
+    valid_values: ["hover", "always"]
+    default_value: "always"
+    category: "ui"
+  
+  minimap.max_width_columns:
+    name: "minimap.max_width_columns"
+    type: "number"
+    description: "Maximum columns in minimap"
+    default_value: 80
+    category: "ui"
+
+  # Gutter
+  gutter.line_numbers:
+    name: "gutter.line_numbers"
+    type: "boolean"
+    description: "Show line numbers"
+    default_value: true
+    category: "editor"
+  
+  gutter.runnables:
+    name: "gutter.runnables"
+    type: "boolean"
+    description: "Show runnable buttons"
+    default_value: true
+    category: "editor"
+  
+  gutter.breakpoints:
+    name: "gutter.breakpoints"
+    type: "boolean"
+    description: "Show breakpoints"
+    default_value: true
+    category: "editor"
+  
+  gutter.folds:
+    name: "gutter.folds"
+    type: "boolean"
+    description: "Show fold buttons"
+    default_value: true
+    category: "editor"
+  
+  relative_line_numbers:
+    name: "relative_line_numbers"
+    type: "boolean"
+    description: "Use relative line numbers"
     default_value: false
     category: "editor"
 
+  # Indent Guides
+  indent_guides.enabled:
+    name: "indent_guides.enabled"
+    type: "boolean"
+    description: "Show indent guides"
+    default_value: true
+    category: "editor"
+  
+  indent_guides.line_width:
+    name: "indent_guides.line_width"
+    type: "number"
+    description: "Width of indent guide lines"
+    default_value: 1
+    category: "editor"
+  
+  indent_guides.active_line_width:
+    name: "indent_guides.active_line_width"
+    type: "number"
+    description: "Width of active indent guide"
+    default_value: 1
+    category: "editor"
+  
+  indent_guides.coloring:
+    name: "indent_guides.coloring"
+    type: "choice"
+    description: "How to color indent guides"
+    valid_values: ["disabled", "fixed", "indent_aware"]
+    default_value: "fixed"
+    category: "editor"
+
+  # Diagnostics
+  diagnostics.button:
+    name: "diagnostics.button"
+    type: "boolean"
+    description: "Show diagnostics button in status bar"
+    default_value: true
+    category: "diagnostics"
+  
+  diagnostics.include_warnings:
+    name: "diagnostics.include_warnings"
+    type: "boolean"
+    description: "Include warnings in diagnostics"
+    default_value: true
+    category: "diagnostics"
+  
+  diagnostics_max_severity:
+    name: "diagnostics_max_severity"
+    type: "choice"
+    description: "Maximum severity to display"
+    valid_values: ["off", "error", "warning", "info", "hint", "null"]
+    category: "diagnostics"
+  
+  lsp_document_colors:
+    name: "lsp_document_colors"
+    type: "choice"
+    description: "How to render document colors"
+    valid_values: ["none", "inlay", "border", "background"]
+    default_value: "inlay"
+    category: "language"
+
+  # Search
+  search.button:
+    name: "search.button"
+    type: "boolean"
+    description: "Show search button in status bar"
+    default_value: true
+    category: "search"
+  
+  search.whole_word:
+    name: "search.whole_word"
+    type: "boolean"
+    description: "Search whole words by default"
+    default_value: false
+    category: "search"
+  
+  search.case_sensitive:
+    name: "search.case_sensitive"
+    type: "boolean"
+    description: "Case-sensitive search by default"
+    default_value: false
+    category: "search"
+  
+  search.regex:
+    name: "search.regex"
+    type: "boolean"
+    description: "Use regex search by default"
+    default_value: false
+    category: "search"
+  
+  search_wrap:
+    name: "search_wrap"
+    type: "boolean"
+    description: "Wrap search at end of file"
+    default_value: true
+    category: "search"
+  
+  seed_search_query_from_cursor:
+    name: "seed_search_query_from_cursor"
+    type: "choice"
+    description: "When to populate search from cursor"
+    valid_values: ["always", "selection", "never"]
+    default_value: "always"
+    category: "search"
+  
+  use_smartcase_search:
+    name: "use_smartcase_search"
+    type: "boolean"
+    description: "Auto-adjust case sensitivity"
+    default_value: false
+    category: "search"
+
+  # Window and Behavior
   confirm_quit:
     name: "confirm_quit"
     type: "boolean"
-    description: "Confirm before quitting the application."
+    description: "Confirm before quitting Zed"
     default_value: false
     category: "behavior"
-
+  
   restore_on_startup:
     name: "restore_on_startup"
-    type: "string"
-    description: "What to restore when starting Zed."
+    type: "choice"
+    description: "What to restore on startup"
     valid_values: ["last_session", "last_workspace", "none"]
     default_value: "last_session"
     category: "behavior"
+  
+  restore_on_file_reopen:
+    name: "restore_on_file_reopen"
+    type: "boolean"
+    description: "Restore file state when reopening"
+    default_value: true
+    category: "behavior"
+  
+  close_on_file_delete:
+    name: "close_on_file_delete"
+    type: "boolean"
+    description: "Close files deleted on disk"
+    default_value: false
+    category: "behavior"
+  
+  autosave:
+    name: "autosave"
+    type: "choice"
+    description: "When to automatically save"
+    valid_values: ["off", "on_window_change", "on_focus_change", "after_delay"]
+    default_value: "off"
+    category: "behavior"
+  
+  hover_popover_enabled:
+    name: "hover_popover_enabled"
+    type: "boolean"
+    description: "Show hover information"
+    default_value: true
+    category: "editor"
+  
+  hover_popover_delay:
+    name: "hover_popover_delay"
+    type: "number"
+    description: "Delay before showing hover"
+    default_value: 300
+    category: "editor"
 
-  indent_guides:
-    name: "indent_guides"
-    type: "object"
-    description: "Indentation guide configuration."
+  # Whitespace
+  show_whitespaces:
+    name: "show_whitespaces"
+    type: "choice"
+    description: "When to show whitespace"
+    valid_values: ["selection", "none", "all", "boundary", "trailing"]
+    default_value: "selection"
+    category: "editor"
+  
+  show_wrap_guides:
+    name: "show_wrap_guides"
+    type: "boolean"
+    description: "Show wrap guides"
+    default_value: true
+    category: "editor"
+  
+  wrap_guides:
+    name: "wrap_guides"
+    type: "array"
+    description: "Character counts for wrap guides"
+    default_value: []
+    category: "editor"
+
+  # Toolbar
+  toolbar.breadcrumbs:
+    name: "toolbar.breadcrumbs"
+    type: "boolean"
+    description: "Show breadcrumbs"
+    default_value: true
+    category: "ui"
+  
+  toolbar.quick_actions:
+    name: "toolbar.quick_actions"
+    type: "boolean"
+    description: "Show quick action buttons"
+    default_value: true
+    category: "ui"
+  
+  toolbar.selections_menu:
+    name: "toolbar.selections_menu"
+    type: "boolean"
+    description: "Show selections menu"
+    default_value: true
+    category: "ui"
+  
+  toolbar.agent_review:
+    name: "toolbar.agent_review"
+    type: "boolean"
+    description: "Show agent review buttons"
+    default_value: true
+    category: "ui"
+  
+  toolbar.code_actions:
+    name: "toolbar.code_actions"
+    type: "boolean"
+    description: "Show code action buttons"
+    default_value: false
+    category: "ui"
+
+  # Telemetry
+  telemetry.diagnostics:
+    name: "telemetry.diagnostics"
+    type: "boolean"
+    description: "Send crash reports"
+    default_value: true
+    category: "telemetry"
+  
+  telemetry.metrics:
+    name: "telemetry.metrics"
+    type: "boolean"
+    description: "Send usage metrics"
+    default_value: true
+    category: "telemetry"
+
+  # Other
+  auto_update:
+    name: "auto_update"
+    type: "boolean"
+    description: "Automatically update Zed"
+    default_value: true
+    category: "general"
+  
+  use_system_path_prompts:
+    name: "use_system_path_prompts"
+    type: "boolean"
+    description: "Use system file dialogs"
+    default_value: true
+    category: "general"
+  
+  use_system_prompts:
+    name: "use_system_prompts"
+    type: "boolean"
+    description: "Use system confirmation dialogs"
+    default_value: true
+    category: "general"
+  
+  middle_click_paste:
+    name: "middle_click_paste"
+    type: "boolean"
+    description: "Enable middle-click paste on Linux"
+    default_value: true
+    category: "editor"
+  
+  enable_language_server:
+    name: "enable_language_server"
+    type: "boolean"
+    description: "Use language servers"
+    default_value: true
+    category: "language"
+  
+  linked_edits:
+    name: "linked_edits"
+    type: "boolean"
+    description: "Edit linked ranges together"
+    default_value: true
+    category: "language"
+  
+  load_direnv:
+    name: "load_direnv"
+    type: "choice"
+    description: "How to load direnv configuration"
+    valid_values: ["direct", "shell_hook"]
+    default_value: "direct"
+    category: "general"
+  
+  unnecessary_code_fade:
+    name: "unnecessary_code_fade"
+    type: "number"
+    description: "Opacity for unused code"
+    default_value: 0.3
     category: "editor"

@@ -1,153 +1,3279 @@
 app_name: "Ghostty"
 config_path: "~/.config/ghostty/config"
-config_type: "toml"
+config_type: "custom"
 
 settings:
   font-family:
     name: "font-family"
     type: "string"
-    description: "The font family to use for terminal text. You can specify multiple fonts for fallback."
-    example: "JetBrains Mono"
+    description: "The font families to use.  You can generate the list of valid values using the CLI:     ghostty +list-fonts This configuration can be repeated multiple times to specify preferred fallback fonts whe..."
+    category: "font"
+
+  font-family-bold:
+    name: "font-family-bold"
+    type: "string"
+    category: "font"
+
+  font-family-italic:
+    name: "font-family-italic"
+    type: "string"
+    category: "font"
+
+  font-family-bold-italic:
+    name: "font-family-bold-italic"
+    type: "string"
+    description: "The named font style to use for each of the requested terminal font styles.  This looks up the style based on the font style string advertised by the font itself. For example, \"Iosevka Heavy\" has..."
+    category: "font"
+
+  font-style:
+    name: "font-style"
+    type: "string"
+    description: "The named font style to use for each of the requested terminal font styles.  This looks up the style based on the font style string advertised by the font itself. For example, \"Iosevka Heavy\" has..."
+    default_value: "default"
+    category: "font"
+
+  font-style-bold:
+    name: "font-style-bold"
+    type: "string"
+    default_value: "default"
+    category: "font"
+
+  font-style-italic:
+    name: "font-style-italic"
+    type: "string"
+    default_value: "default"
+    category: "font"
+
+  font-style-bold-italic:
+    name: "font-style-bold-italic"
+    type: "string"
+    description: "Control whether Ghostty should synthesize a style if the requested style is  not available in the specified font-family. Ghostty can synthesize bold, italic, and bold italic styles if the font does..."
+    default_value: "default"
+    category: "font"
+
+  font-synthetic-style:
+    name: "font-synthetic-style"
+    type: "string"
+    description: "Control whether Ghostty should synthesize a style if the requested style is  not available in the specified font-family. Ghostty can synthesize bold, italic, and bold italic styles if the font does..."
+    default_value: "bold,italic,bold-italic"
+    category: "font"
+
+  font-feature:
+    name: "font-feature"
+    type: "string"
+    description: "Apply a font feature. To enable multiple font features you can repeat  this multiple times or use a comma-separated list of feature settings. The syntax for feature settings is as follows, where `f..."
     category: "font"
 
   font-size:
     name: "font-size"
     type: "number"
-    description: "Font size in points. Can be fractional for precise sizing."
-    default_value: 12
-    example: 14
+    description: "Font size in points. This value can be a non-integer and the nearest integer  pixel size will be selected. If you have a high dpi display where 1pt = 2px then you can get an odd numbered pixel size..."
+    default_value: 13
     category: "font"
+
+  font-variation:
+    name: "font-variation"
+    type: "string"
+    description: "A repeatable configuration to set one or more font variations values for  a variable font. A variable font is a single font, usually with a filename ending in `-VF.ttf` or `-VF.otf` that contains o..."
+    category: "font"
+
+  font-variation-bold:
+    name: "font-variation-bold"
+    type: "string"
+    category: "font"
+
+  font-variation-italic:
+    name: "font-variation-italic"
+    type: "string"
+    category: "font"
+
+  font-variation-bold-italic:
+    name: "font-variation-bold-italic"
+    type: "string"
+    description: "Force one or a range of Unicode codepoints to map to a specific named font.  This is useful if you want to support special symbols or if you want to use specific glyphs that render better for your ..."
+    category: "font"
+
+  font-codepoint-map:
+    name: "font-codepoint-map"
+    type: "string"
+    description: "Force one or a range of Unicode codepoints to map to a specific named font.  This is useful if you want to support special symbols or if you want to use specific glyphs that render better for your ..."
+    category: "font"
+
+  font-thicken:
+    name: "font-thicken"
+    type: "boolean"
+    description: "Draw fonts with a thicker stroke, if supported.  This is currently only supported on macOS."
+    default_value: false
+    category: "font"
+
+  font-thicken-strength:
+    name: "font-thicken-strength"
+    type: "number"
+    description: "Strength of thickening when `font-thicken` is enabled.  Valid values are integers between `0` and `255`. `0` does not correspond to *no* thickening, rather it corresponds to the lightest available ..."
+    default_value: 255
+    category: "font"
+
+  alpha-blending:
+    name: "alpha-blending"
+    type: "color"
+    description: "What color space to use when performing alpha blending.  This affects the appearance of text and of any images with transparency. Additionally, custom shaders will receive colors in the configured ..."
+    default_value: "native"
+    category: "general"
+
+  adjust-cell-width:
+    name: "adjust-cell-width"
+    type: "string"
+    description: "All of the configurations behavior adjust various metrics determined by the  font. The values can be integers (1, -1, etc.) or a percentage (20%, -15%, etc.). In each case, the values represent the..."
+    category: "general"
+
+  adjust-cell-height:
+    name: "adjust-cell-height"
+    type: "string"
+    description: "Distance in pixels or percentage adjustment from the bottom of the cell to the text baseline.  Increase to move baseline UP, decrease to move baseline DOWN. See the notes about adjustments in `adju..."
+    category: "general"
+
+  adjust-font-baseline:
+    name: "adjust-font-baseline"
+    type: "string"
+    description: "Distance in pixels or percentage adjustment from the bottom of the cell to the text baseline.  Increase to move baseline UP, decrease to move baseline DOWN. See the notes about adjustments in `adju..."
+    category: "general"
+
+  adjust-underline-position:
+    name: "adjust-underline-position"
+    type: "string"
+    description: "Distance in pixels or percentage adjustment from the top of the cell to the top of the underline.  Increase to move underline DOWN, decrease to move underline UP. See the notes about adjustments in..."
+    category: "general"
+
+  adjust-underline-thickness:
+    name: "adjust-underline-thickness"
+    type: "string"
+    description: "Thickness in pixels of the underline.  See the notes about adjustments in `adjust-cell-width`."
+    category: "font"
+
+  adjust-strikethrough-position:
+    name: "adjust-strikethrough-position"
+    type: "string"
+    description: "Distance in pixels or percentage adjustment from the top of the cell to the top of the strikethrough.  Increase to move strikethrough DOWN, decrease to move strikethrough UP. See the notes about ad..."
+    category: "general"
+
+  adjust-strikethrough-thickness:
+    name: "adjust-strikethrough-thickness"
+    type: "string"
+    description: "Thickness in pixels or percentage adjustment of the strikethrough.  See the notes about adjustments in `adjust-cell-width`."
+    category: "font"
+
+  adjust-overline-position:
+    name: "adjust-overline-position"
+    type: "string"
+    description: "Distance in pixels or percentage adjustment from the top of the cell to the top of the overline.  Increase to move overline DOWN, decrease to move overline UP. See the notes about adjustments in `a..."
+    category: "general"
+
+  adjust-overline-thickness:
+    name: "adjust-overline-thickness"
+    type: "string"
+    description: "Thickness in pixels or percentage adjustment of the overline.  See the notes about adjustments in `adjust-cell-width`."
+    category: "font"
+
+  adjust-cursor-thickness:
+    name: "adjust-cursor-thickness"
+    type: "string"
+    description: "Thickness in pixels or percentage adjustment of the bar cursor and outlined rect cursor.  See the notes about adjustments in `adjust-cell-width`."
+    category: "font"
+
+  adjust-cursor-height:
+    name: "adjust-cursor-height"
+    type: "string"
+    description: "Height in pixels or percentage adjustment of the cursor. Currently applies to all cursor types:  bar, rect, and outlined rect. See the notes about adjustments in `adjust-cell-width`."
+    category: "general"
+
+  adjust-box-thickness:
+    name: "adjust-box-thickness"
+    type: "string"
+    description: "Thickness in pixels or percentage adjustment of box drawing characters.  See the notes about adjustments in `adjust-cell-width`."
+    category: "font"
+
+  grapheme-width-method:
+    name: "grapheme-width-method"
+    type: "string"
+    description: "The method to use for calculating the cell width of a grapheme cluster.  The default value is `unicode` which uses the Unicode standard to determine grapheme width. This results in correct grapheme..."
+    default_value: "unicode"
+    category: "general"
+
+  freetype-load-flags:
+    name: "freetype-load-flags"
+    type: "string"
+    description: "FreeType load flags to enable. The format of this is a list of flags to  enable separated by commas. If you prefix a flag with `no-` then it is disabled. If you omit a flag, its default value is us..."
+    default_value: "hinting,force-autohint,monochrome,autohint"
+    category: "general"
 
   theme:
     name: "theme"
     type: "string"
-    description: "Color theme for the terminal. Can be built-in theme name or path to custom theme file."
-    valid_values: ["default", "dark", "light"]
-    example: "dark"
+    description: "A theme to use. This can be a built-in theme name, a custom theme  name, or an absolute path to a custom theme file. Ghostty also supports specifying a different theme to use for light and dark mod..."
     category: "appearance"
 
   background:
     name: "background"
-    type: "string"
-    description: "Background color of the terminal in hex format."
-    example: "#1e1e1e"
+    type: "color"
+    description: "Background color for the window.  Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color."
+    default_value: "#282c34"
     category: "appearance"
 
   foreground:
     name: "foreground"
-    type: "string"
-    description: "Foreground (text) color of the terminal in hex format."
-    example: "#ffffff"
+    type: "color"
+    description: "Foreground color for the window.  Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color."
+    default_value: "#ffffff"
     category: "appearance"
+
+  selection-foreground:
+    name: "selection-foreground"
+    type: "color"
+    description: "The foreground and background color for selection. If this is not set, then  the selection color is just the inverted window background and foreground (note: not to be confused with the cell bg/fg)..."
+    category: "appearance"
+
+  selection-background:
+    name: "selection-background"
+    type: "color"
+    description: "Swap the foreground and background colors of cells for selection. This  option overrides the `selection-foreground` and `selection-background` options. If you select across cells with differing for..."
+    category: "appearance"
+
+  selection-invert-fg-bg:
+    name: "selection-invert-fg-bg"
+    type: "boolean"
+    description: "Swap the foreground and background colors of cells for selection. This  option overrides the `selection-foreground` and `selection-background` options. If you select across cells with differing for..."
+    default_value: false
+    category: "general"
+
+  minimum-contrast:
+    name: "minimum-contrast"
+    type: "number"
+    description: "The minimum contrast ratio between the foreground and background colors.  The contrast ratio is a value between 1 and 21. A value of 1 allows for no contrast (e.g. black on black). This value is th..."
+    default_value: 1
+    category: "general"
+
+  palette:
+    name: "palette"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "0=#1d1f21"
+    category: "appearance"
+
+  palette-2:
+    name: "palette-2"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "1=#cc6666"
+    category: "appearance"
+
+  palette-3:
+    name: "palette-3"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "2=#b5bd68"
+    category: "appearance"
+
+  palette-4:
+    name: "palette-4"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "3=#f0c674"
+    category: "appearance"
+
+  palette-5:
+    name: "palette-5"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "4=#81a2be"
+    category: "appearance"
+
+  palette-6:
+    name: "palette-6"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "5=#b294bb"
+    category: "appearance"
+
+  palette-7:
+    name: "palette-7"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "6=#8abeb7"
+    category: "appearance"
+
+  palette-8:
+    name: "palette-8"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "7=#c5c8c6"
+    category: "appearance"
+
+  palette-9:
+    name: "palette-9"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "8=#666666"
+    category: "appearance"
+
+  palette-10:
+    name: "palette-10"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "9=#d54e53"
+    category: "appearance"
+
+  palette-11:
+    name: "palette-11"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "10=#b9ca4a"
+    category: "appearance"
+
+  palette-12:
+    name: "palette-12"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "11=#e7c547"
+    category: "appearance"
+
+  palette-13:
+    name: "palette-13"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "12=#7aa6da"
+    category: "appearance"
+
+  palette-14:
+    name: "palette-14"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "13=#c397d8"
+    category: "appearance"
+
+  palette-15:
+    name: "palette-15"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "14=#70c0b1"
+    category: "appearance"
+
+  palette-16:
+    name: "palette-16"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "15=#eaeaea"
+    category: "appearance"
+
+  palette-17:
+    name: "palette-17"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "16=#000000"
+    category: "appearance"
+
+  palette-18:
+    name: "palette-18"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "17=#00005f"
+    category: "appearance"
+
+  palette-19:
+    name: "palette-19"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "18=#000087"
+    category: "appearance"
+
+  palette-20:
+    name: "palette-20"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "19=#0000af"
+    category: "appearance"
+
+  palette-21:
+    name: "palette-21"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "20=#0000d7"
+    category: "appearance"
+
+  palette-22:
+    name: "palette-22"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "21=#0000ff"
+    category: "appearance"
+
+  palette-23:
+    name: "palette-23"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "22=#005f00"
+    category: "appearance"
+
+  palette-24:
+    name: "palette-24"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "23=#005f5f"
+    category: "appearance"
+
+  palette-25:
+    name: "palette-25"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "24=#005f87"
+    category: "appearance"
+
+  palette-26:
+    name: "palette-26"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "25=#005faf"
+    category: "appearance"
+
+  palette-27:
+    name: "palette-27"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "26=#005fd7"
+    category: "appearance"
+
+  palette-28:
+    name: "palette-28"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "27=#005fff"
+    category: "appearance"
+
+  palette-29:
+    name: "palette-29"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "28=#008700"
+    category: "appearance"
+
+  palette-30:
+    name: "palette-30"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "29=#00875f"
+    category: "appearance"
+
+  palette-31:
+    name: "palette-31"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "30=#008787"
+    category: "appearance"
+
+  palette-32:
+    name: "palette-32"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "31=#0087af"
+    category: "appearance"
+
+  palette-33:
+    name: "palette-33"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "32=#0087d7"
+    category: "appearance"
+
+  palette-34:
+    name: "palette-34"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "33=#0087ff"
+    category: "appearance"
+
+  palette-35:
+    name: "palette-35"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "34=#00af00"
+    category: "appearance"
+
+  palette-36:
+    name: "palette-36"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "35=#00af5f"
+    category: "appearance"
+
+  palette-37:
+    name: "palette-37"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "36=#00af87"
+    category: "appearance"
+
+  palette-38:
+    name: "palette-38"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "37=#00afaf"
+    category: "appearance"
+
+  palette-39:
+    name: "palette-39"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "38=#00afd7"
+    category: "appearance"
+
+  palette-40:
+    name: "palette-40"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "39=#00afff"
+    category: "appearance"
+
+  palette-41:
+    name: "palette-41"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "40=#00d700"
+    category: "appearance"
+
+  palette-42:
+    name: "palette-42"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "41=#00d75f"
+    category: "appearance"
+
+  palette-43:
+    name: "palette-43"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "42=#00d787"
+    category: "appearance"
+
+  palette-44:
+    name: "palette-44"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "43=#00d7af"
+    category: "appearance"
+
+  palette-45:
+    name: "palette-45"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "44=#00d7d7"
+    category: "appearance"
+
+  palette-46:
+    name: "palette-46"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "45=#00d7ff"
+    category: "appearance"
+
+  palette-47:
+    name: "palette-47"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "46=#00ff00"
+    category: "appearance"
+
+  palette-48:
+    name: "palette-48"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "47=#00ff5f"
+    category: "appearance"
+
+  palette-49:
+    name: "palette-49"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "48=#00ff87"
+    category: "appearance"
+
+  palette-50:
+    name: "palette-50"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "49=#00ffaf"
+    category: "appearance"
+
+  palette-51:
+    name: "palette-51"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "50=#00ffd7"
+    category: "appearance"
+
+  palette-52:
+    name: "palette-52"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "51=#00ffff"
+    category: "appearance"
+
+  palette-53:
+    name: "palette-53"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "52=#5f0000"
+    category: "appearance"
+
+  palette-54:
+    name: "palette-54"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "53=#5f005f"
+    category: "appearance"
+
+  palette-55:
+    name: "palette-55"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "54=#5f0087"
+    category: "appearance"
+
+  palette-56:
+    name: "palette-56"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "55=#5f00af"
+    category: "appearance"
+
+  palette-57:
+    name: "palette-57"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "56=#5f00d7"
+    category: "appearance"
+
+  palette-58:
+    name: "palette-58"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "57=#5f00ff"
+    category: "appearance"
+
+  palette-59:
+    name: "palette-59"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "58=#5f5f00"
+    category: "appearance"
+
+  palette-60:
+    name: "palette-60"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "59=#5f5f5f"
+    category: "appearance"
+
+  palette-61:
+    name: "palette-61"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "60=#5f5f87"
+    category: "appearance"
+
+  palette-62:
+    name: "palette-62"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "61=#5f5faf"
+    category: "appearance"
+
+  palette-63:
+    name: "palette-63"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "62=#5f5fd7"
+    category: "appearance"
+
+  palette-64:
+    name: "palette-64"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "63=#5f5fff"
+    category: "appearance"
+
+  palette-65:
+    name: "palette-65"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "64=#5f8700"
+    category: "appearance"
+
+  palette-66:
+    name: "palette-66"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "65=#5f875f"
+    category: "appearance"
+
+  palette-67:
+    name: "palette-67"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "66=#5f8787"
+    category: "appearance"
+
+  palette-68:
+    name: "palette-68"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "67=#5f87af"
+    category: "appearance"
+
+  palette-69:
+    name: "palette-69"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "68=#5f87d7"
+    category: "appearance"
+
+  palette-70:
+    name: "palette-70"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "69=#5f87ff"
+    category: "appearance"
+
+  palette-71:
+    name: "palette-71"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "70=#5faf00"
+    category: "appearance"
+
+  palette-72:
+    name: "palette-72"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "71=#5faf5f"
+    category: "appearance"
+
+  palette-73:
+    name: "palette-73"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "72=#5faf87"
+    category: "appearance"
+
+  palette-74:
+    name: "palette-74"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "73=#5fafaf"
+    category: "appearance"
+
+  palette-75:
+    name: "palette-75"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "74=#5fafd7"
+    category: "appearance"
+
+  palette-76:
+    name: "palette-76"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "75=#5fafff"
+    category: "appearance"
+
+  palette-77:
+    name: "palette-77"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "76=#5fd700"
+    category: "appearance"
+
+  palette-78:
+    name: "palette-78"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "77=#5fd75f"
+    category: "appearance"
+
+  palette-79:
+    name: "palette-79"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "78=#5fd787"
+    category: "appearance"
+
+  palette-80:
+    name: "palette-80"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "79=#5fd7af"
+    category: "appearance"
+
+  palette-81:
+    name: "palette-81"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "80=#5fd7d7"
+    category: "appearance"
+
+  palette-82:
+    name: "palette-82"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "81=#5fd7ff"
+    category: "appearance"
+
+  palette-83:
+    name: "palette-83"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "82=#5fff00"
+    category: "appearance"
+
+  palette-84:
+    name: "palette-84"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "83=#5fff5f"
+    category: "appearance"
+
+  palette-85:
+    name: "palette-85"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "84=#5fff87"
+    category: "appearance"
+
+  palette-86:
+    name: "palette-86"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "85=#5fffaf"
+    category: "appearance"
+
+  palette-87:
+    name: "palette-87"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "86=#5fffd7"
+    category: "appearance"
+
+  palette-88:
+    name: "palette-88"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "87=#5fffff"
+    category: "appearance"
+
+  palette-89:
+    name: "palette-89"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "88=#870000"
+    category: "appearance"
+
+  palette-90:
+    name: "palette-90"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "89=#87005f"
+    category: "appearance"
+
+  palette-91:
+    name: "palette-91"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "90=#870087"
+    category: "appearance"
+
+  palette-92:
+    name: "palette-92"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "91=#8700af"
+    category: "appearance"
+
+  palette-93:
+    name: "palette-93"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "92=#8700d7"
+    category: "appearance"
+
+  palette-94:
+    name: "palette-94"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "93=#8700ff"
+    category: "appearance"
+
+  palette-95:
+    name: "palette-95"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "94=#875f00"
+    category: "appearance"
+
+  palette-96:
+    name: "palette-96"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "95=#875f5f"
+    category: "appearance"
+
+  palette-97:
+    name: "palette-97"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "96=#875f87"
+    category: "appearance"
+
+  palette-98:
+    name: "palette-98"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "97=#875faf"
+    category: "appearance"
+
+  palette-99:
+    name: "palette-99"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "98=#875fd7"
+    category: "appearance"
+
+  palette-100:
+    name: "palette-100"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "99=#875fff"
+    category: "appearance"
+
+  palette-101:
+    name: "palette-101"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "100=#878700"
+    category: "appearance"
+
+  palette-102:
+    name: "palette-102"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "101=#87875f"
+    category: "appearance"
+
+  palette-103:
+    name: "palette-103"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "102=#878787"
+    category: "appearance"
+
+  palette-104:
+    name: "palette-104"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "103=#8787af"
+    category: "appearance"
+
+  palette-105:
+    name: "palette-105"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "104=#8787d7"
+    category: "appearance"
+
+  palette-106:
+    name: "palette-106"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "105=#8787ff"
+    category: "appearance"
+
+  palette-107:
+    name: "palette-107"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "106=#87af00"
+    category: "appearance"
+
+  palette-108:
+    name: "palette-108"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "107=#87af5f"
+    category: "appearance"
+
+  palette-109:
+    name: "palette-109"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "108=#87af87"
+    category: "appearance"
+
+  palette-110:
+    name: "palette-110"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "109=#87afaf"
+    category: "appearance"
+
+  palette-111:
+    name: "palette-111"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "110=#87afd7"
+    category: "appearance"
+
+  palette-112:
+    name: "palette-112"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "111=#87afff"
+    category: "appearance"
+
+  palette-113:
+    name: "palette-113"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "112=#87d700"
+    category: "appearance"
+
+  palette-114:
+    name: "palette-114"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "113=#87d75f"
+    category: "appearance"
+
+  palette-115:
+    name: "palette-115"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "114=#87d787"
+    category: "appearance"
+
+  palette-116:
+    name: "palette-116"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "115=#87d7af"
+    category: "appearance"
+
+  palette-117:
+    name: "palette-117"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "116=#87d7d7"
+    category: "appearance"
+
+  palette-118:
+    name: "palette-118"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "117=#87d7ff"
+    category: "appearance"
+
+  palette-119:
+    name: "palette-119"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "118=#87ff00"
+    category: "appearance"
+
+  palette-120:
+    name: "palette-120"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "119=#87ff5f"
+    category: "appearance"
+
+  palette-121:
+    name: "palette-121"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "120=#87ff87"
+    category: "appearance"
+
+  palette-122:
+    name: "palette-122"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "121=#87ffaf"
+    category: "appearance"
+
+  palette-123:
+    name: "palette-123"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "122=#87ffd7"
+    category: "appearance"
+
+  palette-124:
+    name: "palette-124"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "123=#87ffff"
+    category: "appearance"
+
+  palette-125:
+    name: "palette-125"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "124=#af0000"
+    category: "appearance"
+
+  palette-126:
+    name: "palette-126"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "125=#af005f"
+    category: "appearance"
+
+  palette-127:
+    name: "palette-127"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "126=#af0087"
+    category: "appearance"
+
+  palette-128:
+    name: "palette-128"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "127=#af00af"
+    category: "appearance"
+
+  palette-129:
+    name: "palette-129"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "128=#af00d7"
+    category: "appearance"
+
+  palette-130:
+    name: "palette-130"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "129=#af00ff"
+    category: "appearance"
+
+  palette-131:
+    name: "palette-131"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "130=#af5f00"
+    category: "appearance"
+
+  palette-132:
+    name: "palette-132"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "131=#af5f5f"
+    category: "appearance"
+
+  palette-133:
+    name: "palette-133"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "132=#af5f87"
+    category: "appearance"
+
+  palette-134:
+    name: "palette-134"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "133=#af5faf"
+    category: "appearance"
+
+  palette-135:
+    name: "palette-135"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "134=#af5fd7"
+    category: "appearance"
+
+  palette-136:
+    name: "palette-136"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "135=#af5fff"
+    category: "appearance"
+
+  palette-137:
+    name: "palette-137"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "136=#af8700"
+    category: "appearance"
+
+  palette-138:
+    name: "palette-138"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "137=#af875f"
+    category: "appearance"
+
+  palette-139:
+    name: "palette-139"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "138=#af8787"
+    category: "appearance"
+
+  palette-140:
+    name: "palette-140"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "139=#af87af"
+    category: "appearance"
+
+  palette-141:
+    name: "palette-141"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "140=#af87d7"
+    category: "appearance"
+
+  palette-142:
+    name: "palette-142"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "141=#af87ff"
+    category: "appearance"
+
+  palette-143:
+    name: "palette-143"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "142=#afaf00"
+    category: "appearance"
+
+  palette-144:
+    name: "palette-144"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "143=#afaf5f"
+    category: "appearance"
+
+  palette-145:
+    name: "palette-145"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "144=#afaf87"
+    category: "appearance"
+
+  palette-146:
+    name: "palette-146"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "145=#afafaf"
+    category: "appearance"
+
+  palette-147:
+    name: "palette-147"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "146=#afafd7"
+    category: "appearance"
+
+  palette-148:
+    name: "palette-148"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "147=#afafff"
+    category: "appearance"
+
+  palette-149:
+    name: "palette-149"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "148=#afd700"
+    category: "appearance"
+
+  palette-150:
+    name: "palette-150"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "149=#afd75f"
+    category: "appearance"
+
+  palette-151:
+    name: "palette-151"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "150=#afd787"
+    category: "appearance"
+
+  palette-152:
+    name: "palette-152"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "151=#afd7af"
+    category: "appearance"
+
+  palette-153:
+    name: "palette-153"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "152=#afd7d7"
+    category: "appearance"
+
+  palette-154:
+    name: "palette-154"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "153=#afd7ff"
+    category: "appearance"
+
+  palette-155:
+    name: "palette-155"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "154=#afff00"
+    category: "appearance"
+
+  palette-156:
+    name: "palette-156"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "155=#afff5f"
+    category: "appearance"
+
+  palette-157:
+    name: "palette-157"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "156=#afff87"
+    category: "appearance"
+
+  palette-158:
+    name: "palette-158"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "157=#afffaf"
+    category: "appearance"
+
+  palette-159:
+    name: "palette-159"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "158=#afffd7"
+    category: "appearance"
+
+  palette-160:
+    name: "palette-160"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "159=#afffff"
+    category: "appearance"
+
+  palette-161:
+    name: "palette-161"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "160=#d70000"
+    category: "appearance"
+
+  palette-162:
+    name: "palette-162"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "161=#d7005f"
+    category: "appearance"
+
+  palette-163:
+    name: "palette-163"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "162=#d70087"
+    category: "appearance"
+
+  palette-164:
+    name: "palette-164"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "163=#d700af"
+    category: "appearance"
+
+  palette-165:
+    name: "palette-165"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "164=#d700d7"
+    category: "appearance"
+
+  palette-166:
+    name: "palette-166"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "165=#d700ff"
+    category: "appearance"
+
+  palette-167:
+    name: "palette-167"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "166=#d75f00"
+    category: "appearance"
+
+  palette-168:
+    name: "palette-168"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "167=#d75f5f"
+    category: "appearance"
+
+  palette-169:
+    name: "palette-169"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "168=#d75f87"
+    category: "appearance"
+
+  palette-170:
+    name: "palette-170"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "169=#d75faf"
+    category: "appearance"
+
+  palette-171:
+    name: "palette-171"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "170=#d75fd7"
+    category: "appearance"
+
+  palette-172:
+    name: "palette-172"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "171=#d75fff"
+    category: "appearance"
+
+  palette-173:
+    name: "palette-173"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "172=#d78700"
+    category: "appearance"
+
+  palette-174:
+    name: "palette-174"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "173=#d7875f"
+    category: "appearance"
+
+  palette-175:
+    name: "palette-175"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "174=#d78787"
+    category: "appearance"
+
+  palette-176:
+    name: "palette-176"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "175=#d787af"
+    category: "appearance"
+
+  palette-177:
+    name: "palette-177"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "176=#d787d7"
+    category: "appearance"
+
+  palette-178:
+    name: "palette-178"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "177=#d787ff"
+    category: "appearance"
+
+  palette-179:
+    name: "palette-179"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "178=#d7af00"
+    category: "appearance"
+
+  palette-180:
+    name: "palette-180"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "179=#d7af5f"
+    category: "appearance"
+
+  palette-181:
+    name: "palette-181"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "180=#d7af87"
+    category: "appearance"
+
+  palette-182:
+    name: "palette-182"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "181=#d7afaf"
+    category: "appearance"
+
+  palette-183:
+    name: "palette-183"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "182=#d7afd7"
+    category: "appearance"
+
+  palette-184:
+    name: "palette-184"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "183=#d7afff"
+    category: "appearance"
+
+  palette-185:
+    name: "palette-185"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "184=#d7d700"
+    category: "appearance"
+
+  palette-186:
+    name: "palette-186"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "185=#d7d75f"
+    category: "appearance"
+
+  palette-187:
+    name: "palette-187"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "186=#d7d787"
+    category: "appearance"
+
+  palette-188:
+    name: "palette-188"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "187=#d7d7af"
+    category: "appearance"
+
+  palette-189:
+    name: "palette-189"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "188=#d7d7d7"
+    category: "appearance"
+
+  palette-190:
+    name: "palette-190"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "189=#d7d7ff"
+    category: "appearance"
+
+  palette-191:
+    name: "palette-191"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "190=#d7ff00"
+    category: "appearance"
+
+  palette-192:
+    name: "palette-192"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "191=#d7ff5f"
+    category: "appearance"
+
+  palette-193:
+    name: "palette-193"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "192=#d7ff87"
+    category: "appearance"
+
+  palette-194:
+    name: "palette-194"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "193=#d7ffaf"
+    category: "appearance"
+
+  palette-195:
+    name: "palette-195"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "194=#d7ffd7"
+    category: "appearance"
+
+  palette-196:
+    name: "palette-196"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "195=#d7ffff"
+    category: "appearance"
+
+  palette-197:
+    name: "palette-197"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "196=#ff0000"
+    category: "appearance"
+
+  palette-198:
+    name: "palette-198"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "197=#ff005f"
+    category: "appearance"
+
+  palette-199:
+    name: "palette-199"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "198=#ff0087"
+    category: "appearance"
+
+  palette-200:
+    name: "palette-200"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "199=#ff00af"
+    category: "appearance"
+
+  palette-201:
+    name: "palette-201"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "200=#ff00d7"
+    category: "appearance"
+
+  palette-202:
+    name: "palette-202"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "201=#ff00ff"
+    category: "appearance"
+
+  palette-203:
+    name: "palette-203"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "202=#ff5f00"
+    category: "appearance"
+
+  palette-204:
+    name: "palette-204"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "203=#ff5f5f"
+    category: "appearance"
+
+  palette-205:
+    name: "palette-205"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "204=#ff5f87"
+    category: "appearance"
+
+  palette-206:
+    name: "palette-206"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "205=#ff5faf"
+    category: "appearance"
+
+  palette-207:
+    name: "palette-207"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "206=#ff5fd7"
+    category: "appearance"
+
+  palette-208:
+    name: "palette-208"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "207=#ff5fff"
+    category: "appearance"
+
+  palette-209:
+    name: "palette-209"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "208=#ff8700"
+    category: "appearance"
+
+  palette-210:
+    name: "palette-210"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "209=#ff875f"
+    category: "appearance"
+
+  palette-211:
+    name: "palette-211"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "210=#ff8787"
+    category: "appearance"
+
+  palette-212:
+    name: "palette-212"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "211=#ff87af"
+    category: "appearance"
+
+  palette-213:
+    name: "palette-213"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "212=#ff87d7"
+    category: "appearance"
+
+  palette-214:
+    name: "palette-214"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "213=#ff87ff"
+    category: "appearance"
+
+  palette-215:
+    name: "palette-215"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "214=#ffaf00"
+    category: "appearance"
+
+  palette-216:
+    name: "palette-216"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "215=#ffaf5f"
+    category: "appearance"
+
+  palette-217:
+    name: "palette-217"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "216=#ffaf87"
+    category: "appearance"
+
+  palette-218:
+    name: "palette-218"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "217=#ffafaf"
+    category: "appearance"
+
+  palette-219:
+    name: "palette-219"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "218=#ffafd7"
+    category: "appearance"
+
+  palette-220:
+    name: "palette-220"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "219=#ffafff"
+    category: "appearance"
+
+  palette-221:
+    name: "palette-221"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "220=#ffd700"
+    category: "appearance"
+
+  palette-222:
+    name: "palette-222"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "221=#ffd75f"
+    category: "appearance"
+
+  palette-223:
+    name: "palette-223"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "222=#ffd787"
+    category: "appearance"
+
+  palette-224:
+    name: "palette-224"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "223=#ffd7af"
+    category: "appearance"
+
+  palette-225:
+    name: "palette-225"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "224=#ffd7d7"
+    category: "appearance"
+
+  palette-226:
+    name: "palette-226"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "225=#ffd7ff"
+    category: "appearance"
+
+  palette-227:
+    name: "palette-227"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "226=#ffff00"
+    category: "appearance"
+
+  palette-228:
+    name: "palette-228"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "227=#ffff5f"
+    category: "appearance"
+
+  palette-229:
+    name: "palette-229"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "228=#ffff87"
+    category: "appearance"
+
+  palette-230:
+    name: "palette-230"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "229=#ffffaf"
+    category: "appearance"
+
+  palette-231:
+    name: "palette-231"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "230=#ffffd7"
+    category: "appearance"
+
+  palette-232:
+    name: "palette-232"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "231=#ffffff"
+    category: "appearance"
+
+  palette-233:
+    name: "palette-233"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "232=#080808"
+    category: "appearance"
+
+  palette-234:
+    name: "palette-234"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "233=#121212"
+    category: "appearance"
+
+  palette-235:
+    name: "palette-235"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "234=#1c1c1c"
+    category: "appearance"
+
+  palette-236:
+    name: "palette-236"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "235=#262626"
+    category: "appearance"
+
+  palette-237:
+    name: "palette-237"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "236=#303030"
+    category: "appearance"
+
+  palette-238:
+    name: "palette-238"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "237=#3a3a3a"
+    category: "appearance"
+
+  palette-239:
+    name: "palette-239"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "238=#444444"
+    category: "appearance"
+
+  palette-240:
+    name: "palette-240"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "239=#4e4e4e"
+    category: "appearance"
+
+  palette-241:
+    name: "palette-241"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "240=#585858"
+    category: "appearance"
+
+  palette-242:
+    name: "palette-242"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "241=#626262"
+    category: "appearance"
+
+  palette-243:
+    name: "palette-243"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "242=#6c6c6c"
+    category: "appearance"
+
+  palette-244:
+    name: "palette-244"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "243=#767676"
+    category: "appearance"
+
+  palette-245:
+    name: "palette-245"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "244=#808080"
+    category: "appearance"
+
+  palette-246:
+    name: "palette-246"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "245=#8a8a8a"
+    category: "appearance"
+
+  palette-247:
+    name: "palette-247"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "246=#949494"
+    category: "appearance"
+
+  palette-248:
+    name: "palette-248"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "247=#9e9e9e"
+    category: "appearance"
+
+  palette-249:
+    name: "palette-249"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "248=#a8a8a8"
+    category: "appearance"
+
+  palette-250:
+    name: "palette-250"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "249=#b2b2b2"
+    category: "appearance"
+
+  palette-251:
+    name: "palette-251"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "250=#bcbcbc"
+    category: "appearance"
+
+  palette-252:
+    name: "palette-252"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "251=#c6c6c6"
+    category: "appearance"
+
+  palette-253:
+    name: "palette-253"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "252=#d0d0d0"
+    category: "appearance"
+
+  palette-254:
+    name: "palette-254"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "253=#dadada"
+    category: "appearance"
+
+  palette-255:
+    name: "palette-255"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "254=#e4e4e4"
+    category: "appearance"
+
+  palette-256:
+    name: "palette-256"
+    type: "color"
+    description: "Color palette for the 256 color form that many terminal applications use.  The syntax of this configuration is `N=COLOR` where `N` is 0 to 255 (for the 256 colors in the terminal color table) and `..."
+    default_value: "255=#eeeeee"
+    category: "appearance"
+
+  cursor-color:
+    name: "cursor-color"
+    type: "color"
+    description: "The color of the cursor. If this is not set, a default will be chosen.  Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color."
+    category: "appearance"
+
+  cursor-invert-fg-bg:
+    name: "cursor-invert-fg-bg"
+    type: "boolean"
+    description: "Swap the foreground and background colors of the cell under the cursor. This  option overrides the `cursor-color` and `cursor-text` options."
+    default_value: false
+    category: "cursor"
+
+  cursor-opacity:
+    name: "cursor-opacity"
+    type: "number"
+    description: "The opacity level (opposite of transparency) of the cursor. A value of 1  is fully opaque and a value of 0 is fully transparent. A value less than 0 or greater than 1 will be clamped to the nearest..."
+    default_value: 1
+    category: "cursor"
 
   cursor-style:
     name: "cursor-style"
     type: "string"
-    description: "The style of the terminal cursor."
-    valid_values: ["block", "bar", "underline"]
+    description: "The style of the cursor. This sets the default style. A running program can  still request an explicit cursor style using escape sequences (such as `CSI q`). Shell configurations will often request..."
     default_value: "block"
-    example: "bar"
-    category: "behavior"
+    category: "cursor"
 
-  cursor-blink:
-    name: "cursor-blink"
+  cursor-style-blink:
+    name: "cursor-style-blink"
+    type: "string"
+    description: "Sets the default blinking state of the cursor. This is just the default  state; running programs may override the cursor style using `DECSCUSR` (`CSI q`). If this is not set, the cursor blinks by d..."
+    category: "cursor"
+
+  cursor-text:
+    name: "cursor-text"
+    type: "color"
+    description: "The color of the text under the cursor. If this is not set, a default will  be chosen. Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color."
+    category: "cursor"
+
+  cursor-click-to-move:
+    name: "cursor-click-to-move"
     type: "boolean"
-    description: "Whether the cursor should blink."
-    default_value: false
-    category: "behavior"
-
-  window-padding:
-    name: "window-padding"
-    type: "number"
-    description: "Padding around the terminal content in pixels."
-    default_value: 0
-    example: 10
-    category: "appearance"
-
-  window-width:
-    name: "window-width"
-    type: "number"
-    description: "Default window width in characters."
-    default_value: 80
-    example: 120
-    category: "window"
-
-  window-height:
-    name: "window-height"
-    type: "number"
-    description: "Default window height in characters."
-    default_value: 24
-    example: 40
-    category: "window"
-
-  shell-integration:
-    name: "shell-integration"
-    type: "boolean"
-    description: "Enable shell integration features for enhanced functionality."
+    description: "Enables the ability to move the cursor at prompts by using `alt+click` on  Linux and `option+click` on macOS. This feature requires shell integration (specifically prompt marking via `OSC 133`) and..."
     default_value: true
-    category: "behavior"
-
-  scrollback-limit:
-    name: "scrollback-limit"
-    type: "number"
-    description: "Maximum number of lines to keep in scrollback buffer."
-    default_value: 10000
-    example: 50000
-    category: "behavior"
-
-  copy-on-select:
-    name: "copy-on-select"
-    type: "boolean"
-    description: "Automatically copy text to clipboard when selected."
-    default_value: false
-    category: "behavior"
+    category: "cursor"
 
   mouse-hide-while-typing:
     name: "mouse-hide-while-typing"
     type: "boolean"
-    description: "Hide mouse cursor while typing."
-    default_value: true
-    category: "behavior"
+    description: "Hide the mouse immediately when typing. The mouse becomes visible again  when the mouse is used (button, movement, etc.). Platform-specific behavior may dictate other scenarios where the mouse is s..."
+    default_value: false
+    category: "mouse"
+
+  mouse-shift-capture:
+    name: "mouse-shift-capture"
+    type: "boolean"
+    description: "Determines whether running programs can detect the shift key pressed with a  mouse click. Typically, the shift key is used to extend mouse selection. The default value of `false` means that the shi..."
+    default_value: false
+    category: "mouse"
+
+  mouse-scroll-multiplier:
+    name: "mouse-scroll-multiplier"
+    type: "number"
+    description: "Multiplier for scrolling distance with the mouse wheel. Any value less  than 0.01 or greater than 10,000 will be clamped to the nearest valid value. A value of \"1\" (default) scrolls the default a..."
+    default_value: 1
+    category: "mouse"
 
   background-opacity:
     name: "background-opacity"
     type: "number"
-    description: "Opacity level of the background (0.0 to 1.0)."
-    default_value: 1.0
-    example: 0.9
+    description: "The opacity level (opposite of transparency) of the background. A value of  1 is fully opaque and a value of 0 is fully transparent. A value less than 0 or greater than 1 will be clamped to the nea..."
+    default_value: 1
     category: "appearance"
 
-  window-decoration:
-    name: "window-decoration"
+  background-blur:
+    name: "background-blur"
     type: "boolean"
-    description: "Show window title bar and borders."
+    description: "Whether to blur the background when `background-opacity` is less than 1.  Valid values are:   * a nonnegative integer specifying the *blur intensity*   * `false`, equivalent to a blur intensity of ..."
+    default_value: false
+    category: "appearance"
+
+  unfocused-split-opacity:
+    name: "unfocused-split-opacity"
+    type: "number"
+    description: "The opacity level (opposite of transparency) of an unfocused split.  Unfocused splits by default are slightly faded out to make it easier to see which split is focused. To disable this feature, set..."
+    default_value: 0.7
+    category: "general"
+
+  unfocused-split-fill:
+    name: "unfocused-split-fill"
+    type: "color"
+    description: "The color to dim the unfocused split. Unfocused splits are dimmed by  rendering a semi-transparent rectangle over the split. This sets the color of that rectangle and can be used to carefully contr..."
+    category: "general"
+
+  split-divider-color:
+    name: "split-divider-color"
+    type: "color"
+    description: "The color of the split divider. If this is not set, a default will be chosen.  Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color."
+    category: "appearance"
+
+  command:
+    name: "command"
+    type: "string"
+    description: "The command to run, usually a shell. If this is not an absolute path, it'll  be looked up in the `PATH`. If this is not set, a default will be looked up from your system. The rules for the default ..."
+    category: "shell"
+
+  initial-command:
+    name: "initial-command"
+    type: "string"
+    description: "This is the same as \"command\", but only applies to the first terminal  surface created when Ghostty starts. Subsequent terminal surfaces will use the `command` configuration. After the first term..."
+    category: "shell"
+
+  wait-after-command:
+    name: "wait-after-command"
+    type: "boolean"
+    description: "If true, keep the terminal open after the command exits. Normally, the  terminal window closes when the running command (such as a shell) exits. With this true, the terminal window will stay open u..."
+    default_value: false
+    category: "shell"
+
+  abnormal-command-exit-runtime:
+    name: "abnormal-command-exit-runtime"
+    type: "number"
+    description: "The number of milliseconds of runtime below which we consider a process exit  to be abnormal. This is used to show an error message when the process exits too quickly. On Linux, this must be paired..."
+    default_value: 250
+    category: "shell"
+
+  scrollback-limit:
+    name: "scrollback-limit"
+    type: "number"
+    description: "The size of the scrollback buffer in bytes. This also includes the active  screen. No matter what this is set to, enough memory will always be allocated for the visible screen and anything leftover..."
+    default_value: 10000000
+    category: "scrolling"
+
+  link-url:
+    name: "link-url"
+    type: "boolean"
+    description: "Enable URL matching. URLs are matched on hover with control (Linux) or  super (macOS) pressed and open using the default system application for the linked URL. The URL matcher is always lowest prio..."
     default_value: true
+    category: "general"
+
+  maximize:
+    name: "maximize"
+    type: "boolean"
+    description: "Whether to start the window in a maximized state. This setting applies  to new windows and does not apply to tabs, splits, etc. However, this setting will apply to all new windows, not just the fir..."
+    default_value: false
     category: "window"
 
   fullscreen:
     name: "fullscreen"
     type: "boolean"
-    description: "Start in fullscreen mode."
+    description: "Start new windows in fullscreen. This setting applies to new windows and  does not apply to tabs, splits, etc. However, this setting will apply to all new windows, not just the first one. On macOS,..."
     default_value: false
     category: "window"
-
-  confirm-close-surface:
-    name: "confirm-close-surface"
-    type: "boolean"
-    description: "Confirm before closing terminal with running processes."
-    default_value: true
-    category: "behavior"
 
   title:
     name: "title"
     type: "string"
-    description: "Default window title."
-    example: "Ghostty Terminal"
-    category: "window"
+    description: "The title Ghostty will use for the window. This will force the title of the  window to be this title at all times and Ghostty will ignore any set title escape sequences programs (such as Neovim) ma..."
+    category: "general"
+
+  class:
+    name: "class"
+    type: "string"
+    description: "The setting that will change the application class value.  This controls the class field of the `WM_CLASS` X11 property (when running under X11), and the Wayland application ID (when running under ..."
+    category: "general"
 
   working-directory:
     name: "working-directory"
     type: "string"
-    description: "Default working directory for new terminals."
-    example: "~/Projects"
-    category: "behavior"
+    description: "The directory to change to after starting the command.  This setting is secondary to the `window-inherit-working-directory` setting. If a previous Ghostty terminal exists in the same process, `wind..."
+    category: "shell"
+
+  keybind:
+    name: "keybind"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+page_up=scroll_page_up"
+    category: "keybindings"
+
+  keybind-2:
+    name: "keybind-2"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+equal=equalize_splits"
+    category: "keybindings"
+
+  keybind-3:
+    name: "keybind-3"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:four=goto_tab:4"
+    category: "keybindings"
+
+  keybind-4:
+    name: "keybind-4"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+down=jump_to_prompt:1"
+    category: "keybindings"
+
+  keybind-5:
+    name: "keybind-5"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+w=close_window"
+    category: "keybindings"
+
+  keybind-6:
+    name: "keybind-6"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+left_bracket=previous_tab"
+    category: "keybindings"
+
+  keybind-7:
+    name: "keybind-7"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+backspace=text:\x15"
+    category: "keybindings"
+
+  keybind-8:
+    name: "keybind-8"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+w=close_tab"
+    category: "keybindings"
+
+  keybind-9:
+    name: "keybind-9"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+w=close_surface"
+    category: "keybindings"
+
+  keybind-10:
+    name: "keybind-10"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+i=inspector:toggle"
+    category: "keybindings"
+
+  keybind-11:
+    name: "keybind-11"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:eight=goto_tab:8"
+    category: "keybindings"
+
+  keybind-12:
+    name: "keybind-12"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+right=goto_split:right"
+    category: "keybindings"
+
+  keybind-13:
+    name: "keybind-13"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+up=adjust_selection:up"
+    category: "keybindings"
+
+  keybind-14:
+    name: "keybind-14"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+down=jump_to_prompt:1"
+    category: "keybindings"
+
+  keybind-15:
+    name: "keybind-15"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+enter=toggle_fullscreen"
+    category: "keybindings"
+
+  keybind-16:
+    name: "keybind-16"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+t=new_tab"
+    category: "keybindings"
+
+  keybind-17:
+    name: "keybind-17"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+c=copy_to_clipboard"
+    category: "keybindings"
+
+  keybind-18:
+    name: "keybind-18"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+right_bracket=next_tab"
+    category: "keybindings"
+
+  keybind-19:
+    name: "keybind-19"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:one=goto_tab:1"
+    category: "keybindings"
+
+  keybind-20:
+    name: "keybind-20"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+left=adjust_selection:left"
+    category: "keybindings"
+
+  keybind-21:
+    name: "keybind-21"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+equal=increase_font_size:1"
+    category: "keybindings"
+
+  keybind-22:
+    name: "keybind-22"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+page_up=adjust_selection:page_up"
+    category: "keybindings"
+
+  keybind-23:
+    name: "keybind-23"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:three=goto_tab:3"
+    category: "keybindings"
+
+  keybind-24:
+    name: "keybind-24"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+right=text:\x05"
+    category: "keybindings"
+
+  keybind-25:
+    name: "keybind-25"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+d=new_split:right"
+    category: "keybindings"
+
+  keybind-26:
+    name: "keybind-26"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+down=resize_split:down,10"
+    category: "keybindings"
+
+  keybind-27:
+    name: "keybind-27"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+end=adjust_selection:end"
+    category: "keybindings"
+
+  keybind-28:
+    name: "keybind-28"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+plus=increase_font_size:1"
+    category: "keybindings"
+
+  keybind-29:
+    name: "keybind-29"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+q=quit"
+    category: "keybindings"
+
+  keybind-30:
+    name: "keybind-30"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+home=scroll_to_top"
+    category: "keybindings"
+
+  keybind-31:
+    name: "keybind-31"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+left=resize_split:left,10"
+    category: "keybindings"
+
+  keybind-32:
+    name: "keybind-32"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "alt+left=esc:b"
+    category: "keybindings"
+
+  keybind-33:
+    name: "keybind-33"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+up=resize_split:up,10"
+    category: "keybindings"
+
+  keybind-34:
+    name: "keybind-34"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+left=text:\x01"
+    category: "keybindings"
+
+  keybind-35:
+    name: "keybind-35"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+up=jump_to_prompt:-1"
+    category: "keybindings"
+
+  keybind-36:
+    name: "keybind-36"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+right=adjust_selection:right"
+    category: "keybindings"
+
+  keybind-37:
+    name: "keybind-37"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+comma=open_config"
+    category: "keybindings"
+
+  keybind-38:
+    name: "keybind-38"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+comma=reload_config"
+    category: "keybindings"
+
+  keybind-39:
+    name: "keybind-39"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+minus=decrease_font_size:1"
+    category: "keybindings"
+
+  keybind-40:
+    name: "keybind-40"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+page_down=adjust_selection:page_down"
+    category: "keybindings"
+
+  keybind-41:
+    name: "keybind-41"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "ctrl+tab=next_tab"
+    category: "keybindings"
+
+  keybind-42:
+    name: "keybind-42"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+a=select_all"
+    category: "keybindings"
+
+  keybind-43:
+    name: "keybind-43"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "alt+right=esc:f"
+    category: "keybindings"
+
+  keybind-44:
+    name: "keybind-44"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+enter=toggle_split_zoom"
+    category: "keybindings"
+
+  keybind-45:
+    name: "keybind-45"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+down=goto_split:down"
+    category: "keybindings"
+
+  keybind-46:
+    name: "keybind-46"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+f=toggle_fullscreen"
+    category: "keybindings"
+
+  keybind-47:
+    name: "keybind-47"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+ctrl+right=resize_split:right,10"
+    category: "keybindings"
+
+  keybind-48:
+    name: "keybind-48"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+shift+j=write_screen_file:open"
+    category: "keybindings"
+
+  keybind-49:
+    name: "keybind-49"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+down=adjust_selection:down"
+    category: "keybindings"
+
+  keybind-50:
+    name: "keybind-50"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "ctrl+shift+tab=previous_tab"
+    category: "keybindings"
+
+  keybind-51:
+    name: "keybind-51"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+n=new_window"
+    category: "keybindings"
+
+  keybind-52:
+    name: "keybind-52"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+left=goto_split:left"
+    category: "keybindings"
+
+  keybind-53:
+    name: "keybind-53"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+page_down=scroll_page_down"
+    category: "keybindings"
+
+  keybind-54:
+    name: "keybind-54"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+shift+w=close_all_windows"
+    category: "keybindings"
+
+  keybind-55:
+    name: "keybind-55"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+alt+up=goto_split:up"
+    category: "keybindings"
+
+  keybind-56:
+    name: "keybind-56"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+v=paste_from_selection"
+    category: "keybindings"
+
+  keybind-57:
+    name: "keybind-57"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+left_bracket=goto_split:previous"
+    category: "keybindings"
+
+  keybind-58:
+    name: "keybind-58"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:nine=last_tab"
+    category: "keybindings"
+
+  keybind-59:
+    name: "keybind-59"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+right_bracket=goto_split:next"
+    category: "keybindings"
+
+  keybind-60:
+    name: "keybind-60"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+end=scroll_to_bottom"
+    category: "keybindings"
+
+  keybind-61:
+    name: "keybind-61"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+j=write_screen_file:paste"
+    category: "keybindings"
+
+  keybind-62:
+    name: "keybind-62"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+shift+d=new_split:down"
+    category: "keybindings"
+
+  keybind-63:
+    name: "keybind-63"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+zero=reset_font_size"
+    category: "keybindings"
+
+  keybind-64:
+    name: "keybind-64"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:five=goto_tab:5"
+    category: "keybindings"
+
+  keybind-65:
+    name: "keybind-65"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "shift+home=adjust_selection:home"
+    category: "keybindings"
+
+  keybind-66:
+    name: "keybind-66"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:seven=goto_tab:7"
+    category: "keybindings"
+
+  keybind-67:
+    name: "keybind-67"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+up=jump_to_prompt:-1"
+    category: "keybindings"
+
+  keybind-68:
+    name: "keybind-68"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+k=clear_screen"
+    category: "keybindings"
+
+  keybind-69:
+    name: "keybind-69"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:two=goto_tab:2"
+    category: "keybindings"
+
+  keybind-70:
+    name: "keybind-70"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+physical:six=goto_tab:6"
+    category: "keybindings"
+
+  keybind-71:
+    name: "keybind-71"
+    type: "string"
+    description: "Key bindings. The format is `trigger=action`. Duplicate triggers will  overwrite previously set values. The list of actions is available in the documentation or using the `ghostty +list-actions` co..."
+    default_value: "super+v=paste_from_clipboard"
+    category: "keybindings"
+
+  window-padding-x:
+    name: "window-padding-x"
+    type: "number"
+    description: "Horizontal window padding. This applies padding between the terminal cells  and the left and right window borders. The value is in points, meaning that it will be scaled appropriately for screen DP..."
+    default_value: 2
+    category: "window"
+
+  window-padding-y:
+    name: "window-padding-y"
+    type: "number"
+    description: "Vertical window padding. This applies padding between the terminal cells and  the top and bottom window borders. The value is in points, meaning that it will be scaled appropriately for screen DPI...."
+    default_value: 2
+    category: "window"
+
+  window-padding-balance:
+    name: "window-padding-balance"
+    type: "boolean"
+    description: "The viewport dimensions are usually not perfectly divisible by the cell  size. In this case, some extra padding on the end of a column and the bottom of the final row may exist. If this is `true`, ..."
+    default_value: false
+    category: "window"
+
+  window-padding-color:
+    name: "window-padding-color"
+    type: "color"
+    description: "The color of the padding area of the window. Valid values are:  * `background` - The background color specified in `background`. * `extend` - Extend the background color of the nearest grid cell. *..."
+    default_value: "background"
+    category: "appearance"
+
+  window-vsync:
+    name: "window-vsync"
+    type: "boolean"
+    description: "Synchronize rendering with the screen refresh rate. If true, this will  minimize tearing and align redraws with the screen but may cause input latency. If false, this will maximize redraw frequency..."
+    default_value: true
+    category: "window"
+
+  window-inherit-working-directory:
+    name: "window-inherit-working-directory"
+    type: "boolean"
+    description: "If true, new windows and tabs will inherit the working directory of the  previously focused window. If no window was previously focused, the default working directory will be used (the `working-dir..."
+    default_value: true
+    category: "window"
+
+  window-inherit-font-size:
+    name: "window-inherit-font-size"
+    type: "boolean"
+    description: "If true, new windows and tabs will inherit the font size of the previously  focused window. If no window was previously focused, the default font size will be used. If this is false, the default fo..."
+    default_value: true
+    category: "window"
+
+  window-decoration:
+    name: "window-decoration"
+    type: "string"
+    description: "Configure a preference for window decorations. This setting specifies  a _preference_; the actual OS, desktop environment, window manager, etc. may override this preference. Ghostty will do its bes..."
+    default_value: "auto"
+    category: "window"
+
+  window-title-font-family:
+    name: "window-title-font-family"
+    type: "string"
+    description: "The font that will be used for the application's window and tab titles.  If this setting is left unset, the system default font will be used. Note: any font available on the system may be used, thi..."
+    category: "window"
+
+  window-subtitle:
+    name: "window-subtitle"
+    type: "boolean"
+    description: "The text that will be displayed in the subtitle of the window. Valid values:    * `false` - Disable the subtitle.   * `working-directory` - Set the subtitle to the working directory of the      sur..."
+    default_value: false
+    category: "window"
+
+  window-theme:
+    name: "window-theme"
+    type: "choice"
+    description: "The theme to use for the windows. Valid values:    * `auto` - Determine the theme based on the configured terminal      background color. This has no effect if the \"theme\" configuration      has ..."
+    default_value: "auto"
+    category: "appearance"
+
+  window-colorspace:
+    name: "window-colorspace"
+    type: "color"
+    description: "The color space to use when interpreting terminal colors. \"Terminal colors\"  refers to colors specified in your configuration and colors produced by direct-color SGR sequences. Valid values:   * ..."
+    default_value: "srgb"
+    category: "appearance"
+
+  window-height:
+    name: "window-height"
+    type: "number"
+    description: "The initial window size. This size is in terminal grid cells by default.  Both values must be set to take effect. If only one value is set, it is ignored. We don't currently support specifying a si..."
+    default_value: 0
+    category: "window"
+
+  window-width:
+    name: "window-width"
+    type: "number"
+    description: "The starting window position. This position is in pixels and is relative  to the top-left corner of the primary monitor. Both values must be set to take effect. If only one value is set, it is igno..."
+    default_value: 0
+    category: "window"
+
+  window-position-x:
+    name: "window-position-x"
+    type: "string"
+    description: "The starting window position. This position is in pixels and is relative  to the top-left corner of the primary monitor. Both values must be set to take effect. If only one value is set, it is igno..."
+    category: "window"
+
+  window-position-y:
+    name: "window-position-y"
+    type: "string"
+    description: "Whether to enable saving and restoring window state. Window state includes  their position, size, tabs, splits, etc. Some window state requires shell integration, such as preserving working directo..."
+    category: "window"
+
+  window-save-state:
+    name: "window-save-state"
+    type: "string"
+    description: "Whether to enable saving and restoring window state. Window state includes  their position, size, tabs, splits, etc. Some window state requires shell integration, such as preserving working directo..."
+    default_value: "default"
+    category: "window"
+
+  window-step-resize:
+    name: "window-step-resize"
+    type: "boolean"
+    description: "Resize the window in discrete increments of the focused surface's cell size.  If this is disabled, surfaces are resized in pixel increments. Currently only supported on macOS."
+    default_value: false
+    category: "window"
+
+  window-new-tab-position:
+    name: "window-new-tab-position"
+    type: "choice"
+    description: "The position where new tabs are created. Valid values:    * `current` - Insert the new tab after the currently focused tab,     or at the end if there are no focused tabs.   * `end` - Insert the ne..."
+    default_value: "current"
+    category: "window"
+
+  window-titlebar-background:
+    name: "window-titlebar-background"
+    type: "color"
+    description: "Background color for the window titlebar. This only takes effect if  window-theme is set to ghostty. Currently only supported in the GTK app runtime. Specified as either hex (`#RRGGBB` or `RRGGBB`)..."
+    category: "appearance"
+
+  window-titlebar-foreground:
+    name: "window-titlebar-foreground"
+    type: "color"
+    description: "Foreground color for the window titlebar. This only takes effect if  window-theme is set to ghostty. Currently only supported in the GTK app runtime. Specified as either hex (`#RRGGBB` or `RRGGBB`)..."
+    category: "appearance"
+
+  resize-overlay:
+    name: "resize-overlay"
+    type: "string"
+    description: "This controls when resize overlays are shown. Resize overlays are a  transient popup that shows the size of the terminal while the surfaces are being resized. The possible options are:   * `always`..."
+    default_value: "after-first"
+    category: "general"
+
+  resize-overlay-position:
+    name: "resize-overlay-position"
+    type: "string"
+    description: "If resize overlays are enabled, this controls the position of the overlay.  The possible options are:   * `center`   * `top-left`   * `top-center`   * `top-right`   * `bottom-left`   * `bottom-cent..."
+    default_value: "center"
+    category: "general"
+
+  resize-overlay-duration:
+    name: "resize-overlay-duration"
+    type: "string"
+    description: "If resize overlays are enabled, this controls how long the overlay is  visible on the screen before it is hidden. The default is ¾ of a second or 750 ms. The duration is specified as a series of n..."
+    default_value: "750ms"
+    category: "general"
+
+  focus-follows-mouse:
+    name: "focus-follows-mouse"
+    type: "boolean"
+    description: "If true, when there are multiple split panes, the mouse selects the pane  that is focused. This only applies to the currently focused window; e.g. mousing over a split in an unfocused window will n..."
+    default_value: false
+    category: "general"
+
+  clipboard-read:
+    name: "clipboard-read"
+    type: "string"
+    description: "Whether to allow programs running in the terminal to read/write to the  system clipboard (OSC 52, for googling). The default is to allow clipboard reading after prompting the user and allow writing..."
+    default_value: "ask"
+    category: "clipboard"
+
+  clipboard-write:
+    name: "clipboard-write"
+    type: "string"
+    description: "Trims trailing whitespace on data that is copied to the clipboard. This does  not affect data sent to the clipboard via `clipboard-write`."
+    default_value: "allow"
+    category: "clipboard"
+
+  clipboard-trim-trailing-spaces:
+    name: "clipboard-trim-trailing-spaces"
+    type: "boolean"
+    description: "Trims trailing whitespace on data that is copied to the clipboard. This does  not affect data sent to the clipboard via `clipboard-write`."
+    default_value: true
+    category: "clipboard"
+
+  clipboard-paste-protection:
+    name: "clipboard-paste-protection"
+    type: "boolean"
+    description: "Require confirmation before pasting text that appears unsafe. This helps  prevent a \"copy/paste attack\" where a user may accidentally execute unsafe commands by pasting text with newlines."
+    default_value: true
+    category: "clipboard"
+
+  clipboard-paste-bracketed-safe:
+    name: "clipboard-paste-bracketed-safe"
+    type: "boolean"
+    description: "If true, bracketed pastes will be considered safe. By default, bracketed  pastes are considered safe. \"Bracketed\" pastes are pastes while the running program has bracketed paste mode enabled (a s..."
+    default_value: true
+    category: "clipboard"
+
+  title-report:
+    name: "title-report"
+    type: "boolean"
+    description: "Enables or disabled title reporting (CSI 21 t). This escape sequence  allows the running program to query the terminal title. This is a common security issue and is disabled by default. Warning: Th..."
+    default_value: false
+    category: "general"
+
+  image-storage-limit:
+    name: "image-storage-limit"
+    type: "number"
+    description: "The total amount of bytes that can be used for image data (e.g. the Kitty  image protocol) per terminal screen. The maximum value is 4,294,967,295 (4GiB). The default is 320MB. If this is set to ze..."
+    default_value: 320000000
+    category: "general"
+
+  copy-on-select:
+    name: "copy-on-select"
+    type: "boolean"
+    description: "Whether to automatically copy selected text to the clipboard. `true`  will prefer to copy to the selection clipboard, otherwise it will copy to the system clipboard. The value `clipboard` will alwa..."
+    default_value: true
+    category: "clipboard"
+
+  click-repeat-interval:
+    name: "click-repeat-interval"
+    type: "number"
+    description: "The time in milliseconds between clicks to consider a click a repeat  (double, triple, etc.) or an entirely new single click. A value of zero will use a platform-specific default. The default on ma..."
+    default_value: 0
+    category: "general"
+
+  config-file:
+    name: "config-file"
+    type: "string"
+    description: "Additional configuration files to read. This configuration can be repeated  to read multiple configuration files. Configuration files themselves can load more configuration files. Paths are relativ..."
+    category: "general"
+
+  config-default-files:
+    name: "config-default-files"
+    type: "boolean"
+    description: "When this is true, the default configuration file paths will be loaded.  The default configuration file paths are currently only the XDG config path ($XDG_CONFIG_HOME/ghostty/config). If this is fa..."
+    default_value: true
+    category: "general"
+
+  confirm-close-surface:
+    name: "confirm-close-surface"
+    type: "boolean"
+    description: "Confirms that a surface should be closed before closing it.  This defaults to `true`. If set to `false`, surfaces will close without any confirmation. This can also be set to `always`, which will a..."
+    default_value: true
+    category: "general"
+
+  quit-after-last-window-closed:
+    name: "quit-after-last-window-closed"
+    type: "boolean"
+    description: "Whether or not to quit after the last surface is closed.  This defaults to `false` on macOS since that is standard behavior for a macOS application. On Linux, this defaults to `true` since that is ..."
+    default_value: false
+    category: "general"
+
+  quit-after-last-window-closed-delay:
+    name: "quit-after-last-window-closed-delay"
+    type: "string"
+    description: "Controls how long Ghostty will stay running after the last open surface has  been closed. This only has an effect if `quit-after-last-window-closed` is also set to `true`. The minimum value for thi..."
+    category: "general"
+
+  initial-window:
+    name: "initial-window"
+    type: "boolean"
+    description: "This controls whether an initial window is created when Ghostty  is run. Note that if `quit-after-last-window-closed` is `true` and `quit-after-last-window-closed-delay` is set, setting `initial-wi..."
+    default_value: true
+    category: "general"
+
+  quick-terminal-position:
+    name: "quick-terminal-position"
+    type: "string"
+    description: "The position of the \"quick\" terminal window. To learn more about the  quick terminal, see the documentation for the `toggle_quick_terminal` binding action. Valid values are:   * `top` - Terminal ..."
+    default_value: "top"
+    category: "general"
+
+  quick-terminal-screen:
+    name: "quick-terminal-screen"
+    type: "string"
+    description: "The screen where the quick terminal should show up.  Valid values are:  * `main` - The screen that the operating system recommends as the main    screen. On macOS, this is the screen that is curren..."
+    default_value: "main"
+    category: "general"
+
+  quick-terminal-animation-duration:
+    name: "quick-terminal-animation-duration"
+    type: "number"
+    description: "Duration (in seconds) of the quick terminal enter and exit animation.  Set it to 0 to disable animation completely. This can be changed at runtime."
+    default_value: 0.2
+    category: "general"
+
+  quick-terminal-autohide:
+    name: "quick-terminal-autohide"
+    type: "boolean"
+    description: "Automatically hide the quick terminal when focus shifts to another window.  Set it to false for the quick terminal to remain open even when it loses focus."
+    default_value: true
+    category: "general"
+
+  quick-terminal-space-behavior:
+    name: "quick-terminal-space-behavior"
+    type: "string"
+    description: "This configuration option determines the behavior of the quick terminal  when switching between macOS spaces. macOS spaces are virtual desktops that can be manually created or are automatically cre..."
+    default_value: "move"
+    category: "general"
+
+  shell-integration:
+    name: "shell-integration"
+    type: "string"
+    description: "Whether to enable shell integration auto-injection or not. Shell integration  greatly enhances the terminal experience by enabling a number of features:   * Working directory reporting so new tabs,..."
+    default_value: "detect"
+    category: "shell"
+
+  shell-integration-features:
+    name: "shell-integration-features"
+    type: "string"
+    description: "Shell integration features to enable. These require our shell integration  to be loaded, either automatically via shell-integration or manually. The format of this is a list of features to enable s..."
+    default_value: "cursor,no-sudo,title"
+    category: "shell"
+
+  osc-color-report-format:
+    name: "osc-color-report-format"
+    type: "color"
+    description: "Sets the reporting format for OSC sequences that request color information.  Ghostty currently supports OSC 10 (foreground), OSC 11 (background), and OSC 4 (256 color palette) queries, and by defau..."
+    default_value: "16-bit"
+    category: "appearance"
+
+  vt-kam-allowed:
+    name: "vt-kam-allowed"
+    type: "boolean"
+    description: "If true, allows the \"KAM\" mode (ANSI mode 2) to be used within  the terminal. KAM disables keyboard input at the request of the application. This is not a common feature and is not recommended to..."
+    default_value: false
+    category: "general"
+
+  custom-shader:
+    name: "custom-shader"
+    type: "string"
+    description: "Custom shaders to run after the default shaders. This is a file path  to a GLSL-syntax shader for all platforms. Warning: Invalid shaders can cause Ghostty to become unusable such as by causing the..."
+    category: "general"
+
+  custom-shader-animation:
+    name: "custom-shader-animation"
+    type: "boolean"
+    description: "If `true` (default), the focused terminal surface will run an animation  loop when custom shaders are used. This uses slightly more CPU (generally less than 10%) but allows the shader to animate. T..."
+    default_value: true
+    category: "general"
+
+  app-notifications:
+    name: "app-notifications"
+    type: "string"
+    description: "Control the in-app notifications that Ghostty shows.  On Linux (GTK) with Adwaita, in-app notifications show up as toasts. Toasts appear overlaid on top of the terminal window. They are used to sho..."
+    default_value: "clipboard-copy"
+    category: "general"
+
+  macos-non-native-fullscreen:
+    name: "macos-non-native-fullscreen"
+    type: "boolean"
+    description: "If anything other than false, fullscreen mode on macOS will not use the  native fullscreen, but make the window fullscreen without animations and using a new space. It's faster than the native full..."
+    default_value: false
+    category: "window"
+
+  macos-titlebar-style:
+    name: "macos-titlebar-style"
+    type: "string"
+    description: "The style of the macOS titlebar. Available values are: \"native\",  \"transparent\", \"tabs\", and \"hidden\". The \"native\" style uses the native macOS titlebar with zero customization. The title..."
+    default_value: "transparent"
+    category: "macos"
+
+  macos-titlebar-proxy-icon:
+    name: "macos-titlebar-proxy-icon"
+    type: "string"
+    description: "Whether the proxy icon in the macOS titlebar is visible. The proxy icon  is the icon that represents the folder of the current working directory. You can see this very clearly in the macOS built-in..."
+    default_value: "visible"
+    category: "macos"
+
+  macos-option-as-alt:
+    name: "macos-option-as-alt"
+    type: "string"
+    description: "macOS doesn't have a distinct \"alt\" key and instead has the \"option\"  key which behaves slightly differently. On macOS by default, the option key plus a character will sometimes produces a Unic..."
+    category: "macos"
+
+  macos-window-shadow:
+    name: "macos-window-shadow"
+    type: "boolean"
+    description: "Whether to enable the macOS window shadow. The default value is true.  With some window managers and window transparency settings, you may find false more visually appealing."
+    default_value: true
+    category: "macos"
+
+  macos-auto-secure-input:
+    name: "macos-auto-secure-input"
+    type: "boolean"
+    description: "If true, Ghostty on macOS will automatically enable the \"Secure Input\"  feature when it detects that a password prompt is being displayed. \"Secure Input\" is a macOS security feature that preven..."
+    default_value: true
+    category: "macos"
+
+  macos-secure-input-indication:
+    name: "macos-secure-input-indication"
+    type: "boolean"
+    description: "If true, Ghostty will show a graphical indication when secure input is  enabled. This indication is generally recommended to know when secure input is enabled. Normally, secure input is only active..."
+    default_value: true
+    category: "macos"
+
+  macos-icon:
+    name: "macos-icon"
+    type: "string"
+    description: "Customize the macOS app icon.  This only affects the icon that appears in the dock, application switcher, etc. This does not affect the icon in Finder because that is controlled by a hardcoded valu..."
+    default_value: "official"
+    category: "macos"
+
+  macos-icon-frame:
+    name: "macos-icon-frame"
+    type: "string"
+    description: "The material to use for the frame of the macOS app icon.  Valid values:  * `aluminum` - A brushed aluminum frame. This is the default.  * `beige` - A classic 90's computer beige frame.  * `plastic`..."
+    default_value: "aluminum"
+    category: "macos"
+
+  macos-icon-ghost-color:
+    name: "macos-icon-ghost-color"
+    type: "color"
+    description: "The color of the ghost in the macOS app icon.  Note: This configuration is required when `macos-icon` is set to `custom-style`. This only has an effect when `macos-icon` is set to `custom-style`. S..."
+    category: "appearance"
+
+  macos-icon-screen-color:
+    name: "macos-icon-screen-color"
+    type: "color"
+    description: "The color of the screen in the macOS app icon.  The screen is a gradient so you can specify multiple colors that make up the gradient. Comma-separated colors may be specified as as either hex (`#RR..."
+    category: "appearance"
+
+  linux-cgroup:
+    name: "linux-cgroup"
+    type: "string"
+    description: "Put every surface (tab, split, window) into a dedicated Linux cgroup.  This makes it so that resource management can be done on a per-surface granularity. For example, if a shell program is using t..."
+    default_value: "single-instance"
+    category: "linux"
+
+  linux-cgroup-memory-limit:
+    name: "linux-cgroup-memory-limit"
+    type: "string"
+    description: "Memory limit for any individual terminal process (tab, split, window,  etc.) in bytes. If this is unset then no memory limit will be set. Note that this sets the \"memory.high\" configuration for t..."
+    category: "linux"
+
+  linux-cgroup-processes-limit:
+    name: "linux-cgroup-processes-limit"
+    type: "string"
+    description: "Number of processes limit for any individual terminal process (tab, split,  window, etc.). If this is unset then no limit will be set. Note that this sets the \"pids.max\" configuration for the pro..."
+    category: "linux"
+
+  linux-cgroup-hard-fail:
+    name: "linux-cgroup-hard-fail"
+    type: "boolean"
+    description: "If this is false, then any cgroup initialization (for linux-cgroup)  will be allowed to fail and the failure is ignored. This is useful if you view cgroup isolation as a \"nice to have\" and not a ..."
+    default_value: false
+    category: "linux"
+
+  gtk-opengl-debug:
+    name: "gtk-opengl-debug"
+    type: "boolean"
+    description: "Enable or disable GTK's OpenGL debugging logs. The default is `true` for  debug builds, `false` for all others."
+    default_value: false
+    category: "linux"
+
+  gtk-gsk-renderer:
+    name: "gtk-gsk-renderer"
+    type: "string"
+    description: "Obsolete configuration that should not be set. This was deprecated in  Ghostty 1.1.3 and no longer has any effect. The configuration key will be fully removed in 1.2.0. You can manually override th..."
+    default_value: "default"
+    category: "linux"
+
+  gtk-single-instance:
+    name: "gtk-single-instance"
+    type: "string"
+    description: "If `true`, the Ghostty GTK application will run in single-instance mode:  each new `ghostty` process launched will result in a new window if there is already a running process. If `false`, each new..."
+    default_value: "desktop"
+    category: "linux"
+
+  gtk-titlebar:
+    name: "gtk-titlebar"
+    type: "boolean"
+    description: "When enabled, the full GTK titlebar is displayed instead of your window  manager's simple titlebar. The behavior of this option will vary with your window manager. This option does nothing when `wi..."
+    default_value: true
+    category: "linux"
+
+  gtk-tabs-location:
+    name: "gtk-tabs-location"
+    type: "string"
+    description: "Determines the side of the screen that the GTK tab bar will stick to.  Top, bottom, left, right, and hidden are supported. The default is top. If this option has value `left` or `right` when using ..."
+    default_value: "top"
+    category: "linux"
+
+  gtk-titlebar-hide-when-maximized:
+    name: "gtk-titlebar-hide-when-maximized"
+    type: "boolean"
+    description: "If this is `true`, the titlebar will be hidden when the window is maximized,  and shown when the titlebar is unmaximized. GTK only."
+    default_value: false
+    category: "window"
+
+  adw-toolbar-style:
+    name: "adw-toolbar-style"
+    type: "string"
+    description: "Determines the appearance of the top and bottom bars when using the  Adwaita tab bar. This requires `gtk-adwaita` to be enabled (it is by default). Valid values are:  * `flat` - Top and bottom bars..."
+    default_value: "raised"
+    category: "general"
+
+  gtk-wide-tabs:
+    name: "gtk-wide-tabs"
+    type: "boolean"
+    description: "If `true` (default), then the Ghostty GTK tabs will be \"wide.\" Wide tabs  are the new typical Gnome style where tabs fill their available space. If you set this to `false` then tabs will only tak..."
+    default_value: true
+    category: "linux"
+
+  gtk-adwaita:
+    name: "gtk-adwaita"
+    type: "boolean"
+    description: "If `true` (default), Ghostty will enable Adwaita theme support. This  will make `window-theme` work properly and will also allow Ghostty to properly respond to system theme changes, light/dark mode..."
+    default_value: true
+    category: "linux"
+
+  gtk-custom-css:
+    name: "gtk-custom-css"
+    type: "string"
+    description: "Custom CSS files to be loaded.  This configuration can be repeated multiple times to load multiple files. Prepend a ? character to the file path to suppress errors if the file does not exist. If yo..."
+    category: "linux"
+
+  desktop-notifications:
+    name: "desktop-notifications"
+    type: "boolean"
+    description: "If `true` (default), applications running in the terminal can show desktop  notifications using certain escape sequences such as OSC 9 or OSC 777."
+    default_value: true
+    category: "general"
+
+  bold-is-bright:
+    name: "bold-is-bright"
+    type: "boolean"
+    description: "If `true`, the bold text will use the bright color palette."
+    default_value: false
+    category: "general"
+
+  term:
+    name: "term"
+    type: "string"
+    description: "This will be used to set the `TERM` environment variable.  HACK: We set this with an `xterm` prefix because vim uses that to enable key protocols (specifically this will enable `modifyOtherKeys`), ..."
+    default_value: "xterm-ghostty"
+    category: "general"
+
+  enquiry-response:
+    name: "enquiry-response"
+    type: "string"
+    description: "String to send when we receive `ENQ` (`0x05`) from the command that we are  running. Defaults to an empty string if not set."
+    category: "general"
+
+  auto-update:
+    name: "auto-update"
+    type: "string"
+    description: "Control the auto-update functionality of Ghostty. This is only supported  on macOS currently, since Linux builds are distributed via package managers that are not centrally controlled by Ghostty. C..."
+    category: "general"
+
+  auto-update-channel:
+    name: "auto-update-channel"
+    type: "string"
+    description: "The release channel to use for auto-updates.  The default value of this matches the release channel of the currently running Ghostty version. If you download a pre-release version of Ghostty then t..."
+    category: "general"
+

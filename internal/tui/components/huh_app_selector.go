@@ -48,11 +48,10 @@ func NewHuhAppSelector() *HuhAppSelectorModel {
 func (m *HuhAppSelectorModel) buildForm() {
 	var options []huh.Option[string]
 	
-	// Filter applications based on showAll setting
+	// Show applications - by default show all available apps
 	for _, status := range m.statuses {
-		if !m.showAll && !status.IsInstalled && !status.HasConfig {
-			continue
-		}
+		// Always include applications in the selector
+		// Future: could add filtering based on categories or other criteria
 		
 		// Create descriptive label with status indicators
 		var statusIcons []string
@@ -109,8 +108,10 @@ func (m *HuhAppSelectorModel) Init() tea.Cmd {
 	return m.form.Init()
 }
 
-// Update handles messages
+// Update handles messages with proper Huh form lifecycle integration
 func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd) {
+	var cmds []tea.Cmd
+	
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.width != msg.Width || m.height != msg.Height {
@@ -124,7 +125,7 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 			return m, nil
 		}
 		
-		// Handle custom key bindings
+		// Handle custom key bindings first, before form processes them
 		switch {
 		case key.Matches(msg, m.keyMap.Toggle):
 			// Toggle between showing all apps and only installed/configured ones
@@ -133,23 +134,33 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 			return m, m.form.Init()
 			
 		case key.Matches(msg, m.keyMap.Enter):
-			if m.form.State == huh.StateCompleted && m.selectedApp != "" {
+			// Check if form is completed after processing
+			if m.form != nil && m.form.State == huh.StateCompleted && m.selectedApp != "" {
 				// App was selected, send selection message
 				return m, SelectAppCmd(m.selectedApp)
 			}
 		}
 	}
 	
-	// Update the form
-	form, cmd := m.form.Update(msg)
-	m.form = form.(*huh.Form)
-	
-	// Check if form was completed
-	if m.form.State == huh.StateCompleted && m.selectedApp != "" {
-		return m, SelectAppCmd(m.selectedApp)
+	// Always update the form with the message - this is critical for Huh integration
+	if m.form != nil {
+		form, cmd := m.form.Update(msg)
+		m.form = form.(*huh.Form)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		
+		// Check if form state changed to completed
+		if m.form.State == huh.StateCompleted && m.selectedApp != "" {
+			cmds = append(cmds, SelectAppCmd(m.selectedApp))
+		}
 	}
 	
-	return m, cmd
+	// Return with batched commands
+	if len(cmds) > 0 {
+		return m, tea.Batch(cmds...)
+	}
+	return m, nil
 }
 
 // View renders the component

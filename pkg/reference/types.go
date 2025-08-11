@@ -4,23 +4,23 @@ import "time"
 
 // ConfigReference represents application configuration metadata
 type ConfigReference struct {
-	AppName     string                   `json:"app_name"`
-	ConfigPath  string                   `json:"config_path"`
-	ConfigType  string                   `json:"config_type"` // json, toml, yaml, ini
-	LastUpdated time.Time                `json:"last_updated"`
-	Settings    map[string]ConfigSetting `json:"settings"`
+	AppName     string                   `json:"app_name" yaml:"app_name"`
+	ConfigPath  string                   `json:"config_path" yaml:"config_path"`
+	ConfigType  string                   `json:"config_type" yaml:"config_type"` // json, toml, yaml, ini
+	LastUpdated time.Time                `json:"last_updated" yaml:"last_updated"`
+	Settings    map[string]ConfigSetting `json:"settings" yaml:"settings"`
 }
 
 // ConfigSetting represents a single configuration option
 type ConfigSetting struct {
-	Name         string      `json:"name"`
-	Type         SettingType `json:"type"`
-	Description  string      `json:"description"`
-	DefaultValue interface{} `json:"default_value,omitempty"`
-	Example      interface{} `json:"example,omitempty"`
-	ValidValues  []string    `json:"valid_values,omitempty"`
-	Required     bool        `json:"required,omitempty"`
-	Category     string      `json:"category,omitempty"`
+	Name         string      `json:"name" yaml:"name"`
+	Type         SettingType `json:"type" yaml:"type"`
+	Description  string      `json:"description" yaml:"description"`
+	DefaultValue interface{} `json:"default_value,omitempty" yaml:"default_value,omitempty"`
+	Example      interface{} `json:"example,omitempty" yaml:"example,omitempty"`
+	ValidValues  []string    `json:"valid_values,omitempty" yaml:"valid_values,omitempty"`
+	Required     bool        `json:"required,omitempty" yaml:"required,omitempty"`
+	Category     string      `json:"category,omitempty" yaml:"category,omitempty"`
 }
 
 // SettingType simplified to essential types only

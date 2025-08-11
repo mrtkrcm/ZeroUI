@@ -23,6 +23,7 @@ type ViewState int
 const (
 	HuhAppSelectionView ViewState = iota // New Huh-based app selection (primary view)
 	HuhConfigEditView                    // New Huh-based config editing
+	HuhGridView                          // New Huh-based grid view (enhanced)
 	AppGridView                          // Legacy grid view (fallback)
 	AppSelectionView                     // Legacy app selection (fallback) 
 	ConfigEditView                       // Legacy config editing (fallback)
@@ -92,6 +93,7 @@ type Model struct {
 	// New Huh-based components (primary)
 	huhAppSelector  *components.HuhAppSelectorModel
 	huhConfigEditor *components.HuhConfigEditorModel
+	huhGrid         *components.HuhGridModel // New grid component
 	
 	// Legacy components (fallback)
 	appGrid        *components.AppGridModel      
@@ -124,10 +126,10 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 	styles.SetTheme(theme)
 
 	// Determine initial state based on whether an app was specified
-	// Always start with the modern Huh-based interface
-	initialState := HuhAppSelectionView
+	// Default to traditional 4-column card grid, with Huh as alternative
+	initialState := AppGridView // Start with traditional 4-column grid
 	if initialApp != "" {
-		initialState = HuhConfigEditView
+		initialState = ConfigEditView // Use traditional config editor
 	}
 
 	model := &Model{
@@ -138,6 +140,7 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 		styles:          styles.GetStyles(),
 		theme:           theme,
 		// Initialize new Huh-based components
+		huhGrid:         components.NewHuhGrid(),
 		huhAppSelector:  components.NewHuhAppSelector(),
 		huhConfigEditor: components.NewHuhConfigEditor(""),
 		// Keep legacy components for fallback
@@ -180,6 +183,10 @@ func (m *Model) Init() tea.Cmd {
 	
 	// Initialize all components with error handling
 	// Priority: New Huh components first
+	if cmd := m.huhGrid.Init(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+	
 	if cmd := m.huhAppSelector.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
@@ -295,6 +302,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.focusCurrentComponent()
 			return m, nil
+		case key.Matches(msg, key.NewBinding(key.WithKeys("l"))):
+			// Quick toggle: grid <-> list view
+			if m.state == AppGridView {
+				m.state = HuhAppSelectionView // Switch to Huh list
+			} else if m.state == HuhAppSelectionView {
+				m.state = AppGridView // Switch back to grid
+			} else if m.state == HuhGridView {
+				m.state = AppGridView // Switch from Huh grid to traditional grid
+			}
+			m.focusCurrentComponent()
+			return m, nil
 		}
 
 	case components.AppSelectedMsg:
@@ -358,6 +376,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if cmd != nil {
 				cmds = append(cmds, cmd)
 			}
+		}
+		
+	case HuhGridView:
+		// Update Huh grid component
+		updatedHuhGrid, cmd := m.huhGrid.Update(msg)
+		m.huhGrid = updatedHuhGrid
+		if cmd != nil {
+			cmds = append(cmds, cmd)
 		}
 		
 	case AppGridView:
@@ -444,12 +470,12 @@ func (m *Model) handleBack() tea.Cmd {
 	case HuhAppSelectionView:
 		return tea.Quit
 	case HuhConfigEditView:
-		if m.currentApp == "" {
-			m.state = HuhAppSelectionView
-		} else {
-			m.state = HuhAppSelectionView
-		}
+		// Return to the appropriate app selection view
+		m.state = HuhAppSelectionView 
+		m.currentApp = ""
 		m.focusCurrentComponent()
+	case HuhGridView:
+		return tea.Quit
 	case AppGridView:
 		return tea.Quit
 	case AppSelectionView:
@@ -477,6 +503,7 @@ func (m *Model) focusCurrentComponent() {
 	// Blur all components first
 	m.huhAppSelector.Blur()
 	m.huhConfigEditor.Blur()
+	m.huhGrid.Blur()
 	m.appSelector.Blur()
 	m.configEditor.Blur()
 
@@ -486,6 +513,8 @@ func (m *Model) focusCurrentComponent() {
 		m.huhAppSelector.Focus()
 	case HuhConfigEditView:
 		m.huhConfigEditor.Focus()
+	case HuhGridView:
+		m.huhGrid.Focus()
 	case AppSelectionView:
 		m.appSelector.Focus()
 	case ConfigEditView:
@@ -513,6 +542,7 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	// Update Huh components first
 	cmds = append(cmds, m.huhAppSelector.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.huhConfigEditor.SetSize(contentWidth, contentHeight))
+	cmds = append(cmds, m.huhGrid.SetSize(contentWidth, contentHeight))
 	
 	// Update legacy components
 	cmds = append(cmds, m.appSelector.SetSize(contentWidth, contentHeight))
@@ -535,6 +565,8 @@ func (m *Model) updateHelpBindings() {
 		bindings = m.huhAppSelector.Bindings()
 	case HuhConfigEditView:
 		bindings = m.huhConfigEditor.Bindings()
+	case HuhGridView:
+		bindings = m.huhGrid.Bindings()
 	case AppSelectionView:
 		bindings = m.appSelector.Bindings()
 	case ConfigEditView:
@@ -572,7 +604,7 @@ func (m *Model) View() string {
 	}
 
 	// For modern Huh views, return content directly (they handle their own layout)
-	if (m.state == HuhAppSelectionView || m.state == HuhConfigEditView) && !m.showingHelp {
+	if (m.state == HuhAppSelectionView || m.state == HuhConfigEditView || m.state == HuhGridView) && !m.showingHelp {
 		return content
 	}
 	
@@ -593,6 +625,9 @@ func (m *Model) renderMainContent() string {
 	case HuhConfigEditView:
 		// Render the modern Huh config editor with forms
 		return m.huhConfigEditor.View()
+	case HuhGridView:
+		// Render the modern Huh grid component (primary grid view)
+		return m.huhGrid.View()
 	case AppGridView:
 		// Legacy grid view (fallback)
 		return m.appGrid.View()
@@ -619,6 +654,8 @@ func (m *Model) renderHelp() string {
 		bindings = m.huhAppSelector.Bindings()
 	case HuhConfigEditView:
 		bindings = m.huhConfigEditor.Bindings()
+	case HuhGridView:
+		bindings = m.huhGrid.Bindings()
 	case AppSelectionView:
 		bindings = m.appSelector.Bindings()
 	case ConfigEditView:
@@ -688,12 +725,14 @@ func (m *Model) renderTitle() string {
 		titleText = "🔧 ZeroUI - Select Application (Modern)"
 	case HuhConfigEditView:
 		titleText = fmt.Sprintf("⚙️ ZeroUI - %s Configuration (Huh Forms)", m.currentApp)
+	case HuhGridView:
+		titleText = "🔧 ZeroUI - Application Grid (Enhanced)"
 	case AppSelectionView:
 		titleText = "ZeroUI - Select Application (Legacy)"
 	case ConfigEditView:
 		titleText = fmt.Sprintf("ZeroUI - %s Configuration (Legacy)", m.currentApp)
 	case AppGridView:
-		titleText = "ZeroUI - Application Grid"
+		titleText = "ZeroUI - Application Grid (Legacy)"
 	case PresetSelectionView:
 		titleText = fmt.Sprintf("ZeroUI - %s Presets", m.currentApp)
 	case HelpView:

@@ -140,18 +140,85 @@ func (m *HuhConfigEditorModel) buildForm() {
 				Value(&inputValue).
 				Placeholder("Enter " + field.Key)
 			
-			// Add validation for specific field types
-			if field.Type == "int" || field.Type == "integer" {
+			// Add validation for specific field types with real-time feedback
+			switch field.Type {
+			case "int", "integer":
 				input = input.Validate(func(s string) error {
 					if s == "" {
 						return nil // Allow empty values
 					}
-					// Basic integer validation
-					for _, r := range s {
+					// Enhanced integer validation
+					for i, r := range s {
 						if r < '0' || r > '9' {
-							if r != '-' || len(s) == 1 {
-								return fmt.Errorf("must be a valid integer")
+							if r == '-' && i == 0 && len(s) > 1 {
+								continue // Allow negative sign at start
 							}
+							return fmt.Errorf("must be a valid integer (only digits and optional minus sign)")
+						}
+					}
+					return nil
+				})
+			case "float", "number":
+				input = input.Validate(func(s string) error {
+					if s == "" {
+						return nil // Allow empty values
+					}
+					// Float validation
+					dotCount := 0
+					for i, r := range s {
+						if r == '.' {
+							dotCount++
+							if dotCount > 1 {
+								return fmt.Errorf("only one decimal point allowed")
+							}
+						} else if r < '0' || r > '9' {
+							if r == '-' && i == 0 && len(s) > 1 {
+								continue // Allow negative sign at start
+							}
+							return fmt.Errorf("must be a valid number")
+						}
+					}
+					return nil
+				})
+			case "email":
+				input = input.Validate(func(s string) error {
+					if s == "" {
+						return nil // Allow empty values
+					}
+					// Basic email validation
+					if !strings.Contains(s, "@") {
+						return fmt.Errorf("must be a valid email address")
+					}
+					parts := strings.Split(s, "@")
+					if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+						return fmt.Errorf("must be a valid email address")
+					}
+					if !strings.Contains(parts[1], ".") {
+						return fmt.Errorf("email domain must contain a dot")
+					}
+					return nil
+				})
+			case "url":
+				input = input.Validate(func(s string) error {
+					if s == "" {
+						return nil // Allow empty values
+					}
+					// Basic URL validation
+					if !strings.HasPrefix(s, "http://") && !strings.HasPrefix(s, "https://") {
+						return fmt.Errorf("URL must start with http:// or https://")
+					}
+					return nil
+				})
+			case "path":
+				input = input.Validate(func(s string) error {
+					if s == "" {
+						return nil // Allow empty values
+					}
+					// Basic path validation - check for invalid characters
+					invalidChars := []string{"<", ">", ":", "\"", "|", "?", "*"}
+					for _, char := range invalidChars {
+						if strings.Contains(s, char) {
+							return fmt.Errorf("path contains invalid character: %s", char)
 						}
 					}
 					return nil
@@ -197,7 +264,7 @@ func (m *HuhConfigEditorModel) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles messages
+// Update handles messages with proper Huh form lifecycle integration
 func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	
@@ -213,7 +280,7 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		
-		// Handle custom key bindings
+		// Handle custom key bindings before form processes them
 		switch {
 		case key.Matches(msg, m.keyMap.Reset):
 			// Reset all fields to their default values
@@ -231,13 +298,14 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			
 		case key.Matches(msg, m.keyMap.Presets):
 			// Send preset selection message
-			return m, func() tea.Msg {
+			cmds = append(cmds, func() tea.Msg {
 				return OpenPresetsMsg{}
-			}
+			})
+			return m, tea.Batch(cmds...)
 		}
 	}
 	
-	// Update the form
+	// Always update the form - critical for Huh integration
 	if m.form != nil {
 		form, cmd := m.form.Update(msg)
 		m.form = form.(*huh.Form)
@@ -246,16 +314,23 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		
 		// Check for field changes and emit change events
-		m.checkForChanges()
+		changeCmd := m.checkForChanges()
+		if changeCmd != nil {
+			cmds = append(cmds, changeCmd)
+		}
 	}
 	
-	return m, tea.Batch(cmds...)
+	// Return with batched commands
+	if len(cmds) > 0 {
+		return m, tea.Batch(cmds...)
+	}
+	return m, nil
 }
 
 // checkForChanges detects when form values change and emits change events
-func (m *HuhConfigEditorModel) checkForChanges() {
+func (m *HuhConfigEditorModel) checkForChanges() tea.Cmd {
 	if m.form == nil {
-		return
+		return nil
 	}
 	
 	// Check if the form is completed to mark as having changes
@@ -263,7 +338,29 @@ func (m *HuhConfigEditorModel) checkForChanges() {
 	// individual field changes more precisely.
 	if m.form.State == huh.StateCompleted {
 		m.hasChanges = true
+		
+		// Emit field change events for each field
+		var cmds []tea.Cmd
+		for _, field := range m.fields {
+			// Check if field value has changed from initial
+			if field.CurrentValue != m.formValues[field.Key] {
+				cmds = append(cmds, func() tea.Msg {
+					return FieldChangedMsg{
+						Key:   field.Key,
+						Value: field.CurrentValue,
+					}
+				})
+				// Update stored value
+				m.formValues[field.Key] = field.CurrentValue
+			}
+		}
+		
+		if len(cmds) > 0 {
+			return tea.Batch(cmds...)
+		}
 	}
+	
+	return nil
 }
 
 // View renders the component

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
@@ -19,9 +20,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ConfigLoader interface to support both basic and reference-enhanced loaders
+type ConfigLoader interface {
+	LoadAppConfig(appName string) (*config.AppConfig, error)
+	ListApps() ([]string, error)
+	LoadTargetConfig(appConfig *config.AppConfig) (*koanf.Koanf, error)
+	SaveTargetConfig(appConfig *config.AppConfig, k *koanf.Koanf) error
+}
+
 // Engine handles configuration toggling operations
 type Engine struct {
-	loader    *config.Loader
+	loader    ConfigLoader
 	logger    *logger.Logger
 	homeDir   string                     // Cache for home directory
 	pathCache *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
@@ -30,11 +39,28 @@ type Engine struct {
 
 // NewEngine creates a new toggle engine (backwards compatibility)
 func NewEngine() (*Engine, error) {
-	loader, err := config.NewLoader()
+	// Use reference-enhanced loader for better config coverage
+	enhancedLoader, err := config.NewReferenceEnhancedLoader()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create config loader: %w", err)
+		// Fallback to basic loader if reference-enhanced fails
+		basicLoader, basicErr := config.NewLoader()
+		if basicErr != nil {
+			return nil, fmt.Errorf("failed to create config loader: %w", basicErr)
+		}
+		// Use basic loader as ConfigLoader interface
+		var loader ConfigLoader = basicLoader
+		homeDir, _ := os.UserHomeDir()
+		pathCache, _ := lru.New[string, string](1000)
+		return &Engine{
+			loader:    loader,
+			logger:    logger.Global(),
+			homeDir:   homeDir,
+			pathCache: pathCache,
+		}, nil
 	}
 
+	// Use enhanced loader as ConfigLoader interface
+	var loader ConfigLoader = enhancedLoader
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
@@ -46,7 +72,7 @@ func NewEngine() (*Engine, error) {
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
-func NewEngineWithDeps(configLoader *config.Loader, log *logger.Logger) *Engine {
+func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{

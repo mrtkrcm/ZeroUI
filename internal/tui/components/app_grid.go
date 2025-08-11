@@ -22,7 +22,8 @@ type AppGridModel struct {
 	columns      int
 	width        int
 	height       int
-	cardSize     int // Enforced square dimensions
+	cardSize     int // Card width
+	cardHeight   int // Card height (separate from width for rectangular cards)
 	keyMap       keys.AppKeyMap
 	styles       *styles.Styles
 	showAll      bool
@@ -68,16 +69,17 @@ func NewAppGrid() *AppGridModel {
 	return &AppGridModel{
 		cards:         cards,
 		statuses:      statuses,
-		columns:       3,
-		cardSize:      28, // Perfect squares
+		columns:       4,  // Default to 4 columns (production standard)
+		cardSize:      30, // Width of cards (rectangular)
+		cardHeight:    10, // Height of cards (shorter than width for rectangular)
 		keyMap:        keys.DefaultKeyMap(),
 		styles:        styles.GetStyles(),
 		showAll:       false,
 		viewport:      vp,
 		cacheDuration: 16 * time.Millisecond, // 60fps optimization
-		minCardSize:   20,
-		maxCardSize:   36,
-		cardSpacing:   4, // Initialize spacing
+		minCardSize:   24,
+		maxCardSize:   36, // Reduced max size for better 4-column fit
+		cardSpacing:   2, // Optimized spacing for 4 columns
 		showAnimation: true,
 	}
 }
@@ -223,9 +225,9 @@ func (m *AppGridModel) View() string {
 	return renderedGrid
 }
 
-// renderAdvancedGrid creates the grid with perfect squares and responsive design
+// renderAdvancedGrid creates the grid with rectangular cards and responsive design
 func (m *AppGridModel) renderAdvancedGrid() string {
-	// Build grid rows with perfect square cards
+	// Build grid rows with rectangular cards optimized for 4-column layout
 	var rows []string
 	visibleCards := m.getVisibleCards()
 	
@@ -233,27 +235,47 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 		return m.renderEmptyState()
 	}
 	
-	// Calculate optimal spacing for perfect alignment
-	totalCardWidth := m.columns * m.cardSize
+	// Calculate optimal spacing for perfect alignment with 10% margins
+	sideMarginPercent := 10
+	if m.width < 80 {
+		sideMarginPercent = 5 // Smaller margins on narrow screens
+	}
+	
+	totalMargins := (m.width * sideMarginPercent * 2) / 100 // 10% on each side
+	availableContentWidth := m.width - totalMargins
+	
 	totalSpacing := (m.columns - 1) * m.cardSpacing
-	availableSpace := m.width - totalCardWidth - totalSpacing
-	leftMargin := availableSpace / 2
+	idealCardWidth := (availableContentWidth - totalSpacing) / m.columns
+	
+	// Use ideal width but constrain by min/max
+	if idealCardWidth > m.maxCardSize {
+		m.cardSize = m.maxCardSize
+	} else if idealCardWidth < m.minCardSize {
+		m.cardSize = m.minCardSize
+	} else {
+		m.cardSize = idealCardWidth
+	}
+	
+	// Recalculate actual margins based on card size
+	totalCardWidth := m.columns * m.cardSize
+	actualContentWidth := totalCardWidth + totalSpacing
+	leftMargin := (m.width - actualContentWidth) / 2
 	
 	// Ensure leftMargin is never negative
 	if leftMargin < 0 {
-		leftMargin = 0
+		leftMargin = 2 // Minimum padding
 	}
 	
 	for i := 0; i < len(visibleCards); i += m.columns {
 		var rowCards []string
 		
-		// Build row with perfect square cards
+		// Build row with rectangular cards
 		for j := 0; j < m.columns && i+j < len(visibleCards); j++ {
 			idx := i + j
 			card := visibleCards[idx]
 			
-			// Ensure perfect square dimensions
-			card.SetSize(m.cardSize, m.cardSize)
+			// Ensure rectangular dimensions (width x height)
+			card.SetSize(m.cardSize, m.cardHeight)
 			
 			// Add selection animation effects
 			if idx == m.selectedIdx && m.showAnimation {
@@ -538,23 +560,27 @@ func (m *AppGridModel) updateResponsiveLayout() {
 		availableWidth = 40 // Minimum working width
 	}
 	
-	// Determine optimal card size (perfect squares)
+	// Determine optimal layout - prioritize 4 columns (production standard)
 	if m.width < 60 {
 		// Very small screens - single column
 		m.columns = 1
-		m.cardSize = m.minCardSize
-	} else if m.width < 100 {
+		m.cardSize = min(availableWidth, 30)
+		m.cardHeight = 10
+	} else if m.width < 80 {
 		// Small screens - two columns
 		m.columns = 2
 		m.cardSize = (availableWidth - m.cardSpacing) / 2
-	} else if m.width < 140 {
+		m.cardHeight = 10
+	} else if m.width < 120 {
 		// Medium screens - three columns
 		m.columns = 3
 		m.cardSize = (availableWidth - 2*m.cardSpacing) / 3
+		m.cardHeight = 10
 	} else {
-		// Large screens - four columns max for aesthetics
+		// Standard and large screens - four columns (default and preferred)
 		m.columns = 4
-		m.cardSize = (availableWidth - 3*m.cardSpacing) / 4
+		m.cardSize = min((availableWidth - 3*m.cardSpacing) / 4, 36)
+		m.cardHeight = 10 // Consistent rectangular height
 	}
 	
 	// Enforce size constraints
@@ -569,9 +595,9 @@ func (m *AppGridModel) updateResponsiveLayout() {
 		m.cardSize = m.maxCardSize
 	}
 	
-	// Update all card sizes to perfect squares
+	// Update all card sizes to rectangular dimensions (width x height)
 	for _, card := range m.cards {
-		card.SetSize(m.cardSize, m.cardSize)
+		card.SetSize(m.cardSize, m.cardHeight)
 	}
 	
 	// Update viewport dimensions

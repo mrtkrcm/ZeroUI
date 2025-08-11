@@ -13,7 +13,7 @@ import (
 // Container holds all application dependencies
 type Container struct {
 	logger        *logger.Logger
-	configLoader  *config.Loader
+	configLoader  *config.ReferenceEnhancedLoader
 	toggleEngine  *toggle.Engine
 	configService *service.ConfigService
 }
@@ -51,10 +51,10 @@ func New(cfg *Config) (*Container, error) {
 	// Initialize global logger for convenience
 	logger.InitGlobal(loggerConfig)
 
-	// Initialize config loader
-	configLoader, err := config.NewLoader()
+	// Initialize enhanced config loader with reference integration
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize config loader: %w", err)
+		return nil, fmt.Errorf("failed to initialize enhanced config loader: %w", err)
 	}
 	c.configLoader = configLoader
 
@@ -73,7 +73,7 @@ func (c *Container) Logger() *logger.Logger {
 }
 
 // ConfigLoader returns the config loader instance
-func (c *Container) ConfigLoader() *config.Loader {
+func (c *Container) ConfigLoader() *config.ReferenceEnhancedLoader {
 	return c.configLoader
 }
 
