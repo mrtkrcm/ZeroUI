@@ -280,22 +280,8 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 			// Ensure rectangular dimensions (width x height)
 			card.SetSize(m.cardSize, m.cardHeight)
 			
-			// Add selection animation effects
-			if idx == m.selectedIdx && m.showAnimation {
-				// Add subtle pulse effect for selected card
-				cardView := card.View()
-				if m.animationStep%2 == 0 {
-					// Alternate between normal and slightly enlarged
-					animatedStyle := lipgloss.NewStyle().
-						Padding(0, 1).
-						Border(lipgloss.RoundedBorder()).
-						BorderForeground(lipgloss.Color("212"))
-					cardView = animatedStyle.Render(cardView)
-				}
-				rowCards = append(rowCards, cardView)
-			} else {
-				rowCards = append(rowCards, card.View())
-			}
+			// Consistent card rendering without layout-shifting animations
+			rowCards = append(rowCards, card.View())
 		}
 		
 		// Add perfect spacing between cards - optimized with string builder

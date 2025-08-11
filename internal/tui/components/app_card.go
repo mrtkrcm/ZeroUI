@@ -196,11 +196,8 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 		BorderLeft(true).
 		BorderRight(true)
 	
-	// Add shadow effect for depth
-	if m.Selected || m.hoverEffect {
-		// Create shadow effect with gradient
-		baseStyle = baseStyle.MarginRight(1).MarginBottom(1)
-	}
+	// Remove inconsistent shadow effects that cause layout shifts
+	// Instead, use consistent border highlighting for all states
 	
 	if !m.Status.IsInstalled {
 		// Dimmed style with subtle gradient for uninstalled apps
@@ -211,11 +208,11 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 	}
 	
 	if m.Selected {
-		// Selected style with gradient background and glow
+		// Selected style with gradient background - use consistent border style
 		gradientBg := m.getGradientBackground()
 		return baseStyle.
 			BorderForeground(lipgloss.Color("212")).
-			BorderStyle(lipgloss.DoubleBorder()).
+			BorderStyle(lipgloss.RoundedBorder()).
 			Background(gradientBg).
 			Bold(true)
 	}
