@@ -1,12 +1,12 @@
- ZeroUI - ghostty Configuration                                                                                         
+ ZeroUI - ghostty Configuration (Legacy)                                                                                
                                                                                                                         
-  > background-blur-radius: 0 [0, 10, 20, 30, 40, 50]                                                                   
-    Background blur radius                                                                                              
-    cursor-style: bar                                                                                                   
-    theme: GruvboxDark                                                                                                  
-    font-family: Berkeley Mono                                                                                          
-    font-size: 16                                                                                                       
-    background-opacity: 1.0                                                                                             
+  No configuration fields available                                                                                     
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
                                                                                                                         
                                                                                                                         
                                                                                                                         

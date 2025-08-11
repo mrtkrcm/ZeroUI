@@ -35,4 +35,4 @@
                                                                                                                         
                                                                                                                         
 Status: Ready • Theme: Default                                                                                          
-? toggle help • esc go back • q quit                                                                                    
+? toggle help • esc go back • q quit • ctrl+h switch to Huh UI • ctrl+l switch to legacy UI                             

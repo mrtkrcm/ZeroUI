@@ -1,8 +1,8 @@
- ZeroUI - Select Application                                                                                            
+ ZeroUI - Select Application (Legacy)                                                                                   
                                                                                                                         
   > ghostty                                                                                                             
-                                                                                                                        
-                                                                                                                        
+    mise                                                                                                                
+    zed                                                                                                                 
                                                                                                                         
                                                                                                                         
                                                                                                                         
@@ -35,4 +35,4 @@
                                                                                                                         
                                                                                                                         
 Status: Ready • Theme: Default                                                                                          
-↑/k move up • ↓/j move down • enter select/confirm • ? toggle help • esc go back • q quit                               
+q quit • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up • esc go back • ctrl+h switch to Huh UI     

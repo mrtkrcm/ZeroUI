@@ -21,8 +21,8 @@
 │                                                                                                                    │
 │                                                                                                                    │
 │                                                                                                                    │
-│                  ↑ up • ↓ down • / filter • enter submit                                                           │
 │                                                                                                                    │
+│                  ↑ up • ↓ down • / filter • enter submit                                                           │
 │                                                                                                                    │
 │                                                                                                                    │
 │                                                                                                                    │

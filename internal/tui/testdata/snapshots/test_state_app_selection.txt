@@ -1,6 +1,8 @@
- ZeroUI - Select Application                                                                        
+ ZeroUI - Select Application (Legacy)                                                               
                                                                                                     
   > ghostty                                                                                         
+    mise                                                                                            
+    zed                                                                                             
                                                                                                     
                                                                                                     
                                                                                                     
@@ -22,7 +24,5 @@
                                                                                                     
                                                                                                     
                                                                                                     
-                                                                                                    
-                                                                                                    
-Status: Ready • Apps: 1 • Theme: Default                                                            
-? toggle help • esc go back • q quit                                                                
+Status: Ready • Apps: 3 • Theme: Default                                                            
+? toggle help • esc go back • q quit • ctrl+h switch to Huh UI • ctrl+l switch to legacy UI         

@@ -1,4 +1,4 @@
- ZeroUI - ghostty Configuration                                                                     
+ ZeroUI - ghostty Configuration (Legacy)                                                            
                                                                                                     
   No configuration fields available                                                                 
                                                                                                     
@@ -25,4 +25,4 @@
                                                                                                     
                                                                                                     
 Status: Ready • Apps: 5 • Theme: Dark                                                               
-? toggle help • esc go back • q quit                                                                
+? toggle help • esc go back • q quit • ctrl+h switch to Huh UI • ctrl+l switch to legacy UI         

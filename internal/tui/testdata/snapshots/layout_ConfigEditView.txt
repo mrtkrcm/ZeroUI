@@ -1,4 +1,4 @@
- ZeroUI - test-app Configuration                                                                                        
+ ZeroUI - test-app Configuration (Legacy)                                                                               
                                                                                                                         
   No configuration fields available                                                                                     
                                                                                                                         
