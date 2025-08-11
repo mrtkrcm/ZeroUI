@@ -2,6 +2,7 @@ package extractor
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -103,7 +104,7 @@ type NumberRule struct {
 
 func (r NumberRule) Validate(value interface{}) (bool, string) {
 	var num float64
-	
+
 	switch v := value.(type) {
 	case float64:
 		num = v
@@ -117,7 +118,12 @@ func (r NumberRule) Validate(value interface{}) (bool, string) {
 		if !isNumeric(v) {
 			return false, "must be a number"
 		}
-		return true, "" // Accept valid numeric strings
+		// Parse the numeric string to validate against min/max
+		if parsed, err := strconv.ParseFloat(v, 64); err == nil {
+			num = parsed
+		} else {
+			return false, "must be a number"
+		}
 	default:
 		return false, "must be a number"
 	}

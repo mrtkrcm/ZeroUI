@@ -3,8 +3,6 @@ package extractor
 import (
 	"context"
 	"fmt"
-	"io"
-	"strings"
 	"testing"
 	"time"
 )
@@ -18,7 +16,7 @@ type mockStrategy struct {
 	delay      time.Duration
 }
 
-func (m *mockStrategy) Name() string         { return m.name }
+func (m *mockStrategy) Name() string        { return m.name }
 func (m *mockStrategy) Confidence() float64 { return m.confidence }
 func (m *mockStrategy) Extract(ctx context.Context, app string) (*Config, error) {
 	if m.delay > 0 {
@@ -30,21 +28,6 @@ func (m *mockStrategy) Extract(ctx context.Context, app string) (*Config, error)
 	return m.config, nil
 }
 
-// Mock HTTP client for testing
-type mockHTTPClient struct {
-	responses map[string]string
-	errors    map[string]error
-}
-
-func (m *mockHTTPClient) Get(ctx context.Context, url string) (io.ReadCloser, error) {
-	if err, ok := m.errors[url]; ok {
-		return nil, err
-	}
-	if resp, ok := m.responses[url]; ok {
-		return io.NopCloser(strings.NewReader(resp)), nil
-	}
-	return nil, fmt.Errorf("not found")
-}
 
 func TestExtractor_Extract(t *testing.T) {
 	tests := []struct {
@@ -154,7 +137,7 @@ func TestExtractor_ExtractBatch(t *testing.T) {
 
 func TestLRUCache(t *testing.T) {
 	cache := NewLRUCache(2, 1*time.Hour)
-	
+
 	config1 := &Config{App: "app1"}
 	config2 := &Config{App: "app2"}
 	config3 := &Config{App: "app3"}
@@ -187,13 +170,13 @@ func TestLRUCache(t *testing.T) {
 
 func TestValidator(t *testing.T) {
 	v := NewValidator()
-	
+
 	// Add rules
 	v.AddRule("font-size", NumberRule{
 		Min: Min(8),
 		Max: Max(72),
 	})
-	
+
 	v.AddRule("theme", ChoiceRule{
 		Choices: []string{"light", "dark", "auto"},
 	})
@@ -282,7 +265,7 @@ func BenchmarkExtractor_Extract(b *testing.B) {
 	)
 
 	ctx := context.Background()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		e.Extract(ctx, "test")

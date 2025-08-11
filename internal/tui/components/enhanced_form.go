@@ -104,13 +104,13 @@ func (m *EnhancedFormModel) Update(msg tea.Msg) (*EnhancedFormModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		
+
 		// Update input widths
 		inputWidth := msg.Width - 20
 		if inputWidth < 20 {
 			inputWidth = 20
 		}
-		
+
 		for _, field := range m.fields {
 			field.Input.Width = inputWidth
 		}
@@ -144,10 +144,10 @@ func (m *EnhancedFormModel) Update(msg tea.Msg) (*EnhancedFormModel, tea.Cmd) {
 			field := m.fields[m.focusedIdx]
 			var cmd tea.Cmd
 			field.Input, cmd = field.Input.Update(msg)
-			
+
 			// Validate field on change
 			m.validateField(m.focusedIdx)
-			
+
 			if cmd != nil {
 				cmds = append(cmds, cmd)
 			}
@@ -194,10 +194,10 @@ func (m *EnhancedFormModel) View() string {
 		helpStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
 			Padding(0, 2)
-		
+
 		helpText := []string{
 			"Tab/↓: Next field",
-			"Shift+Tab/↑: Previous field", 
+			"Shift+Tab/↑: Previous field",
 			"Enter: Submit",
 			"Esc: Cancel",
 		}

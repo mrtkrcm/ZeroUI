@@ -57,7 +57,7 @@ func (p *GhosttyPlugin) ParseConfig(configPath string) (map[string]interface{}, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	config := make(map[string]interface{})
 	scanner := bufio.NewScanner(file)
@@ -117,7 +117,7 @@ func (p *GhosttyPlugin) WriteConfig(configPath string, config map[string]interfa
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer := bufio.NewWriter(file)
 	for _, line := range updatedLines {
@@ -295,7 +295,7 @@ func (p *GhosttyPlugin) readConfigLines(configPath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -376,7 +376,7 @@ func (p *GhosttyPlugin) writeNewConfig(configPath string, config map[string]inte
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer := bufio.NewWriter(file)
 

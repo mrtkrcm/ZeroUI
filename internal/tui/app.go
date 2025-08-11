@@ -25,7 +25,7 @@ const (
 	HuhConfigEditView                    // New Huh-based config editing
 	HuhGridView                          // New Huh-based grid view (enhanced)
 	AppGridView                          // Legacy grid view (fallback)
-	AppSelectionView                     // Legacy app selection (fallback) 
+	AppSelectionView                     // Legacy app selection (fallback)
 	ConfigEditView                       // Legacy config editing (fallback)
 	PresetSelectionView
 	HelpView
@@ -84,32 +84,32 @@ func (a *App) Run() error {
 // Model represents the application state
 type Model struct {
 	// Core state
-	engine     *toggle.Engine
-	state      ViewState
-	width      int
-	height     int
-	err        error
+	engine *toggle.Engine
+	state  ViewState
+	width  int
+	height int
+	err    error
 
 	// New Huh-based components (primary)
 	huhAppSelector  *components.HuhAppSelectorModel
 	huhConfigEditor *components.HuhConfigEditorModel
 	huhGrid         *components.HuhGridModel // New grid component
-	
+
 	// Legacy components (fallback)
-	appGrid        *components.AppGridModel      
+	appGrid        *components.AppGridModel
 	appSelector    *components.AppSelectorModel
 	configEditor   *components.ConfigEditorModel
 	statusBar      *components.StatusBarModel
 	responsiveHelp *components.ResponsiveHelpModel
 	help           help.Model
-	
+
 	// UI state
-	keyMap        keys.AppKeyMap
-	styles        *styles.Styles
-	theme         *styles.Theme
-	showingHelp   bool
-	currentApp    string
-	
+	keyMap      keys.AppKeyMap
+	styles      *styles.Styles
+	theme       *styles.Theme
+	showingHelp bool
+	currentApp  string
+
 	// Message handling
 	lastMessage util.InfoMsg
 }
@@ -133,23 +133,23 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 	}
 
 	model := &Model{
-		engine:          engine,
-		state:           initialState,
-		currentApp:      initialApp,
-		keyMap:          keys.DefaultKeyMap(),
-		styles:          styles.GetStyles(),
-		theme:           theme,
+		engine:     engine,
+		state:      initialState,
+		currentApp: initialApp,
+		keyMap:     keys.DefaultKeyMap(),
+		styles:     styles.GetStyles(),
+		theme:      theme,
 		// Initialize new Huh-based components
 		huhGrid:         components.NewHuhGrid(),
 		huhAppSelector:  components.NewHuhAppSelector(),
 		huhConfigEditor: components.NewHuhConfigEditor(""),
 		// Keep legacy components for fallback
-		appGrid:         components.NewAppGrid(),
-		appSelector:     components.NewAppSelector(apps),
-		configEditor:    components.NewConfigEditor(""),
-		statusBar:       components.NewStatusBar(),
-		responsiveHelp:  components.NewResponsiveHelp(),
-		help:            help.New(),
+		appGrid:        components.NewAppGrid(),
+		appSelector:    components.NewAppSelector(apps),
+		configEditor:   components.NewConfigEditor(""),
+		statusBar:      components.NewStatusBar(),
+		responsiveHelp: components.NewResponsiveHelp(),
+		help:           help.New(),
 	}
 
 	// Set up help
@@ -180,47 +180,47 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 // Init initializes the model with proper component setup and performance optimization
 func (m *Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	
+
 	// Initialize all components with error handling
 	// Priority: New Huh components first
 	if cmd := m.huhGrid.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.huhAppSelector.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.huhConfigEditor.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	// Legacy components for fallback
 	if cmd := m.appGrid.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.appSelector.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.configEditor.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.statusBar.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if cmd := m.responsiveHelp.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
-	
+
 	// Initialize status bar with proper app count
 	appCount := len(m.appSelector.GetApps())
 	m.statusBar.SetAppCount(appCount)
 	m.statusBar.SetTheme("Default")
-	
+
 	// Initialize with welcome message
 	cmds = append(cmds, func() tea.Msg {
 		return util.InfoMsg{
@@ -228,12 +228,12 @@ func (m *Model) Init() tea.Cmd {
 			Type: util.InfoTypeSuccess,
 		}
 	})
-	
+
 	// Add initial animation for smooth startup
 	cmds = append(cmds, tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
 		return components.AnimationTickMsg{}
 	}))
-	
+
 	return tea.Batch(cmds...)
 }
 
@@ -256,14 +256,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			oldWidth, oldHeight := m.width, m.height
 			m.width = msg.Width
 			m.height = msg.Height
-			
+
 			// Only trigger expensive size updates if significant change (>5% or >10 pixels)
 			widthDiff := abs(msg.Width - oldWidth)
 			heightDiff := abs(msg.Height - oldHeight)
-			
-			if widthDiff > 10 || heightDiff > 10 || 
-			   (oldWidth > 0 && widthDiff*100/oldWidth > 5) ||
-			   (oldHeight > 0 && heightDiff*100/oldHeight > 5) {
+
+			if widthDiff > 10 || heightDiff > 10 ||
+				(oldWidth > 0 && widthDiff*100/oldWidth > 5) ||
+				(oldHeight > 0 && heightDiff*100/oldHeight > 5) {
 				cmds = append(cmds, m.updateComponentSizes())
 			}
 		}
@@ -291,7 +291,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 		}
-		
+
 		// Handle view switching keys
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+h"))):
@@ -330,7 +330,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentApp = msg.App
 		// Use modern Huh config editor by default
 		m.state = HuhConfigEditView
-		
+
 		// Load config asynchronously to prevent UI freezing
 		cmds = append(cmds, func() tea.Msg {
 			if err := m.loadAppConfig(msg.App); err != nil {
@@ -338,7 +338,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return util.InfoMsg{Msg: fmt.Sprintf("Loaded configuration for %s", msg.App), Type: util.InfoTypeSuccess}
 		})
-		
+
 		m.focusCurrentComponent()
 
 	case components.FieldChangedMsg:
@@ -356,7 +356,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case util.InfoMsg:
 		m.lastMessage = msg
-		
+
 	case components.AnimationTickMsg:
 		// Handle animation updates for smooth UI - batch updates to reduce overhead
 		if m.state == AppGridView {
@@ -369,7 +369,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-		
+
 		// Reduce animation frequency for better performance
 		cmds = append(cmds, tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
 			return components.AnimationTickMsg{}
@@ -385,7 +385,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 	case HuhConfigEditView:
 		// Update Huh config editor with forms
 		if model, cmd := m.huhConfigEditor.Update(msg); cmd != nil || model != m.huhConfigEditor {
@@ -394,7 +394,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 		}
-		
+
 	case HuhGridView:
 		// Update Huh grid component
 		updatedHuhGrid, cmd := m.huhGrid.Update(msg)
@@ -402,15 +402,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 	case AppGridView:
-		// Update legacy app grid component 
+		// Update legacy app grid component
 		updatedGrid, cmd := m.appGrid.Update(msg)
 		m.appGrid = updatedGrid
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 	case AppSelectionView:
 		// Update legacy app selector
 		if model, cmd := m.appSelector.Update(msg); cmd != nil || model != m.appSelector {
@@ -419,7 +419,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 		}
-		
+
 	case ConfigEditView:
 		// Update legacy config editor
 		if model, cmd := m.configEditor.Update(msg); cmd != nil || model != m.configEditor {
@@ -435,7 +435,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusBar = statusModel.(*components.StatusBarModel)
 		cmds = append(cmds, cmd)
 	}
-	
+
 	if helpModel, cmd := m.responsiveHelp.Update(msg); cmd != nil {
 		m.responsiveHelp = helpModel.(*components.ResponsiveHelpModel)
 		cmds = append(cmds, cmd)
@@ -488,7 +488,7 @@ func (m *Model) handleBack() tea.Cmd {
 		return tea.Quit
 	case HuhConfigEditView:
 		// Return to the appropriate app selection view
-		m.state = HuhAppSelectionView 
+		m.state = HuhAppSelectionView
 		m.currentApp = ""
 		m.focusCurrentComponent()
 	case HuhGridView:
@@ -546,30 +546,30 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	statusHeight := 1
 	helpHeight := 1
 	padding := 2
-	
+
 	contentHeight := m.height - titleHeight - statusHeight - helpHeight - padding
 	if contentHeight < 3 {
 		contentHeight = 3
 	}
-	
+
 	contentWidth := m.width - 4 // Account for padding
 
 	var cmds []tea.Cmd
-	
+
 	// Update Huh components first
 	cmds = append(cmds, m.huhAppSelector.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.huhConfigEditor.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.huhGrid.SetSize(contentWidth, contentHeight))
-	
+
 	// Update legacy components
 	cmds = append(cmds, m.appSelector.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.configEditor.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.statusBar.SetSize(m.width, statusHeight))
 	cmds = append(cmds, m.responsiveHelp.SetSize(m.width, helpHeight))
-	
+
 	// Update help bindings based on current state
 	m.updateHelpBindings()
-	
+
 	return tea.Batch(cmds...)
 }
 
@@ -595,9 +595,9 @@ func (m *Model) updateHelpBindings() {
 
 	// Add global bindings
 	bindings = append(bindings, m.keyMap.Help, m.keyMap.Back, m.keyMap.Quit)
-	
+
 	// Add view switching bindings
-	bindings = append(bindings, 
+	bindings = append(bindings,
 		key.NewBinding(key.WithKeys("ctrl+h"), key.WithHelp("ctrl+h", "switch to Huh UI")),
 		key.NewBinding(key.WithKeys("ctrl+l"), key.WithHelp("ctrl+l", "switch to legacy UI")),
 	)
@@ -624,7 +624,7 @@ func (m *Model) View() string {
 	if (m.state == HuhAppSelectionView || m.state == HuhConfigEditView || m.state == HuhGridView) && !m.showingHelp {
 		return content
 	}
-	
+
 	// For legacy AppGridView, return content directly without layout wrapping
 	if m.state == AppGridView && !m.showingHelp {
 		return content
@@ -681,9 +681,9 @@ func (m *Model) renderHelp() string {
 
 	// Add global bindings
 	bindings = append(bindings, m.keyMap.Help, m.keyMap.Back, m.keyMap.Quit)
-	
+
 	// Add view switching bindings
-	bindings = append(bindings, 
+	bindings = append(bindings,
 		key.NewBinding(key.WithKeys("ctrl+h"), key.WithHelp("ctrl+h", "switch to modern Huh UI")),
 		key.NewBinding(key.WithKeys("ctrl+l"), key.WithHelp("ctrl+l", "switch to legacy UI")),
 	)
@@ -701,11 +701,11 @@ func (m *Model) wrapWithLayout(content string) string {
 	titleHeight := lipgloss.Height(title)
 	statusHeight := lipgloss.Height(statusBar)
 	helpHeight := lipgloss.Height(helpText)
-	
+
 	// Reserve space for padding and borders
 	reservedHeight := titleHeight + statusHeight + helpHeight + 2 // +2 for padding
 	contentHeight := m.height - reservedHeight
-	
+
 	// Ensure minimum content height
 	if contentHeight < 3 {
 		contentHeight = 3
@@ -721,11 +721,11 @@ func (m *Model) wrapWithLayout(content string) string {
 
 	// Add section separator if status bar has content
 	sections := []string{title, styledContent}
-	
+
 	if statusBar != "" {
 		sections = append(sections, statusBar)
 	}
-	
+
 	if helpText != "" {
 		sections = append(sections, helpText)
 	}
@@ -736,7 +736,7 @@ func (m *Model) wrapWithLayout(content string) string {
 // renderTitle renders the application title
 func (m *Model) renderTitle() string {
 	var titleText string
-	
+
 	switch m.state {
 	case HuhAppSelectionView:
 		titleText = "🔧 ZeroUI - Select Application (Modern)"
@@ -786,14 +786,14 @@ func (m *Model) renderQuickHelp() string {
 	}
 
 	var bindings []key.Binding
-	
+
 	switch m.state {
 	case AppSelectionView:
 		bindings = []key.Binding{m.keyMap.Up, m.keyMap.Down, m.keyMap.Enter}
 	case ConfigEditView:
 		bindings = []key.Binding{m.keyMap.Up, m.keyMap.Down, m.keyMap.Left, m.keyMap.Right, m.keyMap.Enter}
 	}
-	
+
 	bindings = append(bindings, m.keyMap.Help, m.keyMap.Quit)
 
 	helpStyle := m.styles.Help.Width(m.width)
@@ -838,7 +838,7 @@ func (m *Model) loadAppConfig(appName string) error {
 	// Update both legacy and modern config editors
 	m.configEditor.SetAppName(appName)
 	m.configEditor.SetFields(fields)
-	
+
 	m.huhConfigEditor.SetAppName(appName)
 	m.huhConfigEditor.SetFields(fields)
 

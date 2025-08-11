@@ -11,7 +11,7 @@ import (
 
 // ReferenceEnhancedLoader extends the basic loader with reference config integration
 type ReferenceEnhancedLoader struct {
-	*Loader                      // Embed the base loader
+	*Loader         // Embed the base loader
 	referenceMapper *reference.ReferenceConfigMapper
 	referenceMutex  sync.RWMutex // Thread-safe access to reference configs
 }
@@ -29,11 +29,11 @@ func NewReferenceEnhancedLoader() (*ReferenceEnhancedLoader, error) {
 		// Try alternative paths
 		alternatives := []string{
 			"./configs",
-			"../configs", 
+			"../configs",
 			"../../configs",
 			filepath.Join(os.Getenv("CONFIGTOGGLE_ROOT"), "configs"),
 		}
-		
+
 		found := false
 		for _, alt := range alternatives {
 			if _, err := os.Stat(alt); err == nil {
@@ -42,7 +42,7 @@ func NewReferenceEnhancedLoader() (*ReferenceEnhancedLoader, error) {
 				break
 			}
 		}
-		
+
 		if !found {
 			// Create a basic configs directory as fallback
 			if err := os.MkdirAll("configs", 0755); err != nil {
@@ -139,16 +139,16 @@ func (l *ReferenceEnhancedLoader) LoadAppConfigWithReference(appName string) (*A
 
 	// Try to load existing app config first
 	appConfig, appErr := l.Loader.LoadAppConfig(appName)
-	
+
 	// If app config doesn't exist, try to generate from reference
 	if appErr != nil {
 		referenceConfig, refErr := l.referenceMapper.MapReferenceToAppConfig(appName)
 		if refErr != nil {
 			// Neither app config nor reference config exists
-			return nil, fmt.Errorf("no config found for %s (app config error: %v, reference config error: %v)", 
+			return nil, fmt.Errorf("no config found for %s (app config error: %v, reference config error: %v)",
 				appName, appErr, refErr)
 		}
-		
+
 		// Convert reference config to config package format and return
 		return convertReferenceAppConfig(referenceConfig), nil
 	}
@@ -237,7 +237,7 @@ func (l *ReferenceEnhancedLoader) ValidateReferenceIntegration() error {
 		if err != nil {
 			continue // Try next app
 		}
-		
+
 		// Successfully loaded at least one app
 		return nil
 	}
@@ -249,10 +249,10 @@ func (l *ReferenceEnhancedLoader) ValidateReferenceIntegration() error {
 func (l *ReferenceEnhancedLoader) RefreshReferenceCache() {
 	l.referenceMutex.Lock()
 	defer l.referenceMutex.Unlock()
-	
+
 	// Clear the base loader cache
 	l.ClearCache()
-	
+
 	// Note: The reference mapper doesn't have its own cache currently,
 	// but if it did, we would clear it here as well
 }
@@ -261,10 +261,10 @@ func (l *ReferenceEnhancedLoader) RefreshReferenceCache() {
 func (l *ReferenceEnhancedLoader) GetConfigSource(appName string) (string, error) {
 	// Check if app config exists
 	_, appErr := l.Loader.LoadAppConfig(appName)
-	
+
 	// Check if reference config exists
 	_, refErr := l.referenceMapper.MapReferenceToAppConfig(appName)
-	
+
 	if appErr == nil && refErr == nil {
 		return "merged", nil // Both sources available
 	} else if appErr == nil {
@@ -284,14 +284,14 @@ func (l *ReferenceEnhancedLoader) GetReferenceConfigInfo(appName string) (map[st
 	// This would require extending the reference mapper to expose more metadata
 	// For now, return basic info
 	info := make(map[string]interface{})
-	
+
 	source, err := l.GetConfigSource(appName)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	info["config_source"] = source
 	info["app_name"] = appName
-	
+
 	return info, nil
 }

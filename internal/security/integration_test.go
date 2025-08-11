@@ -14,7 +14,7 @@ func TestSecurityIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir)
 
 	// Create a mock backup directory
 	backupDir := filepath.Join(tempDir, "backups")
@@ -51,9 +51,9 @@ func TestSecurityIntegration(t *testing.T) {
 	// Test 2: YAML limits prevent resource exhaustion
 	t.Run("yaml_limits_prevent_bombs", func(t *testing.T) {
 		yamlValidator := NewYAMLValidator(&YAMLLimits{
-			MaxFileSize: 1024,  // 1KB
-			MaxDepth:    5,     // 5 levels
-			MaxKeys:     20,    // 20 keys
+			MaxFileSize: 1024, // 1KB
+			MaxDepth:    5,    // 5 levels
+			MaxKeys:     20,   // 20 keys
 		})
 
 		// Create a YAML bomb (deeply nested)
@@ -112,8 +112,8 @@ func TestSecurityIntegration(t *testing.T) {
 		pathValidator := NewPathValidator(backupDir)
 
 		maliciousNames := map[string]string{
-			"../../../etc/passwd":     "_etc_passwd",
-			"backup/../../../secret":  "backup_secret",
+			"../../../etc/passwd":    "_etc_passwd",
+			"backup/../../../secret": "backup_secret",
 			"CON.backup":             "backup", // Windows reserved name
 			".hidden_backup":         "hidden_backup",
 			"backup\x00.txt":         "backup.txt",
@@ -143,7 +143,7 @@ func TestSecurityPerformanceImpact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir)
 
 	// Create a reasonably sized YAML file
 	normalYAMLContent := `

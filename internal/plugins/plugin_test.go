@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -260,11 +259,11 @@ func TestRegistry_List(t *testing.T) {
 // TestAutoGenerate tests auto-generation of config files
 func TestAutoGenerate(t *testing.T) {
 	// Create temporary directory
-	tmpDir, err := ioutil.TempDir("", "plugin-test")
+	tmpDir, err := os.MkdirTemp("", "plugin-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Set HOME to tmpDir so config goes there
 	originalHome := os.Getenv("HOME")
@@ -287,7 +286,7 @@ func TestAutoGenerate(t *testing.T) {
 	}
 
 	// Read and verify content
-	content, err := ioutil.ReadFile(configPath)
+	content, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read generated config: %v", err)
 	}
@@ -340,11 +339,11 @@ func TestAutoGenerate(t *testing.T) {
 
 // TestAutoGenerate_DetectFailure tests auto-generation with detect failure
 func TestAutoGenerate_DetectFailure(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "plugin-test")
+	tmpDir, err := os.MkdirTemp("", "plugin-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tmpDir)
@@ -592,11 +591,11 @@ func BenchmarkRegistry_Get(b *testing.B) {
 
 // BenchmarkAutoGenerate benchmarks config auto-generation
 func BenchmarkAutoGenerate(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "plugin-bench")
+	tmpDir, err := os.MkdirTemp("", "plugin-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	originalHome := os.Getenv("HOME")
 

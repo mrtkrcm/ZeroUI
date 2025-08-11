@@ -24,22 +24,22 @@ import (
 type Loader struct {
 	configDir     string
 	yamlValidator *security.YAMLValidator
-	
+
 	// Performance optimization: LRU cache for app configs
-	appConfigCache     *lru.Cache[string, *AppConfig]
-	cacheMutex         sync.RWMutex
-	
+	appConfigCache *lru.Cache[string, *AppConfig]
+	cacheMutex     sync.RWMutex
+
 	// File watching for cache invalidation
-	watcher            *fsnotify.Watcher
-	watcherInitOnce    sync.Once
-	
+	watcher         *fsnotify.Watcher
+	watcherInitOnce sync.Once
+
 	// Cache statistics for monitoring
-	cacheHits          uint64
-	cacheMisses        uint64
-	
+	cacheHits   uint64
+	cacheMisses uint64
+
 	// Memory pools for reusable buffers
-	bufferPool         sync.Pool
-	stringBuilderPool  sync.Pool
+	bufferPool        sync.Pool
+	stringBuilderPool sync.Pool
 }
 
 // NewLoader creates a new config loader with caching
@@ -56,7 +56,7 @@ func NewLoader() (*Loader, error) {
 
 	// Initialize YAML validator with security limits
 	yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
-	
+
 	// Initialize LRU cache with 1000 entry limit (same as toggle engine)
 	appCache, err := lru.New[string, *AppConfig](1000)
 	if err != nil {
@@ -138,7 +138,7 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	}
 	l.cacheMisses++
 	l.cacheMutex.RUnlock()
-	
+
 	// Cache miss - load from disk
 	configPath := filepath.Join(l.configDir, "apps", appName+".yaml")
 
@@ -148,7 +148,7 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 
 	// Initialize file watcher on first use
 	l.initFileWatcher()
-	
+
 	// Use secure YAML reading with complexity limits (Security hardening)
 	data, err := l.yamlValidator.SafeReadFile(configPath)
 	if err != nil {
@@ -162,17 +162,17 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	}
 
 	config.Name = appName
-	
+
 	// Update cache
 	l.cacheMutex.Lock()
 	l.appConfigCache.Add(appName, &config)
 	l.cacheMutex.Unlock()
-	
+
 	// Add file to watcher for automatic cache invalidation
 	if l.watcher != nil {
-		l.watcher.Add(configPath)
+		_ = l.watcher.Add(configPath)
 	}
-	
+
 	return &config, nil
 }
 
@@ -324,7 +324,7 @@ func (l *Loader) initFileWatcher() {
 			// Log error but don't fail - caching will still work without file watching
 			return
 		}
-		
+
 		// Start watching for file changes
 		go l.watchFiles()
 	})
@@ -335,21 +335,21 @@ func (l *Loader) watchFiles() {
 	if l.watcher == nil {
 		return
 	}
-	
+
 	for {
 		select {
 		case event, ok := <-l.watcher.Events:
 			if !ok {
 				return
 			}
-			
+
 			// Invalidate cache on file changes
-			if event.Op&fsnotify.Write == fsnotify.Write || 
-			   event.Op&fsnotify.Remove == fsnotify.Remove ||
-			   event.Op&fsnotify.Rename == fsnotify.Rename {
+			if event.Op&fsnotify.Write == fsnotify.Write ||
+				event.Op&fsnotify.Remove == fsnotify.Remove ||
+				event.Op&fsnotify.Rename == fsnotify.Rename {
 				l.invalidateCacheForPath(event.Name)
 			}
-			
+
 		case err, ok := <-l.watcher.Errors:
 			if !ok {
 				return
@@ -366,7 +366,7 @@ func (l *Loader) invalidateCacheForPath(filePath string) {
 	fileName := filepath.Base(filePath)
 	if strings.HasSuffix(fileName, ".yaml") {
 		appName := strings.TrimSuffix(fileName, ".yaml")
-		
+
 		l.cacheMutex.Lock()
 		l.appConfigCache.Remove(appName)
 		l.cacheMutex.Unlock()
@@ -384,12 +384,12 @@ func (l *Loader) ClearCache() {
 func (l *Loader) GetCacheStats() map[string]interface{} {
 	l.cacheMutex.RLock()
 	defer l.cacheMutex.RUnlock()
-	
+
 	return map[string]interface{}{
 		"cache_hits":   l.cacheHits,
 		"cache_misses": l.cacheMisses,
 		"cache_size":   l.appConfigCache.Len(),
-		"hit_ratio":    float64(l.cacheHits) / float64(l.cacheHits + l.cacheMisses),
+		"hit_ratio":    float64(l.cacheHits) / float64(l.cacheHits+l.cacheMisses),
 	}
 }
 
@@ -407,7 +407,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	// Get source file info for future optimizations (permissions, size hints)
 	_, err = srcFile.Stat()
@@ -419,7 +419,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
 	// Use io.Copy for optimal streaming - handles buffer management automatically
 	_, err = io.Copy(dstFile, srcFile)

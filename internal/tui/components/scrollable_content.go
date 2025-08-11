@@ -37,14 +37,14 @@ func (m *ScrollableContentModel) Init() tea.Cmd {
 // Update implements tea.Model
 func (m *ScrollableContentModel) Update(msg tea.Msg) (*ScrollableContentModel, tea.Cmd) {
 	var cmd tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		headerHeight := 0
 		if m.title != "" {
 			headerHeight = 3
 		}
-		
+
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height - headerHeight
 		return m, nil
@@ -68,7 +68,7 @@ func (m *ScrollableContentModel) View() string {
 			BorderBottom(true).
 			BorderForeground(lipgloss.Color("238")).
 			Width(m.viewport.Width)
-		
+
 		sections = append(sections, titleStyle.Render(m.title))
 	}
 
@@ -82,7 +82,7 @@ func (m *ScrollableContentModel) View() string {
 			Align(lipgloss.Right).
 			Width(m.viewport.Width).
 			Render(fmt.Sprintf("%.0f%%", m.viewport.ScrollPercent()*100))
-		
+
 		sections = append(sections, scrollInfo)
 	}
 
@@ -106,7 +106,7 @@ func (m *ScrollableContentModel) SetSize(width, height int) {
 	if m.title != "" {
 		headerHeight = 3
 	}
-	
+
 	m.viewport.Width = width
 	m.viewport.Height = height - headerHeight
 }

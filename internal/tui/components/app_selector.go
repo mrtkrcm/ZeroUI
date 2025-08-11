@@ -22,12 +22,12 @@ type AppSelectedMsg struct {
 type AppSelectorModel struct {
 	width  int
 	height int
-	
-	apps     []string
-	cursor   int
-	focused  bool
-	keyMap   keys.AppKeyMap
-	styles   *styles.Styles
+
+	apps    []string
+	cursor  int
+	focused bool
+	keyMap  keys.AppKeyMap
+	styles  *styles.Styles
 }
 
 // NewAppSelector creates a new app selector component
@@ -52,7 +52,7 @@ func (m *AppSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.focused {
 			return m, nil
 		}
-		
+
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
 			if m.cursor > 0 {
@@ -70,7 +70,7 @@ func (m *AppSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	
+
 	return m, nil
 }
 
@@ -81,11 +81,11 @@ func (m *AppSelectorModel) View() string {
 	}
 
 	var b strings.Builder
-	
+
 	for i, app := range m.apps {
 		var line string
 		cursor := " "
-		
+
 		if i == m.cursor {
 			cursor = ">"
 			if m.focused {
@@ -96,13 +96,13 @@ func (m *AppSelectorModel) View() string {
 		} else {
 			line = m.styles.Text.Render(fmt.Sprintf("%s %s", cursor, app))
 		}
-		
+
 		b.WriteString(line)
 		if i < len(m.apps)-1 {
 			b.WriteString("\n")
 		}
 	}
-	
+
 	return b.String()
 }
 
@@ -112,7 +112,7 @@ func (m *AppSelectorModel) Focus() tea.Cmd {
 	return nil
 }
 
-// Blur implements layout.Focusable  
+// Blur implements layout.Focusable
 func (m *AppSelectorModel) Blur() tea.Cmd {
 	m.focused = false
 	return nil

@@ -3,7 +3,6 @@ package validation
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 // setupValidatorTest creates a test environment with sample schemas
 func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
-	tmpDir, err := ioutil.TempDir("", "validator-test")
+	tmpDir, err := os.MkdirTemp("", "validator-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -77,12 +76,12 @@ func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
 	}
 	schemaPath := filepath.Join(tmpDir, "test-schema.json")
 	schemaData, _ := json.MarshalIndent(loadedSchema, "", "  ")
-	if err := ioutil.WriteFile(schemaPath, schemaData, 0644); err != nil {
+	if err := os.WriteFile(schemaPath, schemaData, 0644); err != nil {
 		t.Fatalf("Failed to write schema file: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return validator, tmpDir, cleanup
@@ -155,7 +154,7 @@ func TestValidator_LoadSchema(t *testing.T) {
 
 	// Test loading invalid JSON
 	invalidPath := filepath.Join(tmpDir, "invalid.json")
-	if err := ioutil.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
+	if err := os.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
 		t.Fatalf("Failed to write invalid JSON: %v", err)
 	}
 
@@ -611,11 +610,11 @@ func TestFormatValidation(t *testing.T) {
 
 // TestSchemaLoadingFromDir tests loading multiple schemas from directory
 func TestSchemaLoadingFromDir(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "schema-dir-test")
+	tmpDir, err := os.MkdirTemp("", "schema-dir-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create multiple schema files
 	schemas := []*Schema{
@@ -627,13 +626,13 @@ func TestSchemaLoadingFromDir(t *testing.T) {
 	for _, schema := range schemas {
 		schemaData, _ := json.MarshalIndent(schema, "", "  ")
 		schemaPath := filepath.Join(tmpDir, schema.Name+".json")
-		if err := ioutil.WriteFile(schemaPath, schemaData, 0644); err != nil {
+		if err := os.WriteFile(schemaPath, schemaData, 0644); err != nil {
 			t.Fatalf("Failed to write schema file: %v", err)
 		}
 	}
 
 	// Create a non-JSON file that should be ignored
-	if err := ioutil.WriteFile(filepath.Join(tmpDir, "not-a-schema.txt"), []byte("ignore me"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "not-a-schema.txt"), []byte("ignore me"), 0644); err != nil {
 		t.Fatalf("Failed to write non-JSON file: %v", err)
 	}
 

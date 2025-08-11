@@ -104,18 +104,18 @@ func (pv *PathValidator) SanitizeBackupName(input string) string {
 	// Remove directory separators
 	sanitized := strings.ReplaceAll(input, "/", "_")
 	sanitized = strings.ReplaceAll(sanitized, "\\", "_")
-	
+
 	// Remove dangerous characters
 	sanitized = strings.ReplaceAll(sanitized, "..", "_")
 	sanitized = strings.ReplaceAll(sanitized, "\x00", "")
-	
+
 	// Remove leading dots
 	sanitized = strings.TrimLeft(sanitized, ".")
-	
+
 	// Ensure it's not empty after sanitization
 	if sanitized == "" {
 		sanitized = "backup"
 	}
-	
+
 	return sanitized
 }

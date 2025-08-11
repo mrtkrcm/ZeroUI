@@ -250,19 +250,19 @@ func DefaultValidationRules() map[string]ValidationRule {
 		// Font settings
 		"font-family": StringRule(false, "", "monospace", "serif", "sans-serif"),
 		"font-size":   NumberRule(false, Min(8), Max(72)),
-		
+
 		// Color settings
-		"background":  StringRule(false, `^#[0-9A-Fa-f]{6}$`),
-		"foreground":  StringRule(false, `^#[0-9A-Fa-f]{6}$`),
-		
+		"background": StringRule(false, `^#[0-9A-Fa-f]{6}$`),
+		"foreground": StringRule(false, `^#[0-9A-Fa-f]{6}$`),
+
 		// Window settings
 		"window-width":  NumberRule(false, Min(100), Max(3000)),
 		"window-height": NumberRule(false, Min(100), Max(2000)),
-		
+
 		// Boolean settings
 		"mouse-support": BooleanRule(false),
 		"confirm-quit":  BooleanRule(false),
-		
+
 		// Common choices
 		"cursor-shape": ChoiceRule(false, "block", "underline", "bar"),
 		"shell":        StringRule(false, ""),

@@ -18,7 +18,7 @@ type GitHub struct {
 // RepoInfo defines GitHub repository information for config extraction
 type RepoInfo struct {
 	Owner      string   // Repository owner
-	Repo       string   // Repository name  
+	Repo       string   // Repository name
 	Paths      []string // Potential config file paths to try
 	Branch     string   // Branch to use (defaults to main/master)
 	Format     string   // Expected config format
@@ -38,38 +38,38 @@ func NewGitHub() *GitHub {
 		},
 		repos: map[string]RepoInfo{
 			"zed": {
-				Owner:  "zed-industries",
-				Repo:   "zed",
-				Paths:  []string{"assets/settings/default.json", "crates/editor/src/settings.rs"},
-				Format: "json",
+				Owner:      "zed-industries",
+				Repo:       "zed",
+				Paths:      []string{"assets/settings/default.json", "crates/editor/src/settings.rs"},
+				Format:     "json",
 				Confidence: 0.85,
 			},
 			"alacritty": {
-				Owner:  "alacritty",
-				Repo:   "alacritty",
-				Paths:  []string{"alacritty.yml", "extra/alacritty.yml"},
-				Format: "yaml",
+				Owner:      "alacritty",
+				Repo:       "alacritty",
+				Paths:      []string{"alacritty.yml", "extra/alacritty.yml"},
+				Format:     "yaml",
 				Confidence: 0.80,
 			},
 			"wezterm": {
-				Owner:  "wez",
-				Repo:   "wezterm",
-				Paths:  []string{"docs/config/lua/config/index.md", "config/src/lib.rs"},
-				Format: "markdown",
+				Owner:      "wez",
+				Repo:       "wezterm",
+				Paths:      []string{"docs/config/lua/config/index.md", "config/src/lib.rs"},
+				Format:     "markdown",
 				Confidence: 0.75,
 			},
 			"neovim": {
-				Owner:  "neovim",
-				Repo:   "neovim",
-				Paths:  []string{"runtime/doc/options.txt", "src/nvim/options.lua"},
-				Format: "vimdoc",
+				Owner:      "neovim",
+				Repo:       "neovim",
+				Paths:      []string{"runtime/doc/options.txt", "src/nvim/options.lua"},
+				Format:     "vimdoc",
 				Confidence: 0.70,
 			},
 			"tmux": {
-				Owner:  "tmux",
-				Repo:   "tmux",
-				Paths:  []string{"options-table.c", "tmux.1"},
-				Format: "manpage",
+				Owner:      "tmux",
+				Repo:       "tmux",
+				Paths:      []string{"options-table.c", "tmux.1"},
+				Format:     "manpage",
 				Confidence: 0.65,
 			},
 		},
@@ -133,7 +133,7 @@ func (g *GitHub) extractFromPath(ctx context.Context, app string, repo RepoInfo,
 // fetchFile retrieves a file from GitHub's raw content API
 func (g *GitHub) fetchFile(ctx context.Context, owner, repo, branch, path string) ([]byte, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -146,7 +146,7 @@ func (g *GitHub) fetchFile(ctx context.Context, owner, repo, branch, path string
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
@@ -156,7 +156,7 @@ func (g *GitHub) fetchFile(ctx context.Context, owner, repo, branch, path string
 	const maxSize = 10 << 20 // 10MB limit
 	body := make([]byte, 0, 8192)
 	buf := make([]byte, 8192)
-	
+
 	for len(body) < maxSize {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
@@ -208,22 +208,22 @@ func (g *GitHub) parseContent(app string, repo RepoInfo, path string, content []
 func (g *GitHub) parseJSON(config *Config, content []byte) (*Config, error) {
 	// Fast line-by-line JSON parsing to avoid full unmarshaling
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") {
 			continue
 		}
-		
+
 		// Look for key-value pairs: "key": value
 		if strings.Contains(line, ":") && strings.Contains(line, `"`) {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
 				key := strings.Trim(strings.TrimSpace(parts[0]), `"`)
 				value := strings.TrimSpace(strings.Trim(parts[1], `,`))
-				
+
 				if key != "" && !strings.HasPrefix(key, "_") && !strings.HasPrefix(key, "$") {
 					config.Settings[key] = Setting{
 						Name: key,
@@ -241,35 +241,35 @@ func (g *GitHub) parseJSON(config *Config, content []byte) (*Config, error) {
 // parseYAML parses YAML configuration files
 func (g *GitHub) parseYAML(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	var currentSection string
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Look for key-value pairs
 		if strings.Contains(line, ":") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
-				
+
 				// Check if this is a section header (no value)
 				if value == "" {
 					currentSection = key
 					continue
 				}
-				
+
 				// Combine section and key if in a section
 				fullKey := key
 				if currentSection != "" {
 					fullKey = currentSection + "." + key
 				}
-				
+
 				config.Settings[fullKey] = Setting{
 					Name: fullKey,
 					Type: inferType(value),
@@ -285,25 +285,25 @@ func (g *GitHub) parseYAML(config *Config, content []byte) (*Config, error) {
 // parseMarkdown parses markdown documentation for config options
 func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	var inCodeBlock bool
 	var currentSetting string
 	var description strings.Builder
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Track code blocks
 		if strings.HasPrefix(line, "```") {
 			inCodeBlock = !inCodeBlock
 			continue
 		}
-		
+
 		// Skip content inside code blocks unless it's config
 		if inCodeBlock && !strings.Contains(line, "config.") {
 			continue
 		}
-		
+
 		// Look for config options in headers or code
 		if strings.Contains(line, "config.") || strings.HasPrefix(line, "##") {
 			// Extract config key from various formats
@@ -320,7 +320,7 @@ func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) 
 				key = strings.TrimSpace(strings.TrimPrefix(line, "##"))
 				key = strings.Fields(key)[0] // Take first word
 			}
-			
+
 			if key != "" {
 				// Save previous setting
 				if currentSetting != "" && description.Len() > 0 {
@@ -329,7 +329,7 @@ func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) 
 						config.Settings[currentSetting] = setting
 					}
 				}
-				
+
 				currentSetting = key
 				config.Settings[key] = Setting{
 					Name: key,
@@ -346,7 +346,7 @@ func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) 
 			description.WriteString(line)
 		}
 	}
-	
+
 	// Save last setting
 	if currentSetting != "" && description.Len() > 0 {
 		if setting, exists := config.Settings[currentSetting]; exists {
@@ -361,10 +361,10 @@ func (g *GitHub) parseMarkdown(config *Config, content []byte) (*Config, error) 
 // parseRustSource parses Rust source files for config definitions
 func (g *GitHub) parseRustSource(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Look for struct fields or string literals that might be config keys
 		if strings.Contains(line, "pub") && strings.Contains(line, ":") {
 			// Parse struct fields: pub field_name: Type,
@@ -391,10 +391,10 @@ func (g *GitHub) parseRustSource(config *Config, content []byte) (*Config, error
 // parseCSource parses C source files for config definitions
 func (g *GitHub) parseCSource(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Look for option definitions in C code
 		if strings.Contains(line, "{") && strings.Contains(line, `"`) {
 			// Parse option table entries: {"option-name", ...}
@@ -421,10 +421,10 @@ func (g *GitHub) parseCSource(config *Config, content []byte) (*Config, error) {
 // parseText parses generic text files (like man pages or help text)
 func (g *GitHub) parseText(config *Config, content []byte) (*Config, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Look for option patterns in text
 		// Pattern 1: -option, --option
 		if strings.Contains(line, "-") && (strings.Contains(line, "--") || len(line) > 10) {
@@ -452,17 +452,17 @@ func (g *GitHub) parseText(config *Config, content []byte) (*Config, error) {
 func (g *GitHub) parseGeneric(config *Config, content []byte) (*Config, error) {
 	// Try different parsing strategies
 	contentStr := string(content)
-	
+
 	// Check if it looks like JSON
 	if strings.Contains(contentStr, "{") && strings.Contains(contentStr, ":") {
 		return g.parseJSON(config, content)
 	}
-	
+
 	// Check if it looks like YAML
 	if strings.Contains(contentStr, ":") && !strings.Contains(contentStr, "{") {
 		return g.parseYAML(config, content)
 	}
-	
+
 	// Default to text parsing
 	return g.parseText(config, content)
 }

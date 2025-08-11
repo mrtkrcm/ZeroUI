@@ -12,7 +12,7 @@ func TestPathValidator_ValidatePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	validator := NewPathValidator(tmpDir)
 
@@ -100,11 +100,11 @@ func TestPathValidator_ValidatePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidatePath(tt.path)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error for path %q but got none. %s", tt.path, tt.description)
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Expected no error for path %q but got: %v. %s", tt.path, err, tt.description)
 			}
@@ -199,11 +199,11 @@ func TestPathValidator_ValidateBackupName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidateBackupName(tt.backupName)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error for backup name %q but got none. %s", tt.backupName, tt.description)
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Expected no error for backup name %q but got: %v. %s", tt.backupName, err, tt.description)
 			}
@@ -271,13 +271,13 @@ func TestPathValidator_WithMultipleAllowedPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir 1: %v", err)
 	}
-	defer os.RemoveAll(tmpDir1)
+	defer func() { _ = os.RemoveAll(tmpDir1)
 
 	tmpDir2, err := os.MkdirTemp("", "validator-test-2")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir 2: %v", err)
 	}
-	defer os.RemoveAll(tmpDir2)
+	defer func() { _ = os.RemoveAll(tmpDir2)
 
 	validator := NewPathValidator(tmpDir1, tmpDir2)
 
@@ -292,7 +292,7 @@ func TestPathValidator_WithMultipleAllowedPaths(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "allowed_path_2", 
+			name:        "allowed_path_2",
 			path:        filepath.Join(tmpDir2, "backup.txt"),
 			expectError: false,
 		},
@@ -306,11 +306,11 @@ func TestPathValidator_WithMultipleAllowedPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidatePath(tt.path)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error for path %q but got none", tt.path)
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Expected no error for path %q but got: %v", tt.path, err)
 			}

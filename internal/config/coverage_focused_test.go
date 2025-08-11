@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,13 +15,13 @@ import (
 func TestLoader_CoverageEnhancement(t *testing.T) {
 	// Test NewLoader error path
 	originalHome := os.Getenv("HOME")
-	os.Unsetenv("HOME")
+	_ = os.Unsetenv("HOME")
 
 	_, err := NewLoader()
 	assert.Error(t, err, "Should fail when HOME is not set")
 
 	// Restore HOME
-	os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", originalHome)
 }
 
 func TestLoader_ConfigDirectoryAccess(t *testing.T) {
@@ -41,9 +40,9 @@ func TestLoader_ConfigDirectoryAccess(t *testing.T) {
 }
 
 func TestLoader_TargetConfigFormats(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-format-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-format-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader, err := NewLoader()
 	require.NoError(t, err)
@@ -61,7 +60,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "json",
 			content: `{"theme": "dark", "size": 14, "enabled": true}`,
 			setup: func(path string) error {
-				return ioutil.WriteFile(path, []byte(`{"theme": "dark", "size": 14, "enabled": true}`), 0644)
+				return os.WriteFile(path, []byte(`{"theme": "dark", "size": 14, "enabled": true}`), 0644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "dark", k.String("theme"))
@@ -74,7 +73,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "yaml",
 			content: `theme: light\nsize: 16\nenabled: false`,
 			setup: func(path string) error {
-				return ioutil.WriteFile(path, []byte("theme: light\nsize: 16\nenabled: false"), 0644)
+				return os.WriteFile(path, []byte("theme: light\nsize: 16\nenabled: false"), 0644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "light", k.String("theme"))
@@ -87,7 +86,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "toml",
 			content: `theme = "auto"\nsize = 18\nenabled = true`,
 			setup: func(path string) error {
-				return ioutil.WriteFile(path, []byte(`theme = "auto"`+"\n"+`size = 18`+"\n"+`enabled = true`), 0644)
+				return os.WriteFile(path, []byte(`theme = "auto"`+"\n"+`size = 18`+"\n"+`enabled = true`), 0644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "auto", k.String("theme"))
@@ -105,7 +104,7 @@ font-size = 14
 window-decoration = false
 keybind = shift+super+k=reload_config
 keybind = super+equal=increase_font_size`
-				return ioutil.WriteFile(path, []byte(content), 0644)
+				return os.WriteFile(path, []byte(content), 0644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "dark", k.String("theme"))
@@ -143,8 +142,8 @@ keybind = super+equal=increase_font_size`
 
 			// Test saving (create new koanf instance)
 			newData := koanf.New(".")
-			newData.Set("theme", "updated")
-			newData.Set("new_setting", "test_value")
+			_ = newData.Set("theme", "updated")
+			_ = newData.Set("new_setting", "test_value")
 
 			err = loader.SaveTargetConfig(appConfig, newData)
 			require.NoError(t, err)
@@ -162,13 +161,13 @@ func TestLoader_PathExpansionCoverage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with absolute path (no expansion needed)
-	tmpDir, err := ioutil.TempDir("", "configtoggle-path-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-path-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configFile := filepath.Join(tmpDir, "absolute.json")
 	configData := `{"key": "absolute_value"}`
-	err = ioutil.WriteFile(configFile, []byte(configData), 0644)
+	err = os.WriteFile(configFile, []byte(configData), 0644)
 	require.NoError(t, err)
 
 	appConfig := &AppConfig{
@@ -186,9 +185,9 @@ func TestLoader_PathExpansionCoverage(t *testing.T) {
 	require.NoError(t, err)
 
 	homeConfigFile := filepath.Join(home, "test_home_config.json")
-	err = ioutil.WriteFile(homeConfigFile, []byte(`{"key": "home_value"}`), 0644)
+	err = os.WriteFile(homeConfigFile, []byte(`{"key": "home_value"}`), 0644)
 	require.NoError(t, err)
-	defer os.Remove(homeConfigFile)
+	defer func() { _ = os.Remove(homeConfigFile) }()
 
 	homeAppConfig := &AppConfig{
 		Name:   "home-test",
@@ -205,15 +204,15 @@ func TestLoader_ErrorConditions(t *testing.T) {
 	loader, err := NewLoader()
 	require.NoError(t, err)
 
-	tmpDir, err := ioutil.TempDir("", "configtoggle-error-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-error-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader.SetConfigDir(tmpDir)
 
 	t.Run("UnsupportedFormat", func(t *testing.T) {
 		configFile := filepath.Join(tmpDir, "unsupported.xml")
-		err = ioutil.WriteFile(configFile, []byte(`<config>test</config>`), 0644)
+		err = os.WriteFile(configFile, []byte(`<config>test</config>`), 0644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -229,7 +228,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidJSONFile", func(t *testing.T) {
 		invalidJsonFile := filepath.Join(tmpDir, "invalid.json")
-		err = ioutil.WriteFile(invalidJsonFile, []byte(`{"invalid": json syntax`), 0644)
+		err = os.WriteFile(invalidJsonFile, []byte(`{"invalid": json syntax`), 0644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -244,7 +243,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidYAMLFile", func(t *testing.T) {
 		invalidYamlFile := filepath.Join(tmpDir, "invalid.yaml")
-		err = ioutil.WriteFile(invalidYamlFile, []byte("invalid: yaml: [unclosed"), 0644)
+		err = os.WriteFile(invalidYamlFile, []byte("invalid: yaml: [unclosed"), 0644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -259,7 +258,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidTOMLFile", func(t *testing.T) {
 		invalidTomlFile := filepath.Join(tmpDir, "invalid.toml")
-		err = ioutil.WriteFile(invalidTomlFile, []byte("[invalid toml syntax"), 0644)
+		err = os.WriteFile(invalidTomlFile, []byte("[invalid toml syntax"), 0644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -274,9 +273,9 @@ func TestLoader_ErrorConditions(t *testing.T) {
 }
 
 func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-save-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-save-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader, err := NewLoader()
 	require.NoError(t, err)
@@ -292,7 +291,7 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			name:   "JSON_Save",
 			format: "json",
 			verify: func(t *testing.T, filePath string) {
-				content, err := ioutil.ReadFile(filePath)
+				content, err := os.ReadFile(filePath)
 				require.NoError(t, err)
 
 				var data map[string]interface{}
@@ -307,7 +306,7 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			name:   "YAML_Save",
 			format: "yaml",
 			verify: func(t *testing.T, filePath string) {
-				content, err := ioutil.ReadFile(filePath)
+				content, err := os.ReadFile(filePath)
 				require.NoError(t, err)
 
 				var data map[string]interface{}
@@ -322,7 +321,7 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 			name:   "Custom_Save",
 			format: "custom",
 			verify: func(t *testing.T, filePath string) {
-				content, err := ioutil.ReadFile(filePath)
+				content, err := os.ReadFile(filePath)
 				require.NoError(t, err)
 
 				contentStr := string(content)
@@ -344,9 +343,9 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 
 			// Create data to save
 			data := koanf.New(".")
-			data.Set("test_key", "test_value")
-			data.Set("number_key", 123)
-			data.Set("bool_key", true)
+			_ = data.Set("test_key", "test_value")
+			_ = data.Set("number_key", 123)
+			_ = data.Set("bool_key", true)
 
 			// Test saving
 			err := loader.SaveTargetConfig(appConfig, data)
@@ -360,9 +359,9 @@ func TestLoader_SaveTargetConfigCoverage(t *testing.T) {
 }
 
 func TestLoader_LoadAppConfigCoverage(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-load-app-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-load-app-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader, err := NewLoader()
 	require.NoError(t, err)
@@ -391,7 +390,7 @@ fields:
     description: Font size setting
 `
 
-	err = ioutil.WriteFile(appConfigPath, []byte(appConfigContent), 0644)
+	err = os.WriteFile(appConfigPath, []byte(appConfigContent), 0644)
 	require.NoError(t, err)
 
 	// Test loading the app config
@@ -423,9 +422,9 @@ fields:
 }
 
 func TestLoader_InvalidAppConfigFile(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-invalid-app-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-invalid-app-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader, err := NewLoader()
 	require.NoError(t, err)
@@ -443,7 +442,7 @@ path: /path/to/config.json
 format: json
 fields: [invalid yaml structure`
 
-	err = ioutil.WriteFile(invalidAppConfigPath, []byte(invalidContent), 0644)
+	err = os.WriteFile(invalidAppConfigPath, []byte(invalidContent), 0644)
 	require.NoError(t, err)
 
 	// Test loading invalid app config

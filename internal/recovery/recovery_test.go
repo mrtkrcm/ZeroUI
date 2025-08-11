@@ -1,7 +1,6 @@
 package recovery
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,11 +9,11 @@ import (
 
 // TestBackupManager_CreateBackup tests creating backups
 func TestBackupManager_CreateBackup(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "recovery-test")
+	tmpDir, err := os.MkdirTemp("", "recovery-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	bm := &BackupManager{
 		backupDir: tmpDir,
@@ -28,7 +27,7 @@ func TestBackupManager_CreateBackup(t *testing.T) {
 
 	configPath := filepath.Join(configDir, "test.conf")
 	configContent := "theme = dark\nfont-size = 14"
-	if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -44,7 +43,7 @@ func TestBackupManager_CreateBackup(t *testing.T) {
 	}
 
 	// Verify backup content
-	backupContent, err := ioutil.ReadFile(backupPath)
+	backupContent, err := os.ReadFile(backupPath)
 	if err != nil {
 		t.Fatalf("Failed to read backup file: %v", err)
 	}
@@ -66,11 +65,11 @@ func TestBackupManager_CreateBackup(t *testing.T) {
 
 // TestBackupManager_RestoreBackup tests restoring from backup
 func TestBackupManager_RestoreBackup(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "recovery-test")
+	tmpDir, err := os.MkdirTemp("", "recovery-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	bm := &BackupManager{
 		backupDir: tmpDir,
@@ -79,7 +78,7 @@ func TestBackupManager_RestoreBackup(t *testing.T) {
 	// Create backup file
 	backupContent := "theme = light\nfont-size = 16"
 	backupPath := filepath.Join(tmpDir, "test-backup.backup")
-	if err := ioutil.WriteFile(backupPath, []byte(backupContent), 0644); err != nil {
+	if err := os.WriteFile(backupPath, []byte(backupContent), 0644); err != nil {
 		t.Fatalf("Failed to write backup file: %v", err)
 	}
 
@@ -93,7 +92,7 @@ func TestBackupManager_RestoreBackup(t *testing.T) {
 	}
 
 	// Verify restored content
-	restoredContent, err := ioutil.ReadFile(targetPath)
+	restoredContent, err := os.ReadFile(targetPath)
 	if err != nil {
 		t.Fatalf("Failed to read restored file: %v", err)
 	}
@@ -111,11 +110,11 @@ func TestBackupManager_RestoreBackup(t *testing.T) {
 
 // TestBackupManager_ListBackups tests listing backups
 func TestBackupManager_ListBackups(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "recovery-test")
+	tmpDir, err := os.MkdirTemp("", "recovery-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	bm := &BackupManager{
 		backupDir: tmpDir,
@@ -133,7 +132,7 @@ func TestBackupManager_ListBackups(t *testing.T) {
 
 	for _, backup := range backups {
 		path := filepath.Join(tmpDir, backup.name)
-		if err := ioutil.WriteFile(path, []byte(backup.content), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(backup.content), 0644); err != nil {
 			t.Fatalf("Failed to write backup file %s: %v", backup.name, err)
 		}
 	}
@@ -180,16 +179,16 @@ func TestBackupManager_ListBackups(t *testing.T) {
 
 // TestSafeOperation tests safe operations with automatic rollback
 func TestSafeOperation(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "recovery-test")
+	tmpDir, err := os.MkdirTemp("", "recovery-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create original config file
 	configPath := filepath.Join(tmpDir, "config.conf")
 	originalContent := "theme = dark"
-	if err := ioutil.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
 		t.Fatalf("Failed to write original config: %v", err)
 	}
 
@@ -201,7 +200,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Modify the file (simulating a config change)
 	newContent := "theme = light"
-	if err := ioutil.WriteFile(configPath, []byte(newContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(newContent), 0644); err != nil {
 		t.Fatalf("Failed to modify config: %v", err)
 	}
 
@@ -211,7 +210,7 @@ func TestSafeOperation(t *testing.T) {
 	}
 
 	// Verify file still has new content
-	finalContent, err := ioutil.ReadFile(configPath)
+	finalContent, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read final config: %v", err)
 	}
@@ -228,7 +227,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Modify the file again
 	badContent := "invalid config"
-	if err := ioutil.WriteFile(configPath, []byte(badContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(badContent), 0644); err != nil {
 		t.Fatalf("Failed to write bad config: %v", err)
 	}
 
@@ -238,7 +237,7 @@ func TestSafeOperation(t *testing.T) {
 	}
 
 	// Verify file was restored
-	restoredContent, err := ioutil.ReadFile(configPath)
+	restoredContent, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read restored config: %v", err)
 	}
@@ -250,11 +249,11 @@ func TestSafeOperation(t *testing.T) {
 
 // TestBackupManager_CleanupOldBackups tests cleanup functionality
 func TestBackupManager_CleanupOldBackups(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "recovery-test")
+	tmpDir, err := os.MkdirTemp("", "recovery-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	bm := &BackupManager{
 		backupDir: tmpDir,
@@ -271,7 +270,7 @@ func TestBackupManager_CleanupOldBackups(t *testing.T) {
 
 	for _, name := range backupNames {
 		path := filepath.Join(tmpDir, name)
-		if err := ioutil.WriteFile(path, []byte("backup content"), 0644); err != nil {
+		if err := os.WriteFile(path, []byte("backup content"), 0644); err != nil {
 			t.Fatalf("Failed to write backup file %s: %v", name, err)
 		}
 		// Sleep to ensure different modification times
@@ -309,11 +308,11 @@ func TestBackupManager_CleanupOldBackups(t *testing.T) {
 
 // BenchmarkBackupManager_CreateBackup benchmarks backup creation
 func BenchmarkBackupManager_CreateBackup(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "recovery-bench")
+	tmpDir, err := os.MkdirTemp("", "recovery-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	bm := &BackupManager{
 		backupDir: tmpDir,
@@ -322,7 +321,7 @@ func BenchmarkBackupManager_CreateBackup(b *testing.B) {
 	// Create test config file
 	configPath := filepath.Join(tmpDir, "test.conf")
 	configContent := "theme = dark\nfont-size = 14\nother = value"
-	if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		b.Fatalf("Failed to write config file: %v", err)
 	}
 

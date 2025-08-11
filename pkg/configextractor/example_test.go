@@ -133,41 +133,48 @@ func ExampleConfig() {
 	fmt.Printf("Timestamp: %s\n", config.Timestamp.Format(time.RFC3339))
 }
 
-func ExampleCustomStrategy() {
+// CustomExtractorStrategy demonstrates how to implement and use a custom extraction strategy
+type CustomExtractorStrategy struct{}
+
+func (c *CustomExtractorStrategy) Name() string {
+	return "custom"
+}
+
+func (c *CustomExtractorStrategy) Priority() int {
+	return 80 // High priority
+}
+
+func (c *CustomExtractorStrategy) CanExtract(app string) bool {
+	return app == "my-custom-app"
+}
+
+func (c *CustomExtractorStrategy) Extract(ctx context.Context, app string) (*configextractor.Config, error) {
+	return &configextractor.Config{
+		App:    app,
+		Format: "custom",
+		Settings: map[string]configextractor.Setting{
+			"custom-setting": {
+				Name:    "custom-setting",
+				Type:    configextractor.TypeString,
+				Default: "custom-value",
+				Desc:    "A custom setting from custom strategy",
+			},
+		},
+		Source: configextractor.ExtractionSource{
+			Method:     "custom",
+			Location:   "custom-strategy",
+			Confidence: 1.0,
+		},
+		Timestamp: time.Now(),
+	}, nil
+}
+
+func Example_customStrategy() {
 	// Example of adding a custom extraction strategy
-	
-	// First, implement the Strategy interface
-	type CustomStrategy struct{}
-	
-	func (c *CustomStrategy) Name() string { return "custom" }
-	func (c *CustomStrategy) Priority() int { return 80 } // High priority
-	func (c *CustomStrategy) CanExtract(app string) bool { 
-		return app == "my-custom-app" 
-	}
-	func (c *CustomStrategy) Extract(ctx context.Context, app string) (*configextractor.Config, error) {
-		return &configextractor.Config{
-			App:    app,
-			Format: "custom",
-			Settings: map[string]configextractor.Setting{
-				"custom-setting": {
-					Name:    "custom-setting",
-					Type:    configextractor.TypeString,
-					Default: "custom-value",
-					Desc:    "A custom setting from custom strategy",
-				},
-			},
-			Source: configextractor.ExtractionSource{
-				Method:     "custom",
-				Location:   "custom-strategy",
-				Confidence: 1.0,
-			},
-			Timestamp: time.Now(),
-		}, nil
-	}
 
 	// Create extractor with custom strategy
 	extractor := configextractor.New(
-		configextractor.WithStrategy(&CustomStrategy{}),
+		configextractor.WithStrategy(&CustomExtractorStrategy{}),
 	)
 
 	ctx := context.Background()
@@ -180,7 +187,7 @@ func ExampleCustomStrategy() {
 		config.App, config.Source.Method)
 }
 
-func ExampleMinimalUsage() {
+func Example_minimalUsage() {
 	// Simplest possible usage
 	extractor := configextractor.New()
 	
@@ -205,7 +212,7 @@ func ExampleMinimalUsage() {
 	}
 }
 
-func ExamplePerformanceOptimized() {
+func Example_performanceOptimized() {
 	// Example showing performance optimizations
 	extractor := configextractor.New(
 		configextractor.WithTimeout(5*time.Second),   // Shorter timeout

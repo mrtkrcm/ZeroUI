@@ -14,22 +14,22 @@ import (
 
 // AppCardModel represents a single application card with advanced rendering
 type AppCardModel struct {
-	Status     registry.AppStatus
-	Selected   bool
-	Focused    bool
-	Width      int
-	Height     int
-	styles     *styles.Styles
-	
+	Status   registry.AppStatus
+	Selected bool
+	Focused  bool
+	Width    int
+	Height   int
+	styles   *styles.Styles
+
 	// Render caching for performance
-	cachedView     string
-	lastCacheTime  time.Time
-	cacheDuration  time.Duration
-	
+	cachedView    string
+	lastCacheTime time.Time
+	cacheDuration time.Duration
+
 	// Animation state
 	spinner      spinner.Model
 	loadingState bool
-	
+
 	// Visual effects
 	hoverEffect  bool
 	gradientBase lipgloss.Color
@@ -40,7 +40,7 @@ func NewAppCard(status registry.AppStatus) *AppCardModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	
+
 	return &AppCardModel{
 		Status:        status,
 		Width:         30, // Rectangular: 30 wide (default)
@@ -60,31 +60,31 @@ func (m *AppCardModel) Init() tea.Cmd {
 // Update handles messages for the app card with performance optimization
 func (m *AppCardModel) Update(msg tea.Msg) (*AppCardModel, tea.Cmd) {
 	var cmd tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		// Force re-cache on size change
 		m.invalidateCache()
 		return m, nil
-		
+
 	case tea.KeyMsg:
 		if m.Selected && key.Matches(msg, key.NewBinding(key.WithKeys("enter"))) {
 			m.loadingState = true
 			m.invalidateCache()
 			return m, tea.Batch(SelectAppCmd(m.Status.Definition.Name), m.spinner.Tick)
 		}
-		
+
 	case spinner.TickMsg:
 		if m.loadingState {
 			m.spinner, cmd = m.spinner.Update(msg)
 			m.invalidateCache() // Invalidate cache for animation
 			return m, cmd
 		}
-		
-	// Note: Mouse events would be handled here with proper tea.MouseMsg
-	// Currently disabled due to API changes
+
+		// Note: Mouse events would be handled here with proper tea.MouseMsg
+		// Currently disabled due to API changes
 	}
-	
+
 	return m, cmd
 }
 
@@ -94,14 +94,14 @@ func (m *AppCardModel) View() string {
 	if m.isCacheValid() {
 		return m.cachedView
 	}
-	
+
 	// Render the card
 	renderedCard := m.renderCard()
-	
+
 	// Update cache
 	m.cachedView = renderedCard
 	m.lastCacheTime = time.Now()
-	
+
 	return renderedCard
 }
 
@@ -109,13 +109,13 @@ func (m *AppCardModel) View() string {
 func (m *AppCardModel) renderCard() string {
 	// Get advanced card styling for rectangular cards
 	cardStyle := m.getAdvancedCardStyle()
-	
+
 	// Build card content with perfect spacing optimized for rectangular shape
 	var lines []string
-	
+
 	// Top spacing - less for rectangular cards
 	lines = append(lines, "")
-	
+
 	// Loading spinner or logo
 	if m.loadingState {
 		spinnerLine := lipgloss.NewStyle().
@@ -129,59 +129,59 @@ func (m *AppCardModel) renderCard() string {
 			Bold(true).
 			Width(m.Width - 4).
 			Align(lipgloss.Center)
-			
+
 		// Scale logo size based on card width (rectangular optimization)
 		logoText := m.Status.Definition.Logo
 		if m.Width > 32 {
 			logoText = logoText + " " + logoText // Double for larger cards
 		}
-		
+
 		lines = append(lines, logoStyle.Render(logoText))
 	}
-	
+
 	// App name with gradient effect - more prominent for rectangular cards
 	nameStyle := m.getNameStyle().
 		Bold(true).
 		Width(m.Width - 4).
 		Align(lipgloss.Center)
-		
+
 	// Add gradient for selected cards
 	if m.Selected {
 		nameStyle = nameStyle.Foreground(m.getGradientColor())
 	}
-	
+
 	lines = append(lines, nameStyle.Render(m.Status.Definition.Name))
-	
+
 	// Category with improved styling - compact for rectangular cards
 	categoryStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("242")).
 		Italic(true).
 		Width(m.Width - 4).
 		Align(lipgloss.Center)
-		
+
 	if m.hoverEffect {
 		categoryStyle = categoryStyle.Foreground(lipgloss.Color("250"))
 	}
-	
+
 	lines = append(lines, categoryStyle.Render(m.Status.Definition.Category))
-	
+
 	// Status indicators with icons
 	statusLine := m.buildEnhancedStatusLine()
 	lines = append(lines, statusLine)
-	
+
 	// Bottom spacing - minimal for rectangular cards
 	lines = append(lines, "")
-	
+
 	// Join all lines with optimized spacing for rectangular shape
 	content := lipgloss.JoinVertical(lipgloss.Center, lines...)
-	
+
 	// Apply advanced card styling with exact rectangular dimensions
 	card := cardStyle.
 		Width(m.Width).
 		Height(m.Height).
 		Align(lipgloss.Center, lipgloss.Center).
 		Render(content)
-	
+
 	return card
 }
 
@@ -195,10 +195,10 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 		BorderBottom(true).
 		BorderLeft(true).
 		BorderRight(true)
-	
+
 	// Remove inconsistent shadow effects that cause layout shifts
 	// Instead, use consistent border highlighting for all states
-	
+
 	if !m.Status.IsInstalled {
 		// Dimmed style with subtle gradient for uninstalled apps
 		return baseStyle.
@@ -206,7 +206,7 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 			Foreground(lipgloss.Color("240")).
 			Background(lipgloss.Color("232"))
 	}
-	
+
 	if m.Selected {
 		// Selected style with gradient background - use consistent border style
 		gradientBg := m.getGradientBackground()
@@ -216,14 +216,14 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 			Background(gradientBg).
 			Bold(true)
 	}
-	
+
 	if m.Focused || m.hoverEffect {
 		// Focused/hover style with subtle animation
 		return baseStyle.
 			BorderForeground(lipgloss.Color("205")).
 			Background(lipgloss.Color("234"))
 	}
-	
+
 	// Normal style with clean appearance
 	return baseStyle.
 		BorderForeground(lipgloss.Color("244")).
@@ -236,11 +236,11 @@ func (m *AppCardModel) getLogoStyle() lipgloss.Style {
 		Bold(true).
 		Width(m.Width - 4).
 		Align(lipgloss.Center)
-	
+
 	if !m.Status.IsInstalled {
 		return style.Foreground(lipgloss.Color("240"))
 	}
-	
+
 	return style
 }
 
@@ -250,40 +250,40 @@ func (m *AppCardModel) getNameStyle() lipgloss.Style {
 		Bold(true).
 		Width(m.Width - 4).
 		Align(lipgloss.Center)
-	
+
 	if !m.Status.IsInstalled {
 		return style.Foreground(lipgloss.Color("242"))
 	}
-	
+
 	if m.Selected {
 		return style.Foreground(lipgloss.Color("212"))
 	}
-	
+
 	return style.Foreground(lipgloss.Color("255"))
 }
 
 // buildEnhancedStatusLine creates advanced status indicators with icons
 func (m *AppCardModel) buildEnhancedStatusLine() string {
 	var indicators []string
-	
+
 	// Enhanced status indicators with better icons and colors
 	if m.Status.IsInstalled {
 		indicators = append(indicators, "●")
 	} else {
 		indicators = append(indicators, "○")
 	}
-	
+
 	if m.Status.HasConfig {
 		indicators = append(indicators, "⚙")
 	} else if m.Status.ConfigExists {
 		indicators = append(indicators, "📝")
 	}
-	
+
 	// Responsive status styling
 	statusStyle := lipgloss.NewStyle().
 		Width(m.Width - 4).
 		Align(lipgloss.Center)
-	
+
 	// Color coding for status
 	if m.Status.IsInstalled {
 		statusStyle = statusStyle.Foreground(lipgloss.Color("76")) // Bright green
@@ -293,7 +293,7 @@ func (m *AppCardModel) buildEnhancedStatusLine() string {
 	} else {
 		statusStyle = statusStyle.Foreground(lipgloss.Color("240"))
 	}
-	
+
 	return statusStyle.Render(strings.Join(indicators, "  "))
 }
 
@@ -312,7 +312,7 @@ func (m *AppCardModel) SetSize(width, height int) {
 	// Use provided dimensions directly for rectangular cards
 	m.Width = width
 	m.Height = height
-	
+
 	// Ensure minimum viable size
 	if m.Width < 24 {
 		m.Width = 24
@@ -320,7 +320,7 @@ func (m *AppCardModel) SetSize(width, height int) {
 	if m.Height < 8 {
 		m.Height = 8
 	}
-	
+
 	// Invalidate cache when size changes
 	m.invalidateCache()
 }
@@ -332,7 +332,7 @@ func (m *AppCardModel) isCacheValid() bool {
 	if m.cachedView == "" {
 		return false
 	}
-	
+
 	return time.Since(m.lastCacheTime) < m.cacheDuration
 }
 

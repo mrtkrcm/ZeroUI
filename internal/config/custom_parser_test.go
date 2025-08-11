@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,11 +12,11 @@ import (
 
 // TestParseGhosttyConfig tests parsing Ghostty configuration files
 func TestParseGhosttyConfig(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-parser-test")
+	tmpDir, err := os.MkdirTemp("", "ghostty-parser-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test basic parsing
 	t.Run("Basic parsing", func(t *testing.T) {
@@ -30,7 +29,7 @@ background-opacity = 0.9
 debug = true
 window-width = 120
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write basic config: %v", err)
 		}
 
@@ -79,7 +78,7 @@ keybind = cmd+c=copy
 keybind = cmd+v=paste
 keybind = cmd+n=new_window
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write multiple config: %v", err)
 		}
 
@@ -136,7 +135,7 @@ font-size = 14
 debug = false
 
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write comments config: %v", err)
 		}
 
@@ -172,7 +171,7 @@ malformed line without equals
 special-chars = áëíôü
 unicode = 🎨🚀
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write edge cases config: %v", err)
 		}
 
@@ -237,7 +236,7 @@ unicode = 🎨🚀
 	// Test empty file
 	t.Run("Empty file", func(t *testing.T) {
 		configPath := filepath.Join(tmpDir, "empty.conf")
-		if err := ioutil.WriteFile(configPath, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(""), 0644); err != nil {
 			t.Fatalf("Failed to write empty config: %v", err)
 		}
 
@@ -259,7 +258,7 @@ unicode = 🎨🚀
 # Yet another comment
 
 # Final comment`
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write comments-only config: %v", err)
 		}
 
@@ -276,11 +275,11 @@ unicode = 🎨🚀
 
 // TestWriteGhosttyConfig tests writing Ghostty configuration files
 func TestWriteGhosttyConfig(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-writer-test")
+	tmpDir, err := os.MkdirTemp("", "ghostty-writer-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Test writing new config file
 	t.Run("New config file", func(t *testing.T) {
@@ -304,7 +303,7 @@ func TestWriteGhosttyConfig(t *testing.T) {
 		}
 
 		// Verify content
-		content, err := ioutil.ReadFile(outputPath)
+		content, err := os.ReadFile(outputPath)
 		if err != nil {
 			t.Fatalf("Failed to read written config: %v", err)
 		}
@@ -346,7 +345,7 @@ window-height = 40
 # Debug mode
 debug = false
 `
-		if err := ioutil.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
+		if err := os.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
 			t.Fatalf("Failed to write original config: %v", err)
 		}
 
@@ -366,7 +365,7 @@ debug = false
 		}
 
 		// Verify content
-		content, err := ioutil.ReadFile(outputPath)
+		content, err := os.ReadFile(outputPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
@@ -424,7 +423,7 @@ debug = false
 			t.Fatalf("Failed to write array config: %v", err)
 		}
 
-		content, err := ioutil.ReadFile(outputPath)
+		content, err := os.ReadFile(outputPath)
 		if err != nil {
 			t.Fatalf("Failed to read array config: %v", err)
 		}
@@ -472,11 +471,11 @@ debug = false
 
 // TestGhosttyConfigRoundTrip tests parsing and writing back preserves data
 func TestGhosttyConfigRoundTrip(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-roundtrip-test")
+	tmpDir, err := os.MkdirTemp("", "ghostty-roundtrip-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create original config
 	originalPath := filepath.Join(tmpDir, "original.conf")
@@ -492,7 +491,7 @@ keybind = cmd+c=copy
 keybind = cmd+v=paste
 `
 
-	if err := ioutil.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
 		t.Fatalf("Failed to write original config: %v", err)
 	}
 
@@ -567,11 +566,11 @@ keybind = cmd+v=paste
 
 // BenchmarkParseGhosttyConfig benchmarks config parsing
 func BenchmarkParseGhosttyConfig(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-bench")
+	tmpDir, err := os.MkdirTemp("", "ghostty-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a large config file
 	configPath := filepath.Join(tmpDir, "bench.conf")
@@ -593,7 +592,7 @@ func BenchmarkParseGhosttyConfig(b *testing.B) {
 		content.WriteString(fmt.Sprintf("keybind = cmd+%d=action-%d\n", i, i))
 	}
 
-	if err := ioutil.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
 		b.Fatalf("Failed to write bench config: %v", err)
 	}
 
@@ -608,11 +607,11 @@ func BenchmarkParseGhosttyConfig(b *testing.B) {
 
 // BenchmarkWriteGhosttyConfig benchmarks config writing
 func BenchmarkWriteGhosttyConfig(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-write-bench")
+	tmpDir, err := os.MkdirTemp("", "ghostty-write-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create config data
 	k := koanf.New(".")

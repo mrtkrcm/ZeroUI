@@ -25,18 +25,18 @@ func OptimizedHTTPClient() *http.Client {
 				MaxIdleConnsPerHost: 10,
 				MaxConnsPerHost:     50,
 				IdleConnTimeout:     90 * time.Second,
-				
+
 				// TCP optimization
-				DisableKeepAlives:   false,
-				DisableCompression:  false,
-				ForceAttemptHTTP2:   true,
-				
+				DisableKeepAlives:  false,
+				DisableCompression: false,
+				ForceAttemptHTTP2:  true,
+
 				// TLS optimization
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: false,
 					MinVersion:         tls.VersionTLS12,
 				},
-				
+
 				// Timeouts
 				TLSHandshakeTimeout:   10 * time.Second,
 				ResponseHeaderTimeout: 10 * time.Second,

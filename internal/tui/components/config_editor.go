@@ -40,13 +40,13 @@ func NewField(key, fieldType, currentValue string, values []string, description 
 	for i, value := range values {
 		valueLookup[value] = i
 	}
-	
+
 	// Find current cursor position
 	cursor := 0
 	if idx, exists := valueLookup[currentValue]; exists {
 		cursor = idx
 	}
-	
+
 	return &FieldModel{
 		Key:          key,
 		Type:         fieldType,
@@ -69,7 +69,7 @@ func (f *FieldModel) GetValueIndex(value string) (int, bool) {
 		}
 		return 0, false
 	}
-	
+
 	idx, exists := f.valueLookup[value]
 	return idx, exists
 }
@@ -78,13 +78,13 @@ func (f *FieldModel) GetValueIndex(value string) (int, bool) {
 type ConfigEditorModel struct {
 	width  int
 	height int
-	
-	appName  string
-	fields   []*FieldModel
-	cursor   int
-	focused  bool
-	keyMap   keys.AppKeyMap
-	styles   *styles.Styles
+
+	appName string
+	fields  []*FieldModel
+	cursor  int
+	focused bool
+	keyMap  keys.AppKeyMap
+	styles  *styles.Styles
 }
 
 // NewConfigEditor creates a new config editor component
@@ -109,7 +109,7 @@ func (m *ConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.focused {
 			return m, nil
 		}
-		
+
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
 			if m.cursor > 0 {
@@ -175,7 +175,7 @@ func (m *ConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	
+
 	return m, nil
 }
 
@@ -184,29 +184,29 @@ func (m *ConfigEditorModel) View() string {
 	if len(m.fields) == 0 {
 		return m.styles.Muted.Render("No configuration fields available")
 	}
-	
+
 	var b strings.Builder
-	
+
 	for i, field := range m.fields {
 		var line string
 		cursor := " "
-		
+
 		if i == m.cursor {
 			cursor = ">"
 		}
-		
+
 		// Build field display
 		fieldDisplay := fmt.Sprintf("%s %s: %s", cursor, field.Key, field.CurrentValue)
-		
+
 		if i == m.cursor && m.focused {
 			line = m.styles.Selected.Render(fieldDisplay)
-			
+
 			// Show available values for selected field
 			if len(field.Values) > 1 {
 				valueDisplay := fmt.Sprintf(" [%s]", strings.Join(field.Values, ", "))
 				line += m.styles.Muted.Render(valueDisplay)
 			}
-			
+
 			// Show description if available
 			if field.Description != "" {
 				line += "\n" + strings.Repeat(" ", 2) + m.styles.Info.Render(field.Description)
@@ -214,13 +214,13 @@ func (m *ConfigEditorModel) View() string {
 		} else {
 			line = m.styles.Text.Render(fieldDisplay)
 		}
-		
+
 		b.WriteString(line)
 		if i < len(m.fields)-1 {
 			b.WriteString("\n")
 		}
 	}
-	
+
 	return b.String()
 }
 

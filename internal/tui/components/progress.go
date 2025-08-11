@@ -12,11 +12,11 @@ import (
 
 // ProgressModel represents an enhanced progress component
 type ProgressModel struct {
-	progress   progress.Model
-	styles     *styles.Styles
-	label      string
-	value      float64
-	animated   bool
+	progress    progress.Model
+	styles      *styles.Styles
+	label       string
+	value       float64
+	animated    bool
 	showPercent bool
 }
 
@@ -102,7 +102,7 @@ func (m *ProgressModel) View() string {
 			Align(lipgloss.Right).
 			Width(m.progress.Width).
 			MarginTop(1)
-		
+
 		percent := int(m.value * 100)
 		parts = append(parts, percentStyle.Render(fmt.Sprintf("%d%%", percent)))
 	}
@@ -203,7 +203,7 @@ func (m *MultiProgressModel) View() string {
 		}
 		p.SetProgress(m.values[i])
 		parts = append(parts, p.View())
-		
+
 		// Add spacing between progress bars
 		if i < len(m.progresses)-1 {
 			parts = append(parts, "")

@@ -16,27 +16,27 @@ import (
 
 // HuhGridModel represents a Huh-based grid layout for app selection
 type HuhGridModel struct {
-	width        int
-	height       int
-	statuses     []registry.AppStatus
-	form         *huh.Form
-	selectedApp  string
-	focused      bool
-	keyMap       keys.AppKeyMap
-	styles       *styles.Styles
-	showAll      bool
-	columns      int
-	
+	width       int
+	height      int
+	statuses    []registry.AppStatus
+	form        *huh.Form
+	selectedApp string
+	focused     bool
+	keyMap      keys.AppKeyMap
+	styles      *styles.Styles
+	showAll     bool
+	columns     int
+
 	// Grid layout settings
-	cardWidth    int
-	cardHeight   int
-	gridSpacing  int
+	cardWidth   int
+	cardHeight  int
+	gridSpacing int
 }
 
 // NewHuhGrid creates a new Huh-based grid component
 func NewHuhGrid() *HuhGridModel {
 	statuses := registry.GetAppStatuses()
-	
+
 	model := &HuhGridModel{
 		statuses:    statuses,
 		focused:     false,
@@ -48,7 +48,7 @@ func NewHuhGrid() *HuhGridModel {
 		cardHeight:  10,
 		gridSpacing: 2,
 	}
-	
+
 	model.buildGridForm()
 	return model
 }
@@ -56,12 +56,12 @@ func NewHuhGrid() *HuhGridModel {
 // buildGridForm creates a multi-column Huh form for app selection
 func (m *HuhGridModel) buildGridForm() {
 	var options []huh.Option[string]
-	
+
 	// Show applications - by default show all, filter only if specifically requested
 	for _, status := range m.statuses {
 		// Always include the application in the grid
 		// The showAll flag can be used for different filtering in the future
-		
+
 		// Create grid-friendly labels with status indicators
 		var statusIcons []string
 		if status.IsInstalled {
@@ -73,13 +73,13 @@ func (m *HuhGridModel) buildGridForm() {
 		if !status.IsInstalled && !status.HasConfig {
 			statusIcons = append(statusIcons, "○")
 		}
-		
+
 		// Compact label format for grid layout
 		statusText := ""
 		if len(statusIcons) > 0 {
 			statusText = fmt.Sprintf("[%s]", strings.Join(statusIcons, ""))
 		}
-		
+
 		// Multi-line label for better grid presentation with string builder
 		var labelBuilder strings.Builder
 		labelBuilder.Grow(64) // Pre-allocate space to reduce allocations
@@ -91,15 +91,15 @@ func (m *HuhGridModel) buildGridForm() {
 		labelBuilder.WriteByte(' ')
 		labelBuilder.WriteString(status.Definition.Category)
 		label := labelBuilder.String()
-		
+
 		options = append(options, huh.NewOption(label, status.Definition.Name))
 	}
-	
+
 	if len(options) == 0 {
 		// Add fallback option
 		options = append(options, huh.NewOption("No applications available", ""))
 	}
-	
+
 	// Create multi-column select with grid-like appearance
 	selectField := huh.NewSelect[string]().
 		Title("Select Application").
@@ -108,7 +108,7 @@ func (m *HuhGridModel) buildGridForm() {
 		Value(&m.selectedApp).
 		Height(calculateGridHeight(len(options), m.columns)). // Dynamic height based on grid
 		WithTheme(huh.ThemeCharm())
-	
+
 	m.form = huh.NewForm(
 		huh.NewGroup(selectField).Title("Applications Grid"),
 	).
@@ -119,22 +119,22 @@ func (m *HuhGridModel) buildGridForm() {
 // calculateGridHeight calculates the optimal height for the grid display
 func calculateGridHeight(itemCount, columns int) int {
 	rows := (itemCount + columns - 1) / columns // Ceiling division
-	
+
 	// Each row needs space for the card (height + spacing)
 	// Add some padding for borders and spacing
-	baseHeight := 8  // Minimum height
-	rowHeight := 3   // Height per row including spacing
-	maxHeight := 15  // Maximum reasonable height
-	
+	baseHeight := 8 // Minimum height
+	rowHeight := 3  // Height per row including spacing
+	maxHeight := 15 // Maximum reasonable height
+
 	calculatedHeight := baseHeight + (rows * rowHeight)
-	
+
 	if calculatedHeight > maxHeight {
 		return maxHeight
 	}
 	if calculatedHeight < baseHeight {
 		return baseHeight
 	}
-	
+
 	return calculatedHeight
 }
 
@@ -146,7 +146,7 @@ func (m *HuhGridModel) Init() tea.Cmd {
 // Update handles messages with proper grid navigation
 func (m *HuhGridModel) Update(msg tea.Msg) (*HuhGridModel, tea.Cmd) {
 	var cmds []tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.width != msg.Width || m.height != msg.Height {
@@ -154,12 +154,12 @@ func (m *HuhGridModel) Update(msg tea.Msg) (*HuhGridModel, tea.Cmd) {
 			m.height = msg.Height
 			m.updateGridLayout()
 		}
-		
+
 	case tea.KeyMsg:
 		if !m.focused {
 			return m, nil
 		}
-		
+
 		// Handle grid-specific key bindings
 		switch {
 		case key.Matches(msg, m.keyMap.Toggle):
@@ -167,7 +167,7 @@ func (m *HuhGridModel) Update(msg tea.Msg) (*HuhGridModel, tea.Cmd) {
 			m.showAll = !m.showAll
 			m.buildGridForm()
 			return m, m.form.Init()
-			
+
 		case key.Matches(msg, key.NewBinding(key.WithKeys("g"))):
 			// Grid mode toggle (future enhancement)
 			// Could switch between different grid sizes
@@ -175,7 +175,7 @@ func (m *HuhGridModel) Update(msg tea.Msg) (*HuhGridModel, tea.Cmd) {
 			return m, nil
 		}
 	}
-	
+
 	// Always update the form for proper Huh integration
 	if m.form != nil {
 		form, cmd := m.form.Update(msg)
@@ -183,13 +183,13 @@ func (m *HuhGridModel) Update(msg tea.Msg) (*HuhGridModel, tea.Cmd) {
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 		// Check if app was selected
 		if m.form.State == huh.StateCompleted && m.selectedApp != "" {
 			cmds = append(cmds, SelectAppCmd(m.selectedApp))
 		}
 	}
-	
+
 	// Return with batched commands
 	if len(cmds) > 0 {
 		return m, tea.Batch(cmds...)
@@ -211,7 +211,7 @@ func (m *HuhGridModel) toggleGridSize() {
 	default:
 		m.columns = 4 // Default fallback
 	}
-	
+
 	// Rebuild form with new grid layout
 	m.buildGridForm()
 }
@@ -228,10 +228,10 @@ func (m *HuhGridModel) updateGridLayout() {
 		m.columns = 3
 		m.cardWidth = 32
 	} else {
-		m.columns = 4  // Production standard for 115+ width
+		m.columns = 4 // Production standard for 115+ width
 		m.cardWidth = 30
 	}
-	
+
 	// Rebuild form with updated layout
 	m.buildGridForm()
 }
@@ -241,10 +241,10 @@ func (m *HuhGridModel) View() string {
 	if len(m.statuses) == 0 {
 		return m.renderEmptyState()
 	}
-	
+
 	// Create header with grid information
 	header := m.renderGridHeader()
-	
+
 	// Get the form view
 	var formView string
 	if m.form != nil {
@@ -258,19 +258,19 @@ func (m *HuhGridModel) View() string {
 			formView = "Form initialization failed"
 		}
 	}
-	
+
 	// Create footer with grid-specific help
 	footer := m.renderGridFooter()
-	
+
 	// Calculate content dimensions
 	headerHeight := lipgloss.Height(header)
 	footerHeight := lipgloss.Height(footer)
 	availableHeight := m.height - headerHeight - footerHeight - 4
-	
+
 	if availableHeight < 10 {
 		availableHeight = 10
 	}
-	
+
 	// Style the grid container
 	gridStyle := lipgloss.NewStyle().
 		Width(m.width).
@@ -279,9 +279,9 @@ func (m *HuhGridModel) View() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Align(lipgloss.Center, lipgloss.Top)
-	
+
 	styledGrid := gridStyle.Render(formView)
-	
+
 	// Compose the final view
 	content := lipgloss.JoinVertical(
 		lipgloss.Center,
@@ -289,7 +289,7 @@ func (m *HuhGridModel) View() string {
 		styledGrid,
 		footer,
 	)
-	
+
 	// Center everything in available space
 	return lipgloss.Place(
 		m.width,
@@ -303,13 +303,13 @@ func (m *HuhGridModel) View() string {
 // renderGridHeader creates header with grid information
 func (m *HuhGridModel) renderGridHeader() string {
 	title := fmt.Sprintf("🔧 Application Grid (%d columns)", m.columns)
-	
+
 	// Count applications
 	installedCount := 0
 	configuredCount := 0
 	totalCount := len(m.statuses)
 	visibleCount := 0
-	
+
 	for _, status := range m.statuses {
 		if status.IsInstalled {
 			installedCount++
@@ -321,27 +321,27 @@ func (m *HuhGridModel) renderGridHeader() string {
 			visibleCount++
 		}
 	}
-	
-	subtitle := fmt.Sprintf("📱 %d apps • ✅ %d installed • ⚙️ %d configured • 👁️ %d visible", 
+
+	subtitle := fmt.Sprintf("📱 %d apps • ✅ %d installed • ⚙️ %d configured • 👁️ %d visible",
 		totalCount, installedCount, configuredCount, visibleCount)
-	
+
 	viewMode := "Available Only"
 	if m.showAll {
 		viewMode = "All Applications"
 	}
 	subtitle += fmt.Sprintf(" • Mode: %s", viewMode)
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#7C3AED")).
 		Bold(true).
 		Align(lipgloss.Center)
-	
+
 	subtitleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Italic(true).
 		Align(lipgloss.Center).
 		MarginTop(1)
-	
+
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 		titleStyle.Render(title),
@@ -352,22 +352,22 @@ func (m *HuhGridModel) renderGridHeader() string {
 // renderGridFooter creates help text for grid navigation
 func (m *HuhGridModel) renderGridFooter() string {
 	var hints []string
-	
+
 	hints = append(hints, "↑↓←→ Navigate Grid")
 	hints = append(hints, "⏎ Select App")
 	hints = append(hints, "g Toggle Grid Size")
-	
+
 	if m.showAll {
 		hints = append(hints, "t Show Available Only")
 	} else {
 		hints = append(hints, "t Show All Apps")
 	}
-	
+
 	hints = append(hints, "? Help")
 	hints = append(hints, "q Quit")
-	
+
 	helpText := strings.Join(hints, "  •  ")
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Align(lipgloss.Center).
@@ -375,7 +375,7 @@ func (m *HuhGridModel) renderGridFooter() string {
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(0, 2).
 		MarginTop(1)
-	
+
 	return style.Render(helpText)
 }
 
@@ -394,7 +394,7 @@ Supported applications include:
 
 Install any of these applications and they'll appear in the grid!
 `
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Align(lipgloss.Center).
@@ -402,7 +402,7 @@ Install any of these applications and they'll appear in the grid!
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(2, 4).
 		Width(60)
-	
+
 	return lipgloss.Place(
 		m.width,
 		m.height,
@@ -474,7 +474,7 @@ func (m *HuhGridModel) SetColumns(columns int) {
 	} else if columns > 8 {
 		columns = 8
 	}
-	
+
 	m.columns = columns
 	m.buildGridForm()
 }

@@ -14,8 +14,8 @@ func BenchmarkSuperOptimizedValidation(b *testing.B) {
 	schema := &Schema{
 		Name: "super-simple",
 		Fields: map[string]*FieldRule{
-			"name": {Type: "string", Required: true},
-			"port": {Type: "number"},
+			"name":    {Type: "string", Required: true},
+			"port":    {Type: "number"},
 			"enabled": {Type: "boolean"},
 		},
 		Global: &GlobalRules{

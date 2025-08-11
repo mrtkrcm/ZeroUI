@@ -2,7 +2,6 @@ package builtin
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,13 +12,13 @@ import (
 
 // setupGhosttyTest creates a test environment for Ghostty plugin
 func setupGhosttyTest(t *testing.T) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-plugin-test")
+	tmpDir, err := os.MkdirTemp("", "ghostty-plugin-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return tmpDir, cleanup
@@ -78,7 +77,7 @@ func TestGhosttyPlugin_DetectConfigPath(t *testing.T) {
 	}
 
 	linuxConfigPath := filepath.Join(linuxConfigDir, "config")
-	if err := ioutil.WriteFile(linuxConfigPath, []byte("theme = GruvboxDark\n"), 0644); err != nil {
+	if err := os.WriteFile(linuxConfigPath, []byte("theme = GruvboxDark\n"), 0644); err != nil {
 		t.Fatalf("Failed to create Linux config file: %v", err)
 	}
 
@@ -100,7 +99,7 @@ func TestGhosttyPlugin_DetectConfigPath(t *testing.T) {
 	}
 
 	macOSConfigPath := filepath.Join(macOSConfigDir, "config")
-	if err := ioutil.WriteFile(macOSConfigPath, []byte("theme = GruvboxLight\n"), 0644); err != nil {
+	if err := os.WriteFile(macOSConfigPath, []byte("theme = GruvboxLight\n"), 0644); err != nil {
 		t.Fatalf("Failed to create macOS config file: %v", err)
 	}
 
@@ -131,7 +130,7 @@ font-size = 14
 background-opacity = 0.9
 debug = true
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write config file: %v", err)
 		}
 
@@ -167,7 +166,7 @@ keybind = cmd+c=copy
 keybind = cmd+v=paste
 theme = GruvboxDark
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write array config: %v", err)
 		}
 
@@ -232,7 +231,7 @@ font-size = 14
 # Empty line above, comment below
 # window-width = 120
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write comments config: %v", err)
 		}
 
@@ -269,7 +268,7 @@ font-size = 14
 another malformed line
 font-family = JetBrains Mono
 `
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write malformed config: %v", err)
 		}
 
@@ -296,7 +295,7 @@ font-family = JetBrains Mono
 	// Test empty file
 	t.Run("Empty file", func(t *testing.T) {
 		configPath := filepath.Join(tmpDir, "empty.conf")
-		if err := ioutil.WriteFile(configPath, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(""), 0644); err != nil {
 			t.Fatalf("Failed to write empty config: %v", err)
 		}
 
@@ -339,7 +338,7 @@ func TestGhosttyPlugin_WriteConfig(t *testing.T) {
 		}
 
 		// Verify content
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read written config: %v", err)
 		}
@@ -368,7 +367,7 @@ font-size = 16
 window-width = 120
 window-height = 40
 `
-		if err := ioutil.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
+		if err := os.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
 			t.Fatalf("Failed to write original config: %v", err)
 		}
 
@@ -386,7 +385,7 @@ window-height = 40
 		}
 
 		// Read result
-		content, err := ioutil.ReadFile(updatePath)
+		content, err := os.ReadFile(updatePath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
@@ -429,7 +428,7 @@ window-height = 40
 			t.Fatalf("Failed to write array config: %v", err)
 		}
 
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read array config: %v", err)
 		}
@@ -661,11 +660,11 @@ func TestGhosttyPlugin_GetHooks(t *testing.T) {
 
 // BenchmarkGhosttyPlugin_ParseConfig benchmarks config parsing
 func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-bench")
+	tmpDir, err := os.MkdirTemp("", "ghostty-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a large config file
 	configPath := filepath.Join(tmpDir, "bench.conf")
@@ -687,7 +686,7 @@ func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
 		content.WriteString(fmt.Sprintf("keybind = cmd+%d=action-%d\n", i, i))
 	}
 
-	if err := ioutil.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
 		b.Fatalf("Failed to write bench config: %v", err)
 	}
 
@@ -704,11 +703,11 @@ func BenchmarkGhosttyPlugin_ParseConfig(b *testing.B) {
 
 // BenchmarkGhosttyPlugin_WriteConfig benchmarks config writing
 func BenchmarkGhosttyPlugin_WriteConfig(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "ghostty-write-bench")
+	tmpDir, err := os.MkdirTemp("", "ghostty-write-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	plugin := NewGhosttyPlugin()
 

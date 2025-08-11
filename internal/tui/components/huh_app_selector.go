@@ -31,7 +31,7 @@ type HuhAppSelectorModel struct {
 // NewHuhAppSelector creates a new Huh-based app selector
 func NewHuhAppSelector() *HuhAppSelectorModel {
 	statuses := registry.GetAppStatuses()
-	
+
 	model := &HuhAppSelectorModel{
 		statuses: statuses,
 		focused:  false,
@@ -39,7 +39,7 @@ func NewHuhAppSelector() *HuhAppSelectorModel {
 		styles:   styles.GetStyles(),
 		showAll:  false,
 	}
-	
+
 	model.buildForm()
 	return model
 }
@@ -47,12 +47,12 @@ func NewHuhAppSelector() *HuhAppSelectorModel {
 // buildForm creates the Huh form for app selection
 func (m *HuhAppSelectorModel) buildForm() {
 	var options []huh.Option[string]
-	
+
 	// Show applications - by default show all available apps
 	for _, status := range m.statuses {
 		// Always include applications in the selector
 		// Future: could add filtering based on categories or other criteria
-		
+
 		// Create descriptive label with status indicators
 		var statusIcons []string
 		if status.IsInstalled {
@@ -64,26 +64,26 @@ func (m *HuhAppSelectorModel) buildForm() {
 		if !status.IsInstalled && !status.HasConfig {
 			statusIcons = append(statusIcons, "❌")
 		}
-		
+
 		statusText := ""
 		if len(statusIcons) > 0 {
 			statusText = fmt.Sprintf(" [%s]", strings.Join(statusIcons, " "))
 		}
-		
-		label := fmt.Sprintf("%s %s%s - %s", 
-			status.Definition.Logo, 
-			status.Definition.Name, 
+
+		label := fmt.Sprintf("%s %s%s - %s",
+			status.Definition.Logo,
+			status.Definition.Name,
 			statusText,
 			status.Definition.Category)
-		
+
 		options = append(options, huh.NewOption(label, status.Definition.Name))
 	}
-	
+
 	if len(options) == 0 {
 		// Show a message when no apps are available
 		options = append(options, huh.NewOption("No applications available", ""))
 	}
-	
+
 	// Create the select form with modern styling
 	selectField := huh.NewSelect[string]().
 		Title("Select Application").
@@ -92,13 +92,13 @@ func (m *HuhAppSelectorModel) buildForm() {
 		Value(&m.selectedApp).
 		Height(10). // Show more options at once
 		WithTheme(huh.ThemeCharm())
-	
+
 	m.form = huh.NewForm(
 		huh.NewGroup(selectField),
 	).
 		WithShowHelp(true).
 		WithShowErrors(true)
-	
+
 	// Store form size for responsive updates
 	m.lastFormSize = len(options)
 }
@@ -111,7 +111,7 @@ func (m *HuhAppSelectorModel) Init() tea.Cmd {
 // Update handles messages with proper Huh form lifecycle integration
 func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd) {
 	var cmds []tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.width != msg.Width || m.height != msg.Height {
@@ -119,12 +119,12 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 			m.height = msg.Height
 			m.updateFormSize()
 		}
-		
+
 	case tea.KeyMsg:
 		if !m.focused {
 			return m, nil
 		}
-		
+
 		// Handle custom key bindings first, before form processes them
 		switch {
 		case key.Matches(msg, m.keyMap.Toggle):
@@ -132,7 +132,7 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 			m.showAll = !m.showAll
 			m.buildForm()
 			return m, m.form.Init()
-			
+
 		case key.Matches(msg, m.keyMap.Enter):
 			// Check if form is completed after processing
 			if m.form != nil && m.form.State == huh.StateCompleted && m.selectedApp != "" {
@@ -141,7 +141,7 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 			}
 		}
 	}
-	
+
 	// Always update the form with the message - this is critical for Huh integration
 	if m.form != nil {
 		form, cmd := m.form.Update(msg)
@@ -149,13 +149,13 @@ func (m *HuhAppSelectorModel) Update(msg tea.Msg) (*HuhAppSelectorModel, tea.Cmd
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 		// Check if form state changed to completed
 		if m.form.State == huh.StateCompleted && m.selectedApp != "" {
 			cmds = append(cmds, SelectAppCmd(m.selectedApp))
 		}
 	}
-	
+
 	// Return with batched commands
 	if len(cmds) > 0 {
 		return m, tea.Batch(cmds...)
@@ -168,34 +168,34 @@ func (m *HuhAppSelectorModel) View() string {
 	if len(m.statuses) == 0 {
 		return m.renderEmptyState()
 	}
-	
+
 	// Create header with logo and app count info
 	header := m.renderHeader()
-	
+
 	// Get the form view
 	formView := m.form.View()
-	
+
 	// Create footer with help text
 	footer := m.renderFooter()
-	
+
 	// Calculate content dimensions
 	headerHeight := lipgloss.Height(header)
 	footerHeight := lipgloss.Height(footer)
 	availableHeight := m.height - headerHeight - footerHeight - 4 // padding
-	
+
 	if availableHeight < 10 {
 		availableHeight = 10
 	}
-	
+
 	// Style the form container with proper centering
 	formStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(availableHeight).
 		Padding(1, 2).
 		Align(lipgloss.Center, lipgloss.Center)
-	
+
 	styledForm := formStyle.Render(formView)
-	
+
 	// Compose the final view
 	content := lipgloss.JoinVertical(
 		lipgloss.Center,
@@ -203,7 +203,7 @@ func (m *HuhAppSelectorModel) View() string {
 		styledForm,
 		footer,
 	)
-	
+
 	// Center everything in the available space
 	return lipgloss.Place(
 		m.width,
@@ -224,12 +224,12 @@ func (m *HuhAppSelectorModel) renderHeader() string {
 ║        Configuration Manager          ║
 ╚══════════════════════════════════════╝`
 	}
-	
+
 	// Count applications
 	installedCount := 0
 	configuredCount := 0
 	totalCount := len(m.statuses)
-	
+
 	for _, status := range m.statuses {
 		if status.IsInstalled {
 			installedCount++
@@ -238,27 +238,27 @@ func (m *HuhAppSelectorModel) renderHeader() string {
 			configuredCount++
 		}
 	}
-	
-	subtitle := fmt.Sprintf("📱 %d apps • ✅ %d installed • ⚙️ %d configured", 
+
+	subtitle := fmt.Sprintf("📱 %d apps • ✅ %d installed • ⚙️ %d configured",
 		totalCount, installedCount, configuredCount)
-	
+
 	if m.showAll {
 		subtitle += " • Showing: All Applications"
 	} else {
 		subtitle += " • Showing: Available Only"
 	}
-	
+
 	logoStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#7C3AED")).
 		Bold(true).
 		Align(lipgloss.Center)
-	
+
 	subtitleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Italic(true).
 		Align(lipgloss.Center).
 		MarginTop(1)
-	
+
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 		logoStyle.Render(logo),
@@ -269,21 +269,21 @@ func (m *HuhAppSelectorModel) renderHeader() string {
 // renderFooter creates help text footer
 func (m *HuhAppSelectorModel) renderFooter() string {
 	var hints []string
-	
+
 	hints = append(hints, "↑↓ Navigate")
 	hints = append(hints, "⏎ Select")
-	
+
 	if m.showAll {
 		hints = append(hints, "t Show Available Only")
 	} else {
 		hints = append(hints, "t Show All Apps")
 	}
-	
+
 	hints = append(hints, "? Help")
 	hints = append(hints, "q Quit")
-	
+
 	helpText := strings.Join(hints, "  •  ")
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Align(lipgloss.Center).
@@ -291,7 +291,7 @@ func (m *HuhAppSelectorModel) renderFooter() string {
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(0, 2).
 		MarginTop(1)
-	
+
 	return style.Render(helpText)
 }
 
@@ -310,7 +310,7 @@ Supported applications include:
 
 Install any of these applications and they'll appear here!
 `
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Align(lipgloss.Center).
@@ -318,7 +318,7 @@ Install any of these applications and they'll appear here!
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(2, 4).
 		Width(60)
-	
+
 	return lipgloss.Place(
 		m.width,
 		m.height,
@@ -333,7 +333,7 @@ func (m *HuhAppSelectorModel) updateFormSize() {
 	if m.form == nil {
 		return
 	}
-	
+
 	// Calculate optimal form height
 	maxHeight := m.height - 10 // Reserve space for header/footer
 	if maxHeight < 5 {
@@ -341,7 +341,7 @@ func (m *HuhAppSelectorModel) updateFormSize() {
 	} else if maxHeight > 15 {
 		maxHeight = 15 // Don't make it too tall
 	}
-	
+
 	// Rebuild form if needed
 	visibleCount := 0
 	for _, status := range m.statuses {
@@ -349,7 +349,7 @@ func (m *HuhAppSelectorModel) updateFormSize() {
 			visibleCount++
 		}
 	}
-	
+
 	if visibleCount != m.lastFormSize {
 		m.buildForm()
 	}

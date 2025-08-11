@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
 
@@ -34,19 +34,19 @@ func trimSpaceFast(s string) string {
 	if len(s) == 0 {
 		return s
 	}
-	
+
 	// Find start
 	start := 0
 	for start < len(s) && isSpace(s[start]) {
 		start++
 	}
-	
+
 	// Find end
 	end := len(s)
 	for end > start && isSpace(s[end-1]) {
 		end--
 	}
-	
+
 	// Return substring if trimming is needed
 	if start > 0 || end < len(s) {
 		return s[start:end]
@@ -62,10 +62,10 @@ func isSpace(b byte) bool {
 // FastExtractor provides high-performance config extraction
 type FastExtractor struct {
 	// Performance optimizations
-	cache       *ExtractorCache
-	httpClient  *http.Client
-	workerPool  chan struct{} // Limit concurrent operations
-	bufferPool  sync.Pool     // Reuse buffers for parsing
+	cache      *ExtractorCache
+	httpClient *http.Client
+	workerPool chan struct{} // Limit concurrent operations
+	bufferPool sync.Pool     // Reuse buffers for parsing
 }
 
 // ExtractorCache provides thread-safe caching with TTL
@@ -111,7 +111,7 @@ func (e *FastExtractor) ExtractBatch(apps []string) (map[string]*ConfigReference
 
 	results := make(map[string]*ConfigReference)
 	resultsMu := sync.Mutex{}
-	
+
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(apps))
 
@@ -119,7 +119,7 @@ func (e *FastExtractor) ExtractBatch(apps []string) (map[string]*ConfigReference
 		wg.Add(1)
 		go func(appName string) {
 			defer wg.Done()
-			
+
 			// Acquire worker slot
 			e.workerPool <- struct{}{}
 			defer func() { <-e.workerPool }()
@@ -167,7 +167,7 @@ func (e *FastExtractor) ExtractWithContext(ctx context.Context, app string) (*Co
 	}
 
 	resultChan := make(chan result, 3)
-	
+
 	// Launch parallel extraction attempts
 	go func() {
 		config, err := e.extractFromCLI(ctx, app)
@@ -243,9 +243,9 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 	defer func() {
 		// Reset buffer before returning to pool
 		buf = buf[:0]
-		e.bufferPool.Put(buf)
+		e.bufferPool.Put(&buf)
 	}()
-	
+
 	scanner.Buffer(buf[:cap(buf)], 2*1024*1024) // Use pooled buffer, 2MB max for large configs
 
 	var currentKey string
@@ -254,7 +254,7 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Fast parsing with single-pass byte operations
 		if idx := findEqualsByte(line); idx > 0 {
 			// Found a setting
@@ -267,17 +267,17 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 				}
 				descBuilder.Reset()
 			}
-			
+
 			// Optimized trimming with byte-level operations
 			currentKey = trimSpaceFast(line[:idx])
 			value := trimSpaceFast(line[idx+1:])
-			
+
 			config.Settings[currentKey] = ConfigSetting{
 				Name:         currentKey,
 				DefaultValue: value,
 				Category:     inferCategoryQuick(currentKey),
 			}
-			
+
 		} else if len(line) > 0 && (line[0] == '#' || (len(line) > 1 && line[0:2] == "//")) {
 			// Description line - optimized prefix check
 			if descBuilder.Len() > 0 {
@@ -366,7 +366,7 @@ func (e *FastExtractor) parseGitHubStream(app string, r io.Reader) (*ConfigRefer
 
 	// Use buffered reader for efficiency
 	br := bufio.NewReader(r)
-	
+
 	// Simple line-by-line parsing (avoiding full JSON unmarshal for speed)
 	lineNum := 0
 	for {
@@ -377,10 +377,10 @@ func (e *FastExtractor) parseGitHubStream(app string, r io.Reader) (*ConfigRefer
 			}
 			return nil, err
 		}
-		
+
 		lineNum++
 		line = strings.TrimSpace(line)
-		
+
 		// Quick pattern matching
 		if strings.Contains(line, `"`) && strings.Contains(line, `:`) {
 			// Potential setting line
@@ -388,7 +388,7 @@ func (e *FastExtractor) parseGitHubStream(app string, r io.Reader) (*ConfigRefer
 			if len(parts) == 2 {
 				key := strings.Trim(parts[0], `" ,`)
 				value := strings.Trim(parts[1], `, `)
-				
+
 				if key != "" && !strings.HasPrefix(key, "//") {
 					config.Settings[key] = ConfigSetting{
 						Name:         key,
@@ -407,12 +407,12 @@ func (e *FastExtractor) parseGitHubStream(app string, r io.Reader) (*ConfigRefer
 // extractFromLocalFile reads from local configs directory
 func (e *FastExtractor) extractFromLocalFile(ctx context.Context, app string) (*ConfigReference, error) {
 	path := fmt.Sprintf("configs/%s.yaml", app)
-	
+
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Check context before processing
 	select {
@@ -463,7 +463,7 @@ func (e *FastExtractor) parseYAMLStream(app string, r io.Reader) (*ConfigReferen
 				if len(parts) == 2 {
 					key := strings.TrimSpace(parts[0])
 					value := strings.Trim(parts[1], ` "`)
-					
+
 					setting := config.Settings[currentSetting]
 					switch key {
 					case "type":
@@ -489,24 +489,24 @@ func (e *FastExtractor) parseYAMLStream(app string, r io.Reader) (*ConfigReferen
 func (c *ExtractorCache) Get(key string) *ConfigReference {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	entry, exists := c.entries[key]
 	if !exists {
 		return nil
 	}
-	
+
 	// Check TTL
 	if time.Since(entry.timestamp) > c.ttl {
 		return nil
 	}
-	
+
 	return entry.config
 }
 
 func (c *ExtractorCache) Set(key string, config *ConfigReference) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.entries[key] = &cacheEntry{
 		config:    config,
 		timestamp: time.Now(),

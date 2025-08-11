@@ -1,7 +1,6 @@
 package service_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,9 +16,9 @@ import (
 
 func TestConfigService_Integration(t *testing.T) {
 	// Create temporary directory for test
-	tmpDir, err := ioutil.TempDir("", "zeroui-service-test")
+	tmpDir, err := os.MkdirTemp("", "zeroui-service-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create test config structure
 	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
@@ -40,12 +39,12 @@ fields:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	require.NoError(t, ioutil.WriteFile(configPath, []byte(testAppConfig), 0644))
+	require.NoError(t, os.WriteFile(configPath, []byte(testAppConfig), 0644))
 
 	// Create target config file
 	targetConfig := `{"theme": "dark"}`
 	targetPath := filepath.Join(tmpDir, "test-config.json")
-	require.NoError(t, ioutil.WriteFile(targetPath, []byte(targetConfig), 0644))
+	require.NoError(t, os.WriteFile(targetPath, []byte(targetConfig), 0644))
 
 	// Set up service components
 	configLoader, err := config.NewLoader()
@@ -68,7 +67,7 @@ fields:
 		require.NoError(t, err)
 
 		// Verify the change was applied
-		content, err := ioutil.ReadFile(targetPath)
+		content, err := os.ReadFile(targetPath)
 		require.NoError(t, err)
 		assert.Contains(t, string(content), "light")
 	})
@@ -83,7 +82,7 @@ fields:
 		require.NoError(t, err)
 
 		// Verify the change was applied
-		content, err := ioutil.ReadFile(targetPath)
+		content, err := os.ReadFile(targetPath)
 		require.NoError(t, err)
 		assert.Contains(t, string(content), "light")
 	})
@@ -91,9 +90,9 @@ fields:
 
 func TestConfigService_ErrorHandling(t *testing.T) {
 	// Create empty service for error testing
-	tmpDir, err := ioutil.TempDir("", "zeroui-service-error-test")
+	tmpDir, err := os.MkdirTemp("", "zeroui-service-error-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configLoader, err := config.NewLoader()
 	require.NoError(t, err)
@@ -123,9 +122,9 @@ func TestConfigService_ErrorHandling(t *testing.T) {
 
 // Benchmark tests for performance
 func BenchmarkConfigService_ListApplications(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "zeroui-service-bench")
+	tmpDir, err := os.MkdirTemp("", "zeroui-service-bench")
 	require.NoError(b, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
 	require.NoError(b, os.MkdirAll(appsDir, 0755))
@@ -144,7 +143,7 @@ fields:
     default: "dark"
 `
 		configPath := filepath.Join(appsDir, "test-app-"+string(rune('0'+i))+".yaml")
-		require.NoError(b, ioutil.WriteFile(configPath, []byte(testAppConfig), 0644))
+		require.NoError(b, os.WriteFile(configPath, []byte(testAppConfig), 0644))
 	}
 
 	configLoader, err := config.NewLoader()

@@ -36,41 +36,41 @@ type LoadResult struct {
 func (c *ConcurrentConfigLoader) LoadMultipleConfigs(ctx context.Context, configDir string, apps []string, extensions []string) []LoadResult {
 	results := make([]LoadResult, len(apps))
 	var wg sync.WaitGroup
-	
+
 	// Pre-allocate result channels to avoid allocations
 	resultChan := make(chan LoadResult, len(apps))
-	
+
 	// Launch concurrent workers for each app
 	for i, app := range apps {
 		wg.Add(1)
 		go func(index int, appName string) {
 			defer wg.Done()
-			
+
 			// Acquire worker slot (rate limiting)
 			c.workerPool <- struct{}{}
 			defer func() { <-c.workerPool }()
-			
+
 			// Create timeout context for this operation
 			opCtx, cancel := context.WithTimeout(ctx, c.timeout)
 			defer cancel()
-			
+
 			result := c.loadSingleConfig(opCtx, configDir, appName, extensions)
 			resultChan <- result
 		}(i, app)
 	}
-	
+
 	// Close channel when all workers complete
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
-	
+
 	// Collect results in order
 	resultMap := make(map[string]LoadResult, len(apps))
 	for result := range resultChan {
 		resultMap[result.AppName] = result
 	}
-	
+
 	// Return results in original order
 	for i, app := range apps {
 		if result, exists := resultMap[app]; exists {
@@ -82,7 +82,7 @@ func (c *ConcurrentConfigLoader) LoadMultipleConfigs(ctx context.Context, config
 			}
 		}
 	}
-	
+
 	return results
 }
 
@@ -94,35 +94,35 @@ func (c *ConcurrentConfigLoader) loadSingleConfig(ctx context.Context, configDir
 		ext  string
 		err  error
 	}
-	
+
 	fileChan := make(chan fileResult, len(extensions))
 	var fileWg sync.WaitGroup
-	
+
 	// Launch file readers for each extension
 	for _, ext := range extensions {
 		fileWg.Add(1)
 		go func(extension string) {
 			defer fileWg.Done()
-			
+
 			select {
 			case <-ctx.Done():
 				fileChan <- fileResult{err: ctx.Err()}
 				return
 			default:
 			}
-			
+
 			filename := filepath.Join(configDir, appName+extension)
 			data, err := os.ReadFile(filename)
 			fileChan <- fileResult{data: data, ext: extension, err: err}
 		}(ext)
 	}
-	
+
 	// Close channel when all file operations complete
 	go func() {
 		fileWg.Wait()
 		close(fileChan)
 	}()
-	
+
 	// Return first successful result
 	for result := range fileChan {
 		if result.err == nil {
@@ -134,7 +134,7 @@ func (c *ConcurrentConfigLoader) loadSingleConfig(ctx context.Context, configDir
 			}
 		}
 	}
-	
+
 	return LoadResult{
 		AppName: appName,
 		Error:   fmt.Errorf("no config found for %s with extensions %v", appName, extensions),
@@ -144,20 +144,20 @@ func (c *ConcurrentConfigLoader) loadSingleConfig(ctx context.Context, configDir
 // LoadConfigsAsync provides async config loading with callback
 func (c *ConcurrentConfigLoader) LoadConfigsAsync(ctx context.Context, configDir string, apps []string, extensions []string, callback func(LoadResult)) {
 	var wg sync.WaitGroup
-	
+
 	for _, app := range apps {
 		wg.Add(1)
 		go func(appName string) {
 			defer wg.Done()
-			
+
 			// Acquire worker slot
 			c.workerPool <- struct{}{}
 			defer func() { <-c.workerPool }()
-			
+
 			result := c.loadSingleConfig(ctx, configDir, appName, extensions)
 			callback(result)
 		}(app)
 	}
-	
+
 	wg.Wait()
 }

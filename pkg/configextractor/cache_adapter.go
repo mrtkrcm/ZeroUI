@@ -1,8 +1,8 @@
 package configextractor
 
 import (
-	"time"
 	"github.com/mrtkrcm/ZeroUI/pkg/configextractor/cache"
+	"time"
 )
 
 // CacheAdapter adapts the cache.LRUCache to the Cache interface
@@ -23,7 +23,7 @@ func (a *CacheAdapter) Get(key string) (*Config, bool) {
 	if !found {
 		return nil, false
 	}
-	
+
 	// Convert from cache.Config to configextractor.Config
 	config := &Config{
 		App:        cachedConfig.App,
@@ -33,7 +33,7 @@ func (a *CacheAdapter) Get(key string) (*Config, bool) {
 		Source:     ExtractionSource{Method: cachedConfig.Source},
 		Settings:   make(map[string]Setting),
 	}
-	
+
 	// Convert settings if needed
 	if cachedConfig.Settings != nil {
 		for k, v := range cachedConfig.Settings {
@@ -51,7 +51,7 @@ func (a *CacheAdapter) Get(key string) (*Config, bool) {
 			}
 		}
 	}
-	
+
 	return config, true
 }
 
@@ -66,7 +66,7 @@ func (a *CacheAdapter) Set(key string, config *Config) {
 		Timestamp:  config.Timestamp,
 		Settings:   make(map[string]interface{}),
 	}
-	
+
 	// Convert settings
 	for k, v := range config.Settings {
 		settingMap := map[string]interface{}{
@@ -77,7 +77,7 @@ func (a *CacheAdapter) Set(key string, config *Config) {
 		}
 		cachedConfig.Settings[k] = settingMap
 	}
-	
+
 	a.lru.Set(key, cachedConfig, 24*time.Hour)
 }
 

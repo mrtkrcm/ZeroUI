@@ -16,7 +16,7 @@ import (
 type ResponsiveHelpModel struct {
 	width  int
 	height int
-	
+
 	bindings []key.Binding
 	styles   *styles.Styles
 }
@@ -44,14 +44,14 @@ func (m *ResponsiveHelpModel) View() string {
 	if len(m.bindings) == 0 {
 		return ""
 	}
-	
+
 	helpText := m.renderHelp()
-	
+
 	// Style the help text
 	style := m.styles.Help.
 		Width(m.width).
 		Align(lipgloss.Left)
-	
+
 	return style.Render(helpText)
 }
 
@@ -60,7 +60,7 @@ func (m *ResponsiveHelpModel) renderHelp() string {
 	if m.width == 0 {
 		return ""
 	}
-	
+
 	// Create help items from bindings
 	var helpItems []string
 	for _, binding := range m.bindings {
@@ -68,23 +68,23 @@ func (m *ResponsiveHelpModel) renderHelp() string {
 			helpItems = append(helpItems, binding.Help().Key+" "+binding.Help().Desc)
 		}
 	}
-	
+
 	if len(helpItems) == 0 {
 		return ""
 	}
-	
+
 	// Choose separator based on available width
 	separator := " • "
 	if m.width < 60 {
-		separator = " | "  // Shorter separator for narrow screens
+		separator = " | " // Shorter separator for narrow screens
 	}
-	
+
 	// Try to fit all help items
 	fullHelp := strings.Join(helpItems, separator)
 	if lipgloss.Width(fullHelp) <= m.width {
 		return fullHelp
 	}
-	
+
 	// If too long, use progressive truncation
 	return m.truncateHelp(helpItems, separator)
 }
@@ -94,21 +94,21 @@ func (m *ResponsiveHelpModel) truncateHelp(items []string, separator string) str
 	if len(items) == 0 {
 		return ""
 	}
-	
+
 	// Prioritize the most important help items
 	priority := m.prioritizeHelpItems(items)
-	
+
 	// Build help text by adding items until we run out of space
 	var selectedItems []string
 	var currentWidth int
-	
+
 	for _, item := range priority {
 		testWidth := currentWidth
 		if len(selectedItems) > 0 {
 			testWidth += lipgloss.Width(separator)
 		}
 		testWidth += lipgloss.Width(item)
-		
+
 		if testWidth <= m.width {
 			selectedItems = append(selectedItems, item)
 			currentWidth = testWidth
@@ -116,7 +116,7 @@ func (m *ResponsiveHelpModel) truncateHelp(items []string, separator string) str
 			break
 		}
 	}
-	
+
 	// If we can't fit anything, show just the most important
 	if len(selectedItems) == 0 && len(priority) > 0 {
 		item := priority[0]
@@ -124,13 +124,13 @@ func (m *ResponsiveHelpModel) truncateHelp(items []string, separator string) str
 			selectedItems = append(selectedItems, item)
 		}
 	}
-	
+
 	// Add ellipsis if we truncated items
 	result := strings.Join(selectedItems, separator)
 	if len(selectedItems) < len(items) && len(result) < m.width-3 {
 		result += " …"
 	}
-	
+
 	return result
 }
 
@@ -138,38 +138,38 @@ func (m *ResponsiveHelpModel) truncateHelp(items []string, separator string) str
 func (m *ResponsiveHelpModel) prioritizeHelpItems(items []string) []string {
 	// Create a priority map for common actions
 	priorities := map[string]int{
-		"q quit":              1, // Most important - always show quit
-		"? help":              2, // Help is very important
-		"? toggle help":       2,
-		"enter":               3, // Action keys are important
-		"enter select":        3,
-		"enter choose":        3,
+		"q quit":               1, // Most important - always show quit
+		"? help":               2, // Help is very important
+		"? toggle help":        2,
+		"enter":                3, // Action keys are important
+		"enter select":         3,
+		"enter choose":         3,
 		"enter select/confirm": 3,
-		"↑↓":                  4, // Navigation is common
-		"↑/k move up":         4,
-		"↓/j move down":       4,
-		"←/h":                 5,
-		"→/l":                 5,
-		"space":               6,
-		"tab":                 7,
+		"↑↓":                   4, // Navigation is common
+		"↑/k move up":          4,
+		"↓/j move down":        4,
+		"←/h":                  5,
+		"→/l":                  5,
+		"space":                6,
+		"tab":                  7,
 	}
-	
+
 	// Sort items by priority (lower number = higher priority)
 	prioritized := make([]string, len(items))
 	copy(prioritized, items)
-	
+
 	// Simple priority-based sorting
 	for i := 0; i < len(prioritized)-1; i++ {
 		for j := i + 1; j < len(prioritized); j++ {
 			iPriority := m.getItemPriority(prioritized[i], priorities)
 			jPriority := m.getItemPriority(prioritized[j], priorities)
-			
+
 			if iPriority > jPriority {
 				prioritized[i], prioritized[j] = prioritized[j], prioritized[i]
 			}
 		}
 	}
-	
+
 	return prioritized
 }
 
@@ -181,7 +181,7 @@ func (m *ResponsiveHelpModel) getItemPriority(item string, priorities map[string
 			return priority
 		}
 	}
-	
+
 	// Default priority for unknown items
 	return 999
 }

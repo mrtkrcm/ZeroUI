@@ -119,5 +119,5 @@ func (c *LRUCache) evictOldest() {
 type NoOpCache struct{}
 
 func (n *NoOpCache) Get(key string) (*Config, bool) { return nil, false }
-func (n *NoOpCache) Set(key string, config *Config)  {}
-func (n *NoOpCache) Clear()                          {}
+func (n *NoOpCache) Set(key string, config *Config) {}
+func (n *NoOpCache) Clear()                         {}

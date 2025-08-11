@@ -243,7 +243,7 @@ func (art *AutomatedRenderingTest) runScenario(t *testing.T, scenario TestScenar
 	}
 
 	var snapshots []string
-	
+
 	// Execute interactions and capture snapshots
 	for i, interaction := range scenario.Interactions {
 		switch interaction.Type {
@@ -254,25 +254,25 @@ func (art *AutomatedRenderingTest) runScenario(t *testing.T, scenario TestScenar
 			} else if len(interaction.Runes) > 0 {
 				keyMsg = tea.KeyMsg{Type: tea.KeyRunes, Runes: interaction.Runes}
 			}
-			
+
 			updatedModel, _ := model.Update(keyMsg)
 			model = updatedModel.(*Model)
-			
+
 		case WindowResize:
 			resizeMsg := tea.WindowSizeMsg{Width: scenario.Width, Height: scenario.Height}
 			updatedModel, _ := model.Update(resizeMsg)
 			model = updatedModel.(*Model)
-			
+
 		case Wait:
 			time.Sleep(interaction.Delay)
 		}
-		
+
 		// Capture snapshot after each interaction
 		snapshot := model.View()
 		snapshots = append(snapshots, snapshot)
-		
+
 		// Save detailed snapshot for debugging
-		filename := fmt.Sprintf("%s_step_%02d_%s.txt", scenario.Name, i, 
+		filename := fmt.Sprintf("%s_step_%02d_%s.txt", scenario.Name, i,
 			strings.ReplaceAll(interaction.Description, " ", "_"))
 		art.saveSnapshot(t, filename, snapshot)
 	}
@@ -281,7 +281,7 @@ func (art *AutomatedRenderingTest) runScenario(t *testing.T, scenario TestScenar
 	if len(snapshots) > 0 {
 		finalSnapshot := snapshots[len(snapshots)-1]
 		art.runValidations(t, scenario, finalSnapshot)
-		
+
 		// Check against baseline
 		art.checkBaseline(t, scenario.Name, finalSnapshot)
 	}
@@ -292,18 +292,18 @@ func (art *AutomatedRenderingTest) runValidations(t *testing.T, scenario TestSce
 	for _, validation := range scenario.Validations {
 		switch validation.Type {
 		case Contains:
-			assert.Contains(t, snapshot, validation.Pattern, 
+			assert.Contains(t, snapshot, validation.Pattern,
 				"Validation failed: %s", validation.Description)
-			
+
 		case NotContains:
 			assert.NotContains(t, snapshot, validation.Pattern,
 				"Validation failed: %s", validation.Description)
-			
+
 		case LineCount:
 			lines := strings.Split(snapshot, "\n")
 			assert.LessOrEqual(t, len(lines), validation.Count,
 				"Line count validation failed: %s", validation.Description)
-			
+
 		case WidthCheck:
 			lines := strings.Split(snapshot, "\n")
 			for i, line := range lines {
@@ -311,12 +311,12 @@ func (art *AutomatedRenderingTest) runValidations(t *testing.T, scenario TestSce
 				assert.LessOrEqual(t, len(cleanLine), validation.Count,
 					"Width check failed at line %d: %s", i, validation.Description)
 			}
-			
+
 		case HeightCheck:
 			lines := strings.Split(snapshot, "\n")
 			assert.LessOrEqual(t, len(lines), validation.Count,
 				"Height check failed: %s", validation.Description)
-			
+
 		case VisualStructure:
 			art.validateVisualStructure(t, snapshot, validation.Description)
 		}
@@ -326,12 +326,12 @@ func (art *AutomatedRenderingTest) runValidations(t *testing.T, scenario TestSce
 // validateVisualStructure checks for proper UI structure
 func (art *AutomatedRenderingTest) validateVisualStructure(t *testing.T, snapshot, description string) {
 	lines := strings.Split(snapshot, "\n")
-	
+
 	// Check for basic structure elements
 	hasBoxDrawing := false
 	hasContent := false
 	hasSpacing := false
-	
+
 	for _, line := range lines {
 		clean := stripAnsiCodesAutomated(line)
 		if strings.ContainsAny(clean, "╭╮╯╰│─║═") {
@@ -344,7 +344,7 @@ func (art *AutomatedRenderingTest) validateVisualStructure(t *testing.T, snapsho
 			hasSpacing = true
 		}
 	}
-	
+
 	assert.True(t, hasBoxDrawing, "Visual structure should include box drawing characters: %s", description)
 	assert.True(t, hasContent, "Visual structure should have content: %s", description)
 	assert.True(t, hasSpacing, "Visual structure should have proper spacing: %s", description)
@@ -353,13 +353,13 @@ func (art *AutomatedRenderingTest) validateVisualStructure(t *testing.T, snapsho
 // checkBaseline compares current output with baseline
 func (art *AutomatedRenderingTest) checkBaseline(t *testing.T, scenarioName, snapshot string) {
 	hash := art.hashSnapshot(snapshot)
-	
+
 	if baseline, exists := art.baselines[scenarioName]; exists {
 		if baseline != hash {
 			// Create diff file
 			diffPath := filepath.Join(diffDir, fmt.Sprintf("%s.diff", scenarioName))
 			art.createDiff(t, scenarioName, snapshot, diffPath)
-			
+
 			if art.updateMode {
 				art.baselines[scenarioName] = hash
 				t.Logf("Updated baseline for %s", scenarioName)
@@ -380,7 +380,7 @@ func (art *AutomatedRenderingTest) checkBaseline(t *testing.T, scenarioName, sna
 func (art *AutomatedRenderingTest) hashSnapshot(snapshot string) string {
 	// Normalize snapshot by removing timestamps and other dynamic content
 	normalized := art.normalizeSnapshot(snapshot)
-	
+
 	hasher := sha256.New()
 	hasher.Write([]byte(normalized))
 	return hex.EncodeToString(hasher.Sum(nil))
@@ -390,16 +390,16 @@ func (art *AutomatedRenderingTest) hashSnapshot(snapshot string) string {
 func (art *AutomatedRenderingTest) normalizeSnapshot(snapshot string) string {
 	lines := strings.Split(snapshot, "\n")
 	var normalized []string
-	
+
 	for _, line := range lines {
 		// Remove ANSI codes
 		clean := stripAnsiCodesAutomated(line)
-		
+
 		// Remove potential timestamps or dynamic numbers
 		// This is a simplified example - add more normalization as needed
 		normalized = append(normalized, clean)
 	}
-	
+
 	return strings.Join(normalized, "\n")
 }
 
@@ -408,34 +408,34 @@ func (art *AutomatedRenderingTest) createDiff(t *testing.T, scenarioName, actual
 	// Load baseline snapshot if it exists
 	baselinePath := filepath.Join(baselineDir, fmt.Sprintf("%s.txt", scenarioName))
 	baselineSnapshot := ""
-	
+
 	if data, err := os.ReadFile(baselinePath); err == nil {
 		baselineSnapshot = string(data)
 	}
-	
+
 	// Create simple diff
 	actualLines := strings.Split(actualSnapshot, "\n")
 	baselineLines := strings.Split(baselineSnapshot, "\n")
-	
+
 	var diff strings.Builder
 	diff.WriteString(fmt.Sprintf("Diff for scenario: %s\n", scenarioName))
 	diff.WriteString("=" + strings.Repeat("=", 50) + "\n")
-	
+
 	maxLines := len(actualLines)
 	if len(baselineLines) > maxLines {
 		maxLines = len(baselineLines)
 	}
-	
+
 	for i := 0; i < maxLines; i++ {
 		var actualLine, baselineLine string
-		
+
 		if i < len(actualLines) {
 			actualLine = actualLines[i]
 		}
 		if i < len(baselineLines) {
 			baselineLine = baselineLines[i]
 		}
-		
+
 		if actualLine != baselineLine {
 			diff.WriteString(fmt.Sprintf("Line %d:\n", i+1))
 			diff.WriteString(fmt.Sprintf("- %s\n", baselineLine))
@@ -443,7 +443,7 @@ func (art *AutomatedRenderingTest) createDiff(t *testing.T, scenarioName, actual
 			diff.WriteString("\n")
 		}
 	}
-	
+
 	err := os.WriteFile(diffPath, []byte(diff.String()), 0644)
 	if err != nil {
 		t.Logf("Failed to write diff file: %v", err)
@@ -462,7 +462,7 @@ func (art *AutomatedRenderingTest) saveSnapshot(t *testing.T, filename, snapshot
 // loadBaselines loads existing baseline hashes
 func (art *AutomatedRenderingTest) loadBaselines() error {
 	baselineFile := filepath.Join(baselineDir, "baselines.txt")
-	
+
 	file, err := os.Open(baselineFile)
 	if os.IsNotExist(err) {
 		return nil // No baselines yet
@@ -470,8 +470,8 @@ func (art *AutomatedRenderingTest) loadBaselines() error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	
+	defer func() { _ = file.Close() }()
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		parts := strings.SplitN(scanner.Text(), ":", 2)
@@ -479,31 +479,31 @@ func (art *AutomatedRenderingTest) loadBaselines() error {
 			art.baselines[parts[0]] = parts[1]
 		}
 	}
-	
+
 	return scanner.Err()
 }
 
 // saveBaselines saves current baseline hashes
 func (art *AutomatedRenderingTest) saveBaselines() error {
 	baselineFile := filepath.Join(baselineDir, "baselines.txt")
-	
+
 	file, err := os.Create(baselineFile)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	
+	defer func() { _ = file.Close() }()
+
 	// Sort for consistent output
 	var scenarios []string
 	for scenario := range art.baselines {
 		scenarios = append(scenarios, scenario)
 	}
 	sort.Strings(scenarios)
-	
+
 	for _, scenario := range scenarios {
 		fmt.Fprintf(file, "%s:%s\n", scenario, art.baselines[scenario])
 	}
-	
+
 	return nil
 }
 
@@ -534,7 +534,7 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 				assert.Contains(t, view, "╮", "Should contain top-right box character")
 				assert.Contains(t, view, "╯", "Should contain bottom-right box character")
 				assert.Contains(t, view, "╰", "Should contain bottom-left box character")
-				
+
 				// Check for proper box structure
 				lines := strings.Split(stripAnsiCodesAutomated(view), "\n")
 				hasCompleteBoxes := false
@@ -555,7 +555,7 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 			validate: func(t *testing.T, view string) {
 				// Verify ANSI color codes are present and properly formatted
 				assert.Contains(t, view, "\x1b[", "Should contain ANSI color codes")
-				
+
 				// Check for proper color reset codes
 				colorResetCount := strings.Count(view, "\x1b[0m")
 				assert.Greater(t, colorResetCount, 0, "Should have color reset codes")
@@ -568,7 +568,7 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 			setup:  func(m *Model) {},
 			validate: func(t *testing.T, view string) {
 				lines := strings.Split(stripAnsiCodesAutomated(view), "\n")
-				
+
 				// Check for centered title
 				titleFound := false
 				for _, line := range lines {
@@ -587,18 +587,18 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 			name:   "NoOverflow",
 			width:  80,
 			height: 24,
-			setup:  func(m *Model) {
+			setup: func(m *Model) {
 				// Set small terminal to test overflow protection
 			},
 			validate: func(t *testing.T, view string) {
 				lines := strings.Split(stripAnsiCodesAutomated(view), "\n")
-				
+
 				// Verify no line exceeds terminal width
 				for i, line := range lines {
-					assert.LessOrEqual(t, len(line), 80, 
+					assert.LessOrEqual(t, len(line), 80,
 						"Line %d should not exceed terminal width", i+1)
 				}
-				
+
 				// Verify total height doesn't exceed terminal
 				assert.LessOrEqual(t, len(lines), 24,
 					"Output should not exceed terminal height")
@@ -613,11 +613,11 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 			model.height = test.height
 			test.setup(model)
 			model.updateComponentSizes()
-			
+
 			// Render and validate
 			view := model.View()
 			test.validate(t, view)
-			
+
 			// Save for manual inspection
 			filename := fmt.Sprintf("correctness_%s_%dx%d.txt", test.name, test.width, test.height)
 			saveSnapshot(t, filename, view)
@@ -629,7 +629,7 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 func stripAnsiCodesAutomated(str string) string {
 	var result strings.Builder
 	inEscape := false
-	
+
 	for _, ch := range str {
 		if ch == '\x1b' {
 			inEscape = true
@@ -641,6 +641,6 @@ func stripAnsiCodesAutomated(str string) string {
 			result.WriteRune(ch)
 		}
 	}
-	
+
 	return result.String()
 }

@@ -38,7 +38,7 @@ func NewCLIStrategy() *CLIStrategy {
 	}
 }
 
-func (s *CLIStrategy) Name() string { return "CLI" }
+func (s *CLIStrategy) Name() string        { return "CLI" }
 func (s *CLIStrategy) Confidence() float64 { return 0.95 }
 
 func (s *CLIStrategy) Extract(ctx context.Context, app string) (*Config, error) {
@@ -69,7 +69,7 @@ func NewLocalStrategy(dir string) *LocalStrategy {
 	return &LocalStrategy{configDir: dir}
 }
 
-func (s *LocalStrategy) Name() string { return "Local" }
+func (s *LocalStrategy) Name() string        { return "Local" }
 func (s *LocalStrategy) Confidence() float64 { return 0.85 }
 
 func (s *LocalStrategy) Extract(ctx context.Context, app string) (*Config, error) {
@@ -77,7 +77,7 @@ func (s *LocalStrategy) Extract(ctx context.Context, app string) (*Config, error
 	for _, ext := range []string{".yaml", ".yml", ".json", ".toml"} {
 		path := filepath.Join(s.configDir, app+ext)
 		if file, err := os.Open(path); err == nil {
-			defer file.Close()
+			defer func() { _ = file.Close() }()
 			return parseConfigFile(app, file), nil
 		}
 	}
@@ -119,7 +119,7 @@ func NewBuiltinStrategy() *BuiltinStrategy {
 	}
 }
 
-func (s *BuiltinStrategy) Name() string { return "Builtin" }
+func (s *BuiltinStrategy) Name() string        { return "Builtin" }
 func (s *BuiltinStrategy) Confidence() float64 { return 0.60 }
 
 func (s *BuiltinStrategy) Extract(ctx context.Context, app string) (*Config, error) {
@@ -154,7 +154,7 @@ func NewGitHubStrategy(client HTTPClient) *GitHubStrategy {
 	}
 }
 
-func (s *GitHubStrategy) Name() string { return "GitHub" }
+func (s *GitHubStrategy) Name() string        { return "GitHub" }
 func (s *GitHubStrategy) Confidence() float64 { return 0.80 }
 
 func (s *GitHubStrategy) Extract(ctx context.Context, app string) (*Config, error) {
@@ -175,7 +175,7 @@ func (s *GitHubStrategy) Extract(ctx context.Context, app string) (*Config, erro
 			return nil, fmt.Errorf("GitHub fetch failed: %w", err)
 		}
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	return parseConfigFile(app, body), nil
 }
@@ -258,7 +258,7 @@ func parseConfigFile(app string, r io.Reader) *Config {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			continue
@@ -269,7 +269,7 @@ func parseConfigFile(app string, r io.Reader) *Config {
 			if idx := strings.Index(line, sep); idx > 0 {
 				key := strings.Trim(line[:idx], `"' `)
 				value := strings.Trim(line[idx+len(sep):], `"', `)
-				
+
 				if key != "" && !strings.ContainsAny(key, "{}[]") {
 					cfg.Settings[key] = Setting{
 						Name:    key,
@@ -303,7 +303,7 @@ func detectFormat(app string) string {
 
 func parseValue(val string) interface{} {
 	val = strings.Trim(val, `"'`)
-	
+
 	if val == "true" {
 		return true
 	}

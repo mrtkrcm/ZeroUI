@@ -2,7 +2,6 @@ package performance
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,13 +9,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
+// Helper function to write test config
+func writeTestConfig(path string, k *koanf.Koanf) error {
+	return config.WriteGhosttyConfig(path, k, "")
+}
+
 // setupLargeConfigTest creates test environment with large configurations
 func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-perf-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-perf-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -133,7 +138,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 
 		// Write app config file
 		appConfigPath := filepath.Join(appsDir, fmt.Sprintf("%s.yaml", appName))
-		if err := ioutil.WriteFile(appConfigPath, []byte(appConfig.String()), 0644); err != nil {
+		if err := os.WriteFile(appConfigPath, []byte(appConfig.String()), 0644); err != nil {
 			t.Fatalf("Failed to write app config: %v", err)
 		}
 
@@ -158,13 +163,13 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 		}
 		targetJSON += "\n}"
 
-		if err := ioutil.WriteFile(targetPath, []byte(targetJSON), 0644); err != nil {
+		if err := os.WriteFile(targetPath, []byte(targetJSON), 0644); err != nil {
 			t.Fatalf("Failed to write target config: %v", err)
 		}
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return tmpDir, cleanup
@@ -172,7 +177,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 
 // setupLargeCustomConfig creates test with large custom format configs
 func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-custom-perf")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-custom-perf")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -212,12 +217,12 @@ func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
 		}
 	}
 
-	if err := ioutil.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
 		t.Fatalf("Failed to write large config: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return tmpDir, cleanup
@@ -354,11 +359,11 @@ func BenchmarkCustomParser_LargeFiles(b *testing.B) {
 
 // BenchmarkCustomParser_WriteOperations benchmarks writing large custom configs
 func BenchmarkCustomParser_WriteOperations(b *testing.B) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-write-perf")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-write-perf")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create large config data
 	largeConfig := make(map[string]interface{})
@@ -383,15 +388,16 @@ func BenchmarkCustomParser_WriteOperations(b *testing.B) {
 	largeConfig["keybind"] = keybinds
 
 	// Create koanf config
-	k := koanf.New(".")
+	config := koanf.New(".")
 	for key, value := range largeConfig {
-		k.Set(key, value)
+		_ = config.Set(key, value)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		configPath := filepath.Join(tmpDir, fmt.Sprintf("bench-%d.conf", i))
-		err := config.WriteGhosttyConfig(configPath, k, "/nonexistent")
+		// Mock write operation for benchmark
+		err := writeTestConfig(configPath, config)
 		if err != nil {
 			b.Fatalf("Failed to write large config: %v", err)
 		}
@@ -531,23 +537,23 @@ func TestLargeConfigOperations(t *testing.T) {
 
 	t.Run("Parse large config", func(t *testing.T) {
 		start := time.Now()
-		config, err := config.ParseGhosttyConfig(configPath)
+		parsedConfig, err := config.ParseGhosttyConfig(configPath)
 		duration := time.Since(start)
 
 		if err != nil {
 			t.Fatalf("Failed to parse large config: %v", err)
 		}
 
-		t.Logf("Parsed config with %d keys in %v", len(config), duration)
+		t.Logf("Parsed config with %d keys in %v", len(parsedConfig.All()), duration)
 
-		if len(config) == 0 {
+		if len(parsedConfig.All()) == 0 {
 			t.Error("Expected non-empty config")
 		}
 
 		// Verify some expected keys exist
 		expectedKeys := []string{"theme-0", "font-family-1", "font-size-2"}
 		for _, key := range expectedKeys {
-			if _, exists := config[key]; !exists {
+			if !parsedConfig.Exists(key) {
 				t.Errorf("Expected key '%s' not found", key)
 			}
 		}
@@ -555,20 +561,20 @@ func TestLargeConfigOperations(t *testing.T) {
 
 	t.Run("Write large config", func(t *testing.T) {
 		// First parse the config
-		config, err := config.ParseGhosttyConfig(configPath)
+		parsedConfig, err := config.ParseGhosttyConfig(configPath)
 		if err != nil {
 			t.Fatalf("Failed to parse config: %v", err)
 		}
 
 		// Create koanf config
 		k := koanf.New(".")
-		for key, value := range config {
-			k.Set(key, value)
+		for key, value := range parsedConfig.All() {
+			_ = k.Set(key, value)
 		}
 
 		// Add some modifications
-		k.Set("new-setting-1", "new-value-1")
-		k.Set("new-setting-2", "new-value-2")
+		_ = k.Set("new-setting-1", "new-value-1")
+		_ = k.Set("new-setting-2", "new-value-2")
 
 		outputPath := filepath.Join(tmpDir, "large-output.conf")
 
@@ -587,7 +593,7 @@ func TestLargeConfigOperations(t *testing.T) {
 			t.Error("Expected output file to be created")
 		}
 
-		content, err := ioutil.ReadFile(outputPath)
+		content, err := os.ReadFile(outputPath)
 		if err != nil {
 			t.Fatalf("Failed to read output file: %v", err)
 		}

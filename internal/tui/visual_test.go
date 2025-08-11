@@ -143,7 +143,7 @@ func TestVisualRendering(t *testing.T) {
 			model.state = tc.state
 			model.width = tc.width
 			model.height = tc.height
-			
+
 			// Apply custom setup
 			if tc.setup != nil {
 				tc.setup(model)
@@ -177,9 +177,9 @@ func TestResponsiveLayout(t *testing.T) {
 	require.NoError(t, err)
 
 	sizes := []struct {
-		name   string
-		width  int
-		height int
+		name            string
+		width           int
+		height          int
 		expectedColumns int
 	}{
 		{"Mobile", 60, 20, 1},
@@ -196,33 +196,33 @@ func TestResponsiveLayout(t *testing.T) {
 
 			// Test both modern and legacy grids
 			states := []ViewState{HuhGridView, AppGridView}
-			
+
 			for _, state := range states {
 				stateStr := "huh"
 				if state == AppGridView {
 					stateStr = "legacy"
 				}
-				
+
 				t.Run(stateStr, func(t *testing.T) {
 					model.state = state
 					model.width = size.width
 					model.height = size.height
-					
+
 					// Trigger resize
 					resizeMsg := tea.WindowSizeMsg{Width: size.width, Height: size.height}
 					model.Update(resizeMsg)
-					
+
 					// Render
 					view := model.View()
-					
+
 					// Save snapshot
-					filename := fmt.Sprintf("responsive_%s_%s_%dx%d.txt", 
+					filename := fmt.Sprintf("responsive_%s_%s_%dx%d.txt",
 						stateStr, size.name, size.width, size.height)
 					saveVisualSnapshot(t, filename, view)
-					
+
 					// Validate responsive behavior
 					assert.NotEmpty(t, view, "Should render at any size")
-					
+
 					// Check that it doesn't exceed screen bounds
 					lines := countLines(view)
 					assert.LessOrEqual(t, lines, size.height+10, "Should not far exceed screen height")
@@ -287,15 +287,15 @@ func TestAnimationsAndTransitions(t *testing.T) {
 			model.state = transition.fromState
 			model.focusCurrentComponent()
 			startView := model.View()
-			
+
 			// Apply transition
 			transition.action(model)
 			endView := model.View()
-			
+
 			// Save both states
 			saveVisualSnapshot(t, fmt.Sprintf("transition_%s_start.txt", transition.name), startView)
 			saveVisualSnapshot(t, fmt.Sprintf("transition_%s_end.txt", transition.name), endView)
-			
+
 			// Validate both states render
 			assert.NotEmpty(t, startView, "Start state should render")
 			assert.NotEmpty(t, endView, "End state should render")
@@ -324,21 +324,21 @@ func TestPerformance(t *testing.T) {
 	// Benchmark rendering
 	start := time.Now()
 	iterations := 100
-	
+
 	for i := 0; i < iterations; i++ {
 		view := model.View()
 		assert.NotEmpty(t, view)
 	}
-	
+
 	elapsed := time.Since(start)
 	avgTime := elapsed / time.Duration(iterations)
-	
+
 	t.Logf("Average render time: %v", avgTime)
 	t.Logf("Renders per second: %.0f", float64(time.Second)/float64(avgTime))
-	
+
 	// Performance requirements
 	assert.Less(t, avgTime, 16*time.Millisecond, "Should render in <16ms for 60fps")
-	
+
 	// Save performance snapshot
 	finalView := model.View()
 	saveVisualSnapshot(t, "performance_final.txt", finalView)
@@ -376,22 +376,22 @@ func TestUIKeyboardNavigation(t *testing.T) {
 		t.Run(nav.name, func(t *testing.T) {
 			// Capture state before
 			beforeView := model.View()
-			
+
 			// Send key
 			updatedModel, cmd := model.Update(nav.key)
 			model = updatedModel.(*Model)
-			
+
 			// Capture state after
 			afterView := model.View()
-			
+
 			// Save snapshots
 			saveVisualSnapshot(t, fmt.Sprintf("nav_%s_before.txt", nav.name), beforeView)
 			saveVisualSnapshot(t, fmt.Sprintf("nav_%s_after.txt", nav.name), afterView)
-			
+
 			// Basic validation
 			assert.NotEmpty(t, beforeView, "Before state should render")
 			assert.NotEmpty(t, afterView, "After state should render")
-			
+
 			// Check for quit command
 			if nav.name == "quit" {
 				// Should return quit command
@@ -451,14 +451,14 @@ func TestErrorRecovery(t *testing.T) {
 			// Reset model
 			model.err = nil
 			model.state = HuhGridView
-			
+
 			// Apply error condition
 			tc.setup(model)
-			
+
 			// Render and validate
 			view := model.View()
 			saveVisualSnapshot(t, fmt.Sprintf("error_%s.txt", tc.name), view)
-			
+
 			tc.check(t, view)
 		})
 	}
@@ -468,7 +468,7 @@ func TestErrorRecovery(t *testing.T) {
 
 func saveVisualSnapshot(t *testing.T, filename, content string) {
 	t.Helper()
-	
+
 	path := filepath.Join(visualTestDir, filename)
 	err := os.WriteFile(path, []byte(content), 0644)
 	if err != nil {
@@ -496,7 +496,7 @@ func TestVisualRegression(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping visual regression tests in short mode")
 	}
-	
+
 	// This test would compare current output with saved reference images
 	// For now, it just ensures we can generate all the visual outputs
 	engine, err := toggle.NewEngine()
@@ -514,16 +514,16 @@ func TestVisualRegression(t *testing.T) {
 		AppSelectionView,
 		ConfigEditView,
 	}
-	
+
 	for _, state := range states {
 		model.state = state
 		model.width = 120
 		model.height = 40
 		model.focusCurrentComponent()
-		
+
 		view := model.View()
 		assert.NotEmpty(t, view, fmt.Sprintf("State %d should render", int(state)))
-		
+
 		// Save as reference
 		filename := fmt.Sprintf("reference_state_%d.txt", int(state))
 		saveVisualSnapshot(t, filename, view)

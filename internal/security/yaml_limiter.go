@@ -19,7 +19,7 @@ type YAMLLimits struct {
 // DefaultYAMLLimits returns sensible default limits for YAML parsing
 func DefaultYAMLLimits() *YAMLLimits {
 	return &YAMLLimits{
-		MaxFileSize:    10 * 1024 * 1024, // 10MB
+		MaxFileSize:    10 * 1024 * 1024,  // 10MB
 		MaxDepth:       50,                // 50 levels deep
 		MaxKeys:        10000,             // 10,000 keys
 		ParseTimeout:   30 * time.Second,  // 30 second timeout
@@ -51,7 +51,7 @@ func (v *YAMLValidator) ValidateFile(filePath string) error {
 	}
 
 	if fileInfo.Size() > v.limits.MaxFileSize {
-		return fmt.Errorf("file size %d bytes exceeds maximum allowed size of %d bytes", 
+		return fmt.Errorf("file size %d bytes exceeds maximum allowed size of %d bytes",
 			fileInfo.Size(), v.limits.MaxFileSize)
 	}
 
@@ -81,23 +81,23 @@ func (v *YAMLValidator) validateStructuralComplexity(content []byte) error {
 	keyCount := 0
 	inString := false
 	escaped := false
-	
+
 	for i := 0; i < len(content); i++ {
 		char := content[i]
-		
+
 		// Handle string content (skip structural analysis inside strings)
 		if char == '"' && !escaped {
 			inString = !inString
 			continue
 		}
-		
+
 		if inString {
 			escaped = (char == '\\' && !escaped)
 			continue
 		}
-		
+
 		escaped = false
-		
+
 		switch char {
 		case '{', '[':
 			// Opening braces/brackets increase depth
@@ -105,31 +105,31 @@ func (v *YAMLValidator) validateStructuralComplexity(content []byte) error {
 			if depth > maxDepthSeen {
 				maxDepthSeen = depth
 			}
-			
+
 			// Check depth limit
 			if depth > v.limits.MaxDepth {
-				return fmt.Errorf("nesting depth %d exceeds maximum allowed depth of %d", 
+				return fmt.Errorf("nesting depth %d exceeds maximum allowed depth of %d",
 					depth, v.limits.MaxDepth)
 			}
-		
+
 		case '}', ']':
 			// Closing braces/brackets decrease depth
 			if depth > 0 {
 				depth--
 			}
-		
+
 		case ':':
 			// Count potential keys (colon usually indicates key-value pair)
 			if !inString {
 				keyCount++
 				if keyCount > v.limits.MaxKeys {
-					return fmt.Errorf("key count %d exceeds maximum allowed keys of %d", 
+					return fmt.Errorf("key count %d exceeds maximum allowed keys of %d",
 						keyCount, v.limits.MaxKeys)
 				}
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -145,29 +145,29 @@ func (v *YAMLValidator) SafeReadFile(filePath string) ([]byte, error) {
 		data []byte
 		err  error
 	}
-	
+
 	resultChan := make(chan readResult, 1)
-	
+
 	// Read file with timeout
 	go func() {
 		data, err := os.ReadFile(filePath)
 		resultChan <- readResult{data: data, err: err}
 	}()
-	
+
 	// Wait for result or timeout
 	select {
 	case result := <-resultChan:
 		if result.err != nil {
 			return nil, fmt.Errorf("failed to read file: %w", result.err)
 		}
-		
+
 		// Validate content before returning
 		if err := v.ValidateContent(result.data); err != nil {
 			return nil, err
 		}
-		
+
 		return result.data, nil
-		
+
 	case <-time.After(v.limits.ParseTimeout):
 		return nil, fmt.Errorf("file read timeout after %v", v.limits.ParseTimeout)
 	}

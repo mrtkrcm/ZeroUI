@@ -3,7 +3,6 @@ package atomic
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,13 +14,13 @@ import (
 
 // setupAtomicTest creates a test environment for atomic operations
 func setupAtomicTest(t *testing.T) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "atomic-test")
+	tmpDir, err := os.MkdirTemp("", "atomic-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return tmpDir, cleanup
@@ -57,7 +56,7 @@ func TestOperation_Basic(t *testing.T) {
 
 	// Create initial config file
 	initialConfig := `{"setting": "initial_value"}`
-	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -90,7 +89,7 @@ func TestOperation_Basic(t *testing.T) {
 	operation.Commit()
 
 	// Verify the file was updated
-	content, err := ioutil.ReadFile(configPath)
+	content, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read updated config: %v", err)
 	}
@@ -118,7 +117,7 @@ func TestOperation_Rollback(t *testing.T) {
 
 	// Create initial config file
 	originalContent := `{"setting": "original_value"}`
-	if err := ioutil.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -147,7 +146,7 @@ func TestOperation_Rollback(t *testing.T) {
 	}
 
 	// Verify the file was modified
-	content, err := ioutil.ReadFile(configPath)
+	content, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read modified config: %v", err)
 	}
@@ -163,7 +162,7 @@ func TestOperation_Rollback(t *testing.T) {
 	}
 
 	// Verify the file was restored
-	content, err = ioutil.ReadFile(configPath)
+	content, err = os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read restored config: %v", err)
 	}
@@ -191,7 +190,7 @@ func TestReadOperation(t *testing.T) {
 
 	// Create config file
 	configContent := `{"setting1": "value1", "setting2": 42, "setting3": true}`
-	if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -239,7 +238,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"counter": 0}`
-	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -328,7 +327,7 @@ func TestConcurrentOperations(t *testing.T) {
 		wg.Wait()
 
 		// Final value should be consistent (last writer wins due to serialization)
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read final config: %v", err)
 		}
@@ -338,7 +337,7 @@ func TestConcurrentOperations(t *testing.T) {
 		if err := json.Unmarshal(content, &result); err != nil {
 			t.Fatalf("Failed to parse final JSON: %v", err)
 		}
-		
+
 		counter, ok := result["counter"].(float64)
 		if !ok || int(counter) != 3 {
 			t.Errorf("Expected counter to be 3 in final result, got: %v", result)
@@ -368,7 +367,7 @@ func TestTransaction(t *testing.T) {
 	// Create initial files
 	for i, configPath := range configPaths {
 		content := fmt.Sprintf(`{"id": %d, "value": "initial"}`, i+1)
-		if err := ioutil.WriteFile(configPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to write initial config %d: %v", i+1, err)
 		}
 	}
@@ -412,7 +411,7 @@ func TestTransaction(t *testing.T) {
 
 		// Verify all files were updated
 		for i, configPath := range configPaths {
-			content, err := ioutil.ReadFile(configPath)
+			content, err := os.ReadFile(configPath)
 			if err != nil {
 				t.Fatalf("Failed to read updated config %d: %v", i+1, err)
 			}
@@ -462,7 +461,7 @@ func TestTransaction(t *testing.T) {
 
 		// Verify all files were restored to previous state
 		for i, configPath := range configPaths {
-			content, err := ioutil.ReadFile(configPath)
+			content, err := os.ReadFile(configPath)
 			if err != nil {
 				t.Fatalf("Failed to read rolled back config %d: %v", i+1, err)
 			}
@@ -493,7 +492,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"status": "original"}`
-	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -519,7 +518,7 @@ func TestSafeOperation(t *testing.T) {
 		}
 
 		// Verify file was updated
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
@@ -557,7 +556,7 @@ func TestSafeOperation(t *testing.T) {
 		}
 
 		// Verify file was rolled back
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read rolled back config: %v", err)
 		}
@@ -586,7 +585,7 @@ func TestLockManager(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"counter": 0}`
-	if err := ioutil.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -596,7 +595,7 @@ func TestLockManager(t *testing.T) {
 
 		err := lockManager.WithReadLock(configPath, func() error {
 			// Read the file
-			content, err := ioutil.ReadFile(configPath)
+			content, err := os.ReadFile(configPath)
 			if err != nil {
 				return err
 			}
@@ -638,7 +637,7 @@ func TestLockManager(t *testing.T) {
 		}
 
 		// Verify file was updated
-		content, err := ioutil.ReadFile(configPath)
+		content, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}

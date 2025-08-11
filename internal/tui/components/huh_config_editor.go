@@ -47,19 +47,19 @@ func (m *HuhConfigEditorModel) buildForm() {
 	if len(m.fields) == 0 {
 		return
 	}
-	
+
 	var groups []*huh.Group
 	var currentGroup []*huh.Field
-	
+
 	// Group fields by categories or create logical groups
 	for i, field := range m.fields {
 		var formField huh.Field
-		
+
 		// Initialize form value if not set
 		if _, exists := m.formValues[field.Key]; !exists {
 			m.formValues[field.Key] = field.CurrentValue
 		}
-		
+
 		switch field.Type {
 		case "boolean", "bool":
 			// Use confirm for boolean fields
@@ -67,7 +67,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 			if field.CurrentValue == "true" || field.CurrentValue == "1" || field.CurrentValue == "yes" {
 				boolValue = true
 			}
-			
+
 			formField = huh.NewConfirm().
 				Key(field.Key).
 				Title(field.Key).
@@ -75,7 +75,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 				Value(&boolValue).
 				Affirmative("Yes").
 				Negative("No")
-			
+
 		case "select", "enum":
 			if len(field.Values) > 0 {
 				// Use select for enumerated values
@@ -83,9 +83,9 @@ func (m *HuhConfigEditorModel) buildForm() {
 				for _, val := range field.Values {
 					options = append(options, huh.NewOption(val, val))
 				}
-				
+
 				selectValue := field.CurrentValue
-				
+
 				formField = huh.NewSelect[string]().
 					Key(field.Key).
 					Title(field.Key).
@@ -102,7 +102,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 					Value(&inputValue).
 					Placeholder("Enter " + field.Key)
 			}
-			
+
 		case "multiselect":
 			if len(field.Values) > 0 {
 				// Use multiselect for multiple choices
@@ -110,7 +110,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 				for _, val := range field.Values {
 					options = append(options, huh.NewOption(val, val))
 				}
-				
+
 				// Parse current value as comma-separated
 				var selectedValues []string
 				if field.CurrentValue != "" {
@@ -119,7 +119,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 						selectedValues[i] = strings.TrimSpace(val)
 					}
 				}
-				
+
 				formField = huh.NewMultiSelect[string]().
 					Key(field.Key).
 					Title(field.Key).
@@ -127,19 +127,19 @@ func (m *HuhConfigEditorModel) buildForm() {
 					Options(options...).
 					Value(&selectedValues)
 			}
-			
+
 		case "text", "string", "":
 		default:
 			// Use input for text fields
 			inputValue := field.CurrentValue
-			
+
 			input := huh.NewInput().
 				Key(field.Key).
 				Title(field.Key).
 				Description(field.Description).
 				Value(&inputValue).
 				Placeholder("Enter " + field.Key)
-			
+
 			// Add validation for specific field types with real-time feedback
 			switch field.Type {
 			case "int", "integer":
@@ -224,31 +224,31 @@ func (m *HuhConfigEditorModel) buildForm() {
 					return nil
 				})
 			}
-			
+
 			formField = input
 		}
-		
+
 		currentGroup = append(currentGroup, &formField)
-		
+
 		// Create groups of 5 fields for better organization
 		if len(currentGroup) >= 5 || i == len(m.fields)-1 {
 			groupTitle := "Configuration"
 			if len(groups) > 0 {
 				groupTitle = fmt.Sprintf("Configuration (Part %d)", len(groups)+1)
 			}
-			
+
 			// Convert []*huh.Field to []huh.Field
 			var fieldsSlice []huh.Field
 			for _, field := range currentGroup {
 				fieldsSlice = append(fieldsSlice, *field)
 			}
-			
+
 			group := huh.NewGroup(fieldsSlice...).Title(groupTitle)
 			groups = append(groups, group)
 			currentGroup = []*huh.Field{}
 		}
 	}
-	
+
 	// Create the form
 	m.form = huh.NewForm(groups...).
 		WithShowHelp(true).
@@ -267,19 +267,19 @@ func (m *HuhConfigEditorModel) Init() tea.Cmd {
 // Update handles messages with proper Huh form lifecycle integration
 func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.width != msg.Width || m.height != msg.Height {
 			m.width = msg.Width
 			m.height = msg.Height
 		}
-		
+
 	case tea.KeyMsg:
 		if !m.focused {
 			return m, nil
 		}
-		
+
 		// Handle custom key bindings before form processes them
 		switch {
 		case key.Matches(msg, m.keyMap.Reset):
@@ -295,7 +295,7 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.form.Init())
 			}
 			return m, tea.Batch(cmds...)
-			
+
 		case key.Matches(msg, m.keyMap.Presets):
 			// Send preset selection message
 			cmds = append(cmds, func() tea.Msg {
@@ -304,7 +304,7 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 	}
-	
+
 	// Always update the form - critical for Huh integration
 	if m.form != nil {
 		form, cmd := m.form.Update(msg)
@@ -312,14 +312,14 @@ func (m *HuhConfigEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		
+
 		// Check for field changes and emit change events
 		changeCmd := m.checkForChanges()
 		if changeCmd != nil {
 			cmds = append(cmds, changeCmd)
 		}
 	}
-	
+
 	// Return with batched commands
 	if len(cmds) > 0 {
 		return m, tea.Batch(cmds...)
@@ -332,13 +332,13 @@ func (m *HuhConfigEditorModel) checkForChanges() tea.Cmd {
 	if m.form == nil {
 		return nil
 	}
-	
+
 	// Check if the form is completed to mark as having changes
 	// Note: This is a simplified approach. In practice, you'd want to track
 	// individual field changes more precisely.
 	if m.form.State == huh.StateCompleted {
 		m.hasChanges = true
-		
+
 		// Emit field change events for each field
 		var cmds []tea.Cmd
 		for _, field := range m.fields {
@@ -354,12 +354,12 @@ func (m *HuhConfigEditorModel) checkForChanges() tea.Cmd {
 				m.formValues[field.Key] = field.CurrentValue
 			}
 		}
-		
+
 		if len(cmds) > 0 {
 			return tea.Batch(cmds...)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -368,29 +368,29 @@ func (m *HuhConfigEditorModel) View() string {
 	if len(m.fields) == 0 {
 		return m.renderEmptyState()
 	}
-	
+
 	if m.form == nil {
 		return m.styles.Muted.Render("Building form...")
 	}
-	
+
 	// Create header
 	header := m.renderHeader()
-	
+
 	// Get form view
 	formView := m.form.View()
-	
+
 	// Create footer with actions
 	footer := m.renderFooter()
-	
+
 	// Calculate dimensions
 	headerHeight := lipgloss.Height(header)
 	footerHeight := lipgloss.Height(footer)
 	availableHeight := m.height - headerHeight - footerHeight - 4
-	
+
 	if availableHeight < 10 {
 		availableHeight = 10
 	}
-	
+
 	// Style the form container
 	formStyle := lipgloss.NewStyle().
 		Width(m.width).
@@ -398,9 +398,9 @@ func (m *HuhConfigEditorModel) View() string {
 		Padding(1, 2).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#E2E8F0"))
-	
+
 	styledForm := formStyle.Render(formView)
-	
+
 	// Compose the view
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -408,22 +408,22 @@ func (m *HuhConfigEditorModel) View() string {
 		styledForm,
 		footer,
 	)
-	
+
 	return content
 }
 
 // renderHeader creates the editor header
 func (m *HuhConfigEditorModel) renderHeader() string {
 	title := fmt.Sprintf("⚙️  %s Configuration", m.appName)
-	
+
 	// Add change indicator
 	changeIndicator := ""
 	if m.hasChanges {
 		changeIndicator = " 🔄 (Modified)"
 	}
-	
+
 	subtitle := fmt.Sprintf("%d configuration options%s", len(m.fields), changeIndicator)
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#7C3AED")).
 		Bold(true).
@@ -432,12 +432,12 @@ func (m *HuhConfigEditorModel) renderHeader() string {
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(0, 1, 1, 1).
 		Width(m.width - 4)
-	
+
 	subtitleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Italic(true).
 		Padding(0, 1)
-	
+
 	return titleStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -450,7 +450,7 @@ func (m *HuhConfigEditorModel) renderHeader() string {
 // renderFooter creates the action footer
 func (m *HuhConfigEditorModel) renderFooter() string {
 	var actions []string
-	
+
 	// Form navigation hints
 	if m.form != nil {
 		switch m.form.State {
@@ -460,12 +460,12 @@ func (m *HuhConfigEditorModel) renderFooter() string {
 			actions = append(actions, "✅ Configuration Complete")
 		}
 	}
-	
+
 	// General actions
 	actions = append(actions, "r Reset", "p Presets", "esc Back", "q Quit")
-	
+
 	helpText := strings.Join(actions, "  •  ")
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Background(lipgloss.Color("#F8FAFC")).
@@ -473,7 +473,7 @@ func (m *HuhConfigEditorModel) renderFooter() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Width(m.width - 4)
-	
+
 	return style.Render(helpText)
 }
 
@@ -491,7 +491,7 @@ This could mean:
 
 Try selecting a different application.
 `, m.appName)
-	
+
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#64748B")).
 		Align(lipgloss.Center).
@@ -499,7 +499,7 @@ Try selecting a different application.
 		BorderForeground(lipgloss.Color("#E2E8F0")).
 		Padding(2, 4).
 		Width(60)
-	
+
 	return lipgloss.Place(
 		m.width,
 		m.height,

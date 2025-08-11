@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 	"time"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
 
@@ -24,10 +24,10 @@ type Extractor struct {
 	parsers    map[string]Parser
 	cache      Cache
 	registry   AppRegistry
-	
+
 	// Performance optimizations
-	timeout        time.Duration
-	concurrency    int
+	timeout          time.Duration
+	concurrency      int
 	concurrentLoader *performance.ConcurrentConfigLoader
 }
 
@@ -41,21 +41,21 @@ func New(opts ...Option) *Extractor {
 		concurrency:      8,
 		concurrentLoader: performance.NewConcurrentLoader(8), // Match concurrency
 	}
-	
+
 	// Apply options
 	for _, opt := range opts {
 		opt(e)
 	}
-	
+
 	// Register default strategies (sorted by priority)
 	e.registerDefaultStrategies()
-	
+
 	// Register default parsers
 	e.registerDefaultParsers()
-	
+
 	// Register default app definitions
 	e.registerDefaultApps()
-	
+
 	return e
 }
 
@@ -64,40 +64,40 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 	// Apply timeout
 	ctx, cancel := context.WithTimeout(ctx, e.timeout)
 	defer cancel()
-	
+
 	// Check cache first
 	cacheKey := fmt.Sprintf("config:%s", app)
 	if cached, ok := e.cache.Get(cacheKey); ok {
 		return cached, nil
 	}
-	
+
 	// Get applicable strategies for this app
 	strategies := e.getStrategiesForApp(app)
 	if len(strategies) == 0 {
 		return nil, fmt.Errorf("no extraction strategies available for app: %s", app)
 	}
-	
+
 	// Try strategies in parallel using worker pool to prevent goroutine leaks
 	type result struct {
 		config *Config
 		err    error
 		source string
 	}
-	
+
 	resultChan := make(chan result, len(strategies))
 	workerPool := make(chan struct{}, min(len(strategies), 5)) // Limit concurrent goroutines
 	var wg sync.WaitGroup
-	
+
 	// Launch extraction attempts with worker pool
 	for _, strategy := range strategies {
 		wg.Add(1)
 		go func(s Strategy) {
 			defer wg.Done()
-			
+
 			// Acquire worker slot
 			workerPool <- struct{}{}
 			defer func() { <-workerPool }()
-			
+
 			// Check context before expensive operation
 			select {
 			case <-ctx.Done():
@@ -105,22 +105,22 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 				return
 			default:
 			}
-			
+
 			config, err := s.Extract(ctx, app)
 			resultChan <- result{config, err, s.Name()}
 		}(strategy)
 	}
-	
+
 	// Close result channel when all workers complete
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
-	
+
 	// Collect results, return best one
 	var bestConfig *Config
 	var lastErr error
-	
+
 	// Process results as they arrive
 	for res := range resultChan {
 		if res.err == nil && res.config != nil {
@@ -129,7 +129,7 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 			return res.config, nil
 		}
 		lastErr = res.err
-		
+
 		// Check context cancellation
 		select {
 		case <-ctx.Done():
@@ -137,12 +137,12 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 		default:
 		}
 	}
-	
+
 	if bestConfig != nil {
 		e.cache.Set(cacheKey, bestConfig)
 		return bestConfig, nil
 	}
-	
+
 	return nil, fmt.Errorf("all extraction strategies failed for %s: %w", app, lastErr)
 }
 
@@ -151,16 +151,16 @@ func (e *Extractor) ExtractBatch(ctx context.Context, apps []string) (map[string
 	// Apply timeout
 	ctx, cancel := context.WithTimeout(ctx, e.timeout)
 	defer cancel()
-	
+
 	results := make(map[string]*Config)
 	resultsMu := sync.Mutex{}
 	errors := make(map[string]error)
 	errorsMu := sync.Mutex{}
-	
+
 	// Use worker pool for concurrency control
 	work := make(chan string, len(apps))
 	var wg sync.WaitGroup
-	
+
 	// Start workers
 	for i := 0; i < e.concurrency; i++ {
 		wg.Add(1)
@@ -180,16 +180,16 @@ func (e *Extractor) ExtractBatch(ctx context.Context, apps []string) (map[string
 			}
 		}()
 	}
-	
+
 	// Send work
 	for _, app := range apps {
 		work <- app
 	}
 	close(work)
-	
+
 	// Wait for completion
 	wg.Wait()
-	
+
 	// Return results (partial success is OK)
 	return results, nil
 }
@@ -199,14 +199,14 @@ func (e *Extractor) SupportedApps() []string {
 	if e.registry != nil {
 		return e.registry.ListApps()
 	}
-	
+
 	// Fallback: collect from strategies
 	appSet := make(map[string]bool)
-	for _ = range e.strategies {
+	for range e.strategies {
 		// This would need to be enhanced based on strategy implementation
 		// For now, return common apps
 	}
-	
+
 	apps := []string{"ghostty", "zed", "alacritty", "wezterm", "tmux", "git", "neovim"}
 	result := make([]string, 0, len(apps))
 	for app := range appSet {
@@ -215,7 +215,7 @@ func (e *Extractor) SupportedApps() []string {
 	if len(result) == 0 {
 		return apps // fallback
 	}
-	
+
 	sort.Strings(result)
 	return result
 }
@@ -223,18 +223,18 @@ func (e *Extractor) SupportedApps() []string {
 // getStrategiesForApp returns strategies that can handle the app, sorted by priority
 func (e *Extractor) getStrategiesForApp(app string) []Strategy {
 	var applicable []Strategy
-	
+
 	for _, strategy := range e.strategies {
 		if strategy.CanExtract(app) {
 			applicable = append(applicable, strategy)
 		}
 	}
-	
+
 	// Sort by priority (higher first)
 	sort.Slice(applicable, func(i, j int) bool {
 		return applicable[i].Priority() > applicable[j].Priority()
 	})
-	
+
 	return applicable
 }
 
@@ -242,10 +242,10 @@ func (e *Extractor) getStrategiesForApp(app string) []Strategy {
 func (e *Extractor) registerDefaultStrategies() {
 	// Order matters - higher priority strategies first
 	e.strategies = []Strategy{
-		NewCLI(),      // Fastest, most reliable
+		NewCLI(), // Fastest, most reliable
 		// NewLocal(),    // Fast, cached locally
 		// NewBuiltin(),  // Always available fallback
-		NewGitHub(),   // Network dependent, slower
+		NewGitHub(), // Network dependent, slower
 	}
 }
 
@@ -260,7 +260,7 @@ func (e *Extractor) registerDefaultApps() {
 	if e.registry == nil {
 		return
 	}
-	
+
 	// Register common applications
 	apps := []*AppDef{
 		{
@@ -295,7 +295,7 @@ func (e *Extractor) registerDefaultApps() {
 			GitHubRepo: "wez/wezterm",
 		},
 	}
-	
+
 	for _, app := range apps {
 		e.registry.Register(app)
 	}

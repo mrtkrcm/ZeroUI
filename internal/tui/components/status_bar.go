@@ -16,14 +16,14 @@ import (
 type StatusBarModel struct {
 	width  int
 	height int
-	
+
 	// Status information
-	status    string
-	appCount  int
-	theme     string
-	message   string
-	msgType   util.InfoType
-	
+	status   string
+	appCount int
+	theme    string
+	message  string
+	msgType  util.InfoType
+
 	styles *styles.Styles
 }
 
@@ -56,50 +56,50 @@ func (m *StatusBarModel) View() string {
 	if m.width == 0 {
 		return ""
 	}
-	
+
 	// Create status sections
 	left := m.renderLeftSection()
 	right := m.renderRightSection()
-	
+
 	// Calculate spacing
 	usedWidth := lipgloss.Width(left) + lipgloss.Width(right)
 	spacing := m.width - usedWidth
-	
+
 	if spacing < 1 {
 		spacing = 1
 	}
-	
+
 	spacer := strings.Repeat(" ", spacing)
-	
+
 	statusLine := lipgloss.JoinHorizontal(lipgloss.Left, left, spacer, right)
-	
+
 	// Style the status bar
 	style := m.styles.Base.
 		Width(m.width).
 		Background(lipgloss.Color(styles.ColorToHex(styles.GetTheme().BgSubtle))).
 		Foreground(lipgloss.Color(styles.ColorToHex(styles.GetTheme().FgMuted)))
-	
+
 	return style.Render(statusLine)
 }
 
 // renderLeftSection renders the left side of the status bar
 func (m *StatusBarModel) renderLeftSection() string {
 	var parts []string
-	
+
 	if m.status != "" {
 		parts = append(parts, fmt.Sprintf("Status: %s", m.status))
 	} else {
 		parts = append(parts, "Status: Ready")
 	}
-	
+
 	if m.appCount > 0 {
 		parts = append(parts, fmt.Sprintf("Apps: %d", m.appCount))
 	}
-	
+
 	if m.theme != "" {
 		parts = append(parts, fmt.Sprintf("Theme: %s", m.theme))
 	}
-	
+
 	return strings.Join(parts, " • ")
 }
 
@@ -119,7 +119,7 @@ func (m *StatusBarModel) renderRightSection() string {
 		}
 		return style.Render(m.message)
 	}
-	
+
 	return ""
 }
 

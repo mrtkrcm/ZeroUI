@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -19,13 +19,13 @@ import (
 
 // setupLoggerTest creates a test environment for logging
 func setupLoggerTest(t *testing.T) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "logger-test")
+	tmpDir, err := os.MkdirTemp("", "logger-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return tmpDir, cleanup
@@ -100,7 +100,7 @@ func TestLoggerWithConfig(t *testing.T) {
 		t.Error("Expected log file to be created")
 	}
 
-	content, err := ioutil.ReadFile(logFile)
+	content, err := os.ReadFile(logFile)
 	if err != nil {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
@@ -398,10 +398,10 @@ func TestMetrics(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	
+
 	// Test error recording
 	metrics.RecordError(ctx, "test_operation", "test_error")
-	
+
 	// Test operation recording
 	metrics.RecordToggleOperation(ctx, "test_app", "test_key", true, 100*time.Millisecond)
 	metrics.RecordCycleOperation(ctx, "test_app", "test_key", true, 200*time.Millisecond)
@@ -478,7 +478,7 @@ func TestAuditHook(t *testing.T) {
 		t.Error("Expected audit file to be created")
 	}
 
-	content, err := ioutil.ReadFile(auditFile)
+	content, err := os.ReadFile(auditFile)
 	if err != nil {
 		t.Fatalf("Failed to read audit file: %v", err)
 	}
@@ -497,7 +497,7 @@ func TestAuditHook(t *testing.T) {
 	logger.Info("Regular log message")
 
 	// Audit file should not grow
-	newContent, err := ioutil.ReadFile(auditFile)
+	newContent, err := os.ReadFile(auditFile)
 	if err != nil {
 		t.Fatalf("Failed to read audit file: %v", err)
 	}
@@ -524,7 +524,7 @@ func TestLoadLogConfig(t *testing.T) {
 		t.Fatalf("Failed to marshal config: %v", err)
 	}
 
-	if err := ioutil.WriteFile(configPath, configData, 0644); err != nil {
+	if err := os.WriteFile(configPath, configData, 0644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -554,7 +554,7 @@ func TestLoadLogConfig(t *testing.T) {
 
 	// Test loading invalid JSON
 	invalidPath := filepath.Join(tmpDir, "invalid.json")
-	if err := ioutil.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
+	if err := os.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
 

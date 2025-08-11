@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -16,11 +15,11 @@ import (
 // TestLoader_LoadAppConfig tests loading application configurations
 func TestLoader_LoadAppConfig(t *testing.T) {
 	// Create temporary directory for test configs
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
@@ -60,7 +59,7 @@ hooks:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -136,11 +135,11 @@ hooks:
 
 // TestLoader_LoadAppConfig_NotFound tests loading non-existent app config
 func TestLoader_LoadAppConfig_NotFound(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader := &Loader{
 		configDir: tmpDir,
@@ -155,11 +154,11 @@ func TestLoader_LoadAppConfig_NotFound(t *testing.T) {
 
 // TestLoader_ListApps tests listing applications
 func TestLoader_ListApps(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
@@ -172,7 +171,7 @@ func TestLoader_ListApps(t *testing.T) {
 	for _, app := range testApps {
 		configContent := fmt.Sprintf("name: %s\npath: ~/.config/%s/config.json", app, app)
 		configPath := filepath.Join(appsDir, app+".yaml")
-		if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write test config for %s: %v", app, err)
 		}
 	}
@@ -206,11 +205,11 @@ func TestLoader_ListApps(t *testing.T) {
 
 // TestLoader_ListApps_Empty tests listing apps when directory is empty
 func TestLoader_ListApps_Empty(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader := &Loader{
 		configDir: tmpDir,
@@ -247,11 +246,11 @@ func TestNewLoader(t *testing.T) {
 // BenchmarkLoader_LoadAppConfig benchmarks app config loading
 func BenchmarkLoader_LoadAppConfig(b *testing.B) {
 	// Create temporary directory for test configs
-	tmpDir, err := ioutil.TempDir("", "configtoggle-bench")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-bench")
 	if err != nil {
 		b.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create apps directory and test config
 	appsDir := filepath.Join(tmpDir, "apps")
@@ -275,7 +274,7 @@ presets:
 `
 
 	configPath := filepath.Join(appsDir, "bench-app.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		b.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -295,11 +294,11 @@ presets:
 
 // TestLoader_LoadTargetConfig tests loading target configuration files
 func TestLoader_LoadTargetConfig(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader := &Loader{
 		configDir: tmpDir,
@@ -314,7 +313,7 @@ func TestLoader_LoadTargetConfig(t *testing.T) {
   "font-size": 14,
   "debug": true
 }`
-		if err := ioutil.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
+		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
 			t.Fatalf("Failed to write JSON file: %v", err)
 		}
 
@@ -350,7 +349,7 @@ debug: false
 nested:
   value: test
 `
-		if err := ioutil.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
 			t.Fatalf("Failed to write YAML file: %v", err)
 		}
 
@@ -390,7 +389,7 @@ font-family = JetBrains Mono
 font-size = 14
 background-opacity = 0.9
 `
-		if err := ioutil.WriteFile(customPath, []byte(customContent), 0644); err != nil {
+		if err := os.WriteFile(customPath, []byte(customContent), 0644); err != nil {
 			t.Fatalf("Failed to write custom config file: %v", err)
 		}
 
@@ -421,7 +420,7 @@ background-opacity = 0.9
 	t.Run("Format detection", func(t *testing.T) {
 		jsonPath := filepath.Join(tmpDir, "auto.json")
 		jsonContent := `{"detected": "json"}`
-		if err := ioutil.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
+		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
 			t.Fatalf("Failed to write auto-detect JSON file: %v", err)
 		}
 
@@ -466,7 +465,7 @@ background-opacity = 0.9
 
 		// Invalid JSON
 		invalidPath := filepath.Join(tmpDir, "invalid.json")
-		if err := ioutil.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
+		if err := os.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
 			t.Fatalf("Failed to write invalid JSON: %v", err)
 		}
 
@@ -484,11 +483,11 @@ background-opacity = 0.9
 
 // TestLoader_SaveTargetConfig tests saving target configuration files
 func TestLoader_SaveTargetConfig(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "configtoggle-test")
+	tmpDir, err := os.MkdirTemp("", "configtoggle-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	loader := &Loader{
 		configDir: tmpDir,
@@ -522,7 +521,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 		}
 
 		// Verify content by loading it back
-		content, err := ioutil.ReadFile(jsonPath)
+		content, err := os.ReadFile(jsonPath)
 		if err != nil {
 			t.Fatalf("Failed to read saved JSON: %v", err)
 		}
@@ -558,7 +557,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 		}
 
 		// Verify content
-		content, err := ioutil.ReadFile(yamlPath)
+		content, err := os.ReadFile(yamlPath)
 		if err != nil {
 			t.Fatalf("Failed to read saved YAML: %v", err)
 		}
@@ -588,7 +587,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 		}
 
 		// Verify content
-		content, err := ioutil.ReadFile(customPath)
+		content, err := os.ReadFile(customPath)
 		if err != nil {
 			t.Fatalf("Failed to read saved custom config: %v", err)
 		}

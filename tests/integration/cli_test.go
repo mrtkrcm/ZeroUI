@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -167,7 +166,7 @@ func TestCLI_BackupCommands(t *testing.T) {
 
 // buildBinary builds the zeroui binary for testing
 func buildBinary(t testing.TB) string {
-	tmpDir, err := ioutil.TempDir("", "zeroui-test-binary")
+	tmpDir, err := os.MkdirTemp("", "zeroui-test-binary")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir for binary: %v", err)
 	}
@@ -191,7 +190,7 @@ func buildBinary(t testing.TB) string {
 
 // setupTestConfig creates a test configuration
 func setupTestConfig(t testing.TB) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "zeroui-test-config")
+	tmpDir, err := os.MkdirTemp("", "zeroui-test-config")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -235,7 +234,7 @@ hooks:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -246,12 +245,12 @@ hooks:
 }`
 
 	targetPath := filepath.Join(tmpDir, "test-config.json")
-	if err := ioutil.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write target config: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return configDir, cleanup
@@ -401,7 +400,7 @@ func TestCLI_MultipleFormats(t *testing.T) {
 
 	// Verify YAML file was updated
 	yamlPath := filepath.Join(filepath.Dir(configDir), "yaml-config.yaml")
-	content, err := ioutil.ReadFile(yamlPath)
+	content, err := os.ReadFile(yamlPath)
 	if err != nil {
 		t.Fatalf("Failed to read YAML config: %v", err)
 	}
@@ -430,7 +429,7 @@ func TestCLI_CustomFormat(t *testing.T) {
 
 	// Verify custom file was updated
 	customPath := filepath.Join(filepath.Dir(configDir), "custom-config.conf")
-	content, err := ioutil.ReadFile(customPath)
+	content, err := os.ReadFile(customPath)
 	if err != nil {
 		t.Fatalf("Failed to read custom config: %v", err)
 	}
@@ -510,7 +509,7 @@ func TestCLI_ConcurrentOperations(t *testing.T) {
 
 // setupYAMLTestConfig creates a YAML test configuration
 func setupYAMLTestConfig(t testing.TB) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "zeroui-yaml-test")
+	tmpDir, err := os.MkdirTemp("", "zeroui-yaml-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -534,19 +533,19 @@ fields:
     description: "Application theme"`
 
 	configPath := filepath.Join(appsDir, "yaml-app.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to write YAML app config: %v", err)
 	}
 
 	targetConfig := `theme: dark
 font-size: 14`
 	targetPath := filepath.Join(tmpDir, "yaml-config.yaml")
-	if err := ioutil.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write YAML target config: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return configDir, cleanup
@@ -554,7 +553,7 @@ font-size: 14`
 
 // setupCustomTestConfig creates a custom format test configuration
 func setupCustomTestConfig(t testing.TB) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "zeroui-custom-test")
+	tmpDir, err := os.MkdirTemp("", "zeroui-custom-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -578,7 +577,7 @@ fields:
     description: "Application theme"`
 
 	configPath := filepath.Join(appsDir, "custom-app.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to write custom app config: %v", err)
 	}
 
@@ -586,12 +585,12 @@ fields:
 theme = GruvboxDark
 font-family = JetBrains Mono`
 	targetPath := filepath.Join(tmpDir, "custom-config.conf")
-	if err := ioutil.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write custom target config: %v", err)
 	}
 
 	cleanup := func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	}
 
 	return configDir, cleanup

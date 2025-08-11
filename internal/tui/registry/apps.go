@@ -128,11 +128,11 @@ func getHomeDir() string {
 func GetAppStatuses() []AppStatus {
 	apps := GetSupportedApps()
 	statuses := make([]AppStatus, 0, len(apps))
-	
+
 	for _, app := range apps {
 		execPath, isInstalled := CheckExecutable(app.Executable)
 		configPath := ExpandPath(app.ConfigPath)
-		
+
 		status := AppStatus{
 			Definition:     app,
 			IsInstalled:    isInstalled,
@@ -140,10 +140,10 @@ func GetAppStatuses() []AppStatus {
 			ConfigExists:   fileExists(configPath),
 			HasConfig:      hasZeroUIConfig(app.Name),
 		}
-		
+
 		statuses = append(statuses, status)
 	}
-	
+
 	return statuses
 }
 

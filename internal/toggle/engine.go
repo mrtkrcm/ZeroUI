@@ -239,7 +239,7 @@ func (e *Engine) Cycle(appName, key string) error {
 	}
 
 	// Set the value
-	targetConfig.Set(key, convertedValue)
+	_ = targetConfig.Set(key, convertedValue)
 
 	if viper.GetBool("dry-run") {
 		log.Info("Would cycle configuration", map[string]interface{}{
@@ -306,7 +306,7 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		}
 
 		// Convert value to appropriate type if field config exists
-		var convertedValue interface{} = value
+		convertedValue := value
 		if exists {
 			convertedValue, err = e.convertValue(fmt.Sprintf("%v", value), fieldConfig.Type)
 			if err != nil {
@@ -314,7 +314,7 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 			}
 		}
 
-		targetConfig.Set(key, convertedValue)
+		_ = targetConfig.Set(key, convertedValue)
 	}
 
 	if viper.GetBool("dry-run") {
@@ -584,7 +584,7 @@ func (e *Engine) setEnvironmentVariables(envVars map[string]string) error {
 		}
 
 		// Set the environment variable (scoped to this process)
-		os.Setenv(key, value)
+		_ = os.Setenv(key, value)
 	}
 
 	return nil

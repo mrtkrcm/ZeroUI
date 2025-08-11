@@ -22,9 +22,9 @@ type Theme struct {
 	Info      color.Color
 
 	// Background colors
-	BgBase     color.Color
-	BgSubtle   color.Color
-	BgOverlay  color.Color
+	BgBase    color.Color
+	BgSubtle  color.Color
+	BgOverlay color.Color
 
 	// Foreground colors
 	FgBase     color.Color
@@ -101,19 +101,19 @@ func parseColor(hex string) color.Color {
 
 // Styles holds pre-configured lipgloss styles
 type Styles struct {
-	Base         lipgloss.Style
-	Title        lipgloss.Style
-	Subtitle     lipgloss.Style
-	Text         lipgloss.Style
-	Muted        lipgloss.Style
-	Selected     lipgloss.Style
-	Success      lipgloss.Style
-	Error        lipgloss.Style
-	Warning      lipgloss.Style
-	Info         lipgloss.Style
-	Border       lipgloss.Style
-	BorderFocus  lipgloss.Style
-	Help         lipgloss.Style
+	Base        lipgloss.Style
+	Title       lipgloss.Style
+	Subtitle    lipgloss.Style
+	Text        lipgloss.Style
+	Muted       lipgloss.Style
+	Selected    lipgloss.Style
+	Success     lipgloss.Style
+	Error       lipgloss.Style
+	Warning     lipgloss.Style
+	Info        lipgloss.Style
+	Border      lipgloss.Style
+	BorderFocus lipgloss.Style
+	Help        lipgloss.Style
 }
 
 // BuildStyles creates lipgloss styles from theme
@@ -176,12 +176,12 @@ func ColorToHex(c color.Color) string {
 	if c == nil {
 		return "#000000"
 	}
-	
+
 	// If it's already a lipgloss.Color, return its value
 	if lc, ok := c.(lipgloss.Color); ok {
 		return string(lc)
 	}
-	
+
 	// Convert from color.Color to hex
 	r, g, b, _ := c.RGBA()
 	return fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8)

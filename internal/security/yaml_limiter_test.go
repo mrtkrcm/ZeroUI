@@ -18,7 +18,7 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir)
 
 	// Small file (should pass)
 	smallFile := tempDir + "/small.yaml"
@@ -76,9 +76,9 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 
 func TestYAMLValidator_ValidateContent(t *testing.T) {
 	validator := NewYAMLValidator(&YAMLLimits{
-		MaxFileSize: 100,   // 100 bytes
-		MaxDepth:    3,     // 3 levels
-		MaxKeys:     5,     // 5 keys max
+		MaxFileSize: 100, // 100 bytes
+		MaxDepth:    3,   // 3 levels
+		MaxKeys:     5,   // 5 keys max
 	})
 
 	tests := []struct {
@@ -136,17 +136,17 @@ func TestYAMLValidator_ValidateContent(t *testing.T) {
 
 func TestYAMLValidator_SafeReadFile(t *testing.T) {
 	validator := NewYAMLValidator(&YAMLLimits{
-		MaxFileSize:  1024,                // 1KB
-		MaxDepth:     10,                  
-		MaxKeys:      100,                 
-		ParseTimeout: 1 * time.Second,     // Short timeout for testing
+		MaxFileSize:  1024, // 1KB
+		MaxDepth:     10,
+		MaxKeys:      100,
+		ParseTimeout: 1 * time.Second, // Short timeout for testing
 	})
 
 	tempDir, err := os.MkdirTemp("", "yaml-safe-read-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir)
 
 	// Valid file
 	validFile := tempDir + "/valid.yaml"
@@ -209,9 +209,9 @@ func TestYAMLValidator_SafeReadFile(t *testing.T) {
 
 func TestYAMLValidator_YAMLBombProtection(t *testing.T) {
 	validator := NewYAMLValidator(&YAMLLimits{
-		MaxFileSize: 10000,  // 10KB
-		MaxDepth:    5,      // Low depth limit
-		MaxKeys:     50,     // Low key limit
+		MaxFileSize: 10000, // 10KB
+		MaxDepth:    5,     // Low depth limit
+		MaxKeys:     50,    // Low key limit
 	})
 
 	tests := []struct {
@@ -227,8 +227,8 @@ func TestYAMLValidator_YAMLBombProtection(t *testing.T) {
 			description: "Deep nesting should be blocked",
 		},
 		{
-			name:        "many_keys_attack",
-			content:     func() string {
+			name: "many_keys_attack",
+			content: func() string {
 				var keys []string
 				for i := 0; i < 100; i++ {
 					keys = append(keys, fmt.Sprintf("key%d: value%d", i, i))
@@ -284,9 +284,9 @@ func TestDefaultYAMLLimits(t *testing.T) {
 
 func TestYAMLValidator_GetLimits(t *testing.T) {
 	customLimits := &YAMLLimits{
-		MaxFileSize: 2048,
-		MaxDepth:    20,
-		MaxKeys:     500,
+		MaxFileSize:  2048,
+		MaxDepth:     20,
+		MaxKeys:      500,
 		ParseTimeout: 10 * time.Second,
 	}
 

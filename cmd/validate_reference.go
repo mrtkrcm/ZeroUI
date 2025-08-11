@@ -70,10 +70,10 @@ func validateAllReferenceConfigs(loader *config.ReferenceEnhancedLoader) error {
 	fmt.Printf("📋 Found %d apps to validate\n\n", len(apps))
 
 	var failedApps []string
-	
+
 	for _, app := range apps {
 		fmt.Printf("🔄 Validating %s...\n", app)
-		
+
 		if err := validateSingleReferenceConfig(loader, app); err != nil {
 			fmt.Printf("  ❌ Failed: %v\n\n", err)
 			failedApps = append(failedApps, app)
@@ -85,7 +85,7 @@ func validateAllReferenceConfigs(loader *config.ReferenceEnhancedLoader) error {
 	// Summary
 	successful := len(apps) - len(failedApps)
 	fmt.Printf("📊 Summary: %d/%d apps validated successfully\n", successful, len(apps))
-	
+
 	if len(failedApps) > 0 {
 		fmt.Printf("❌ Failed apps: %v\n", failedApps)
 		return fmt.Errorf("validation failed for %d apps", len(failedApps))
@@ -96,7 +96,7 @@ func validateAllReferenceConfigs(loader *config.ReferenceEnhancedLoader) error {
 }
 
 func validateSingleReferenceConfig(loader *config.ReferenceEnhancedLoader, appName string) error {
-	// 1. Test app config loading from any source  
+	// 1. Test app config loading from any source
 	fmt.Printf("  🔧 Loading app config...")
 	source, err := loader.GetConfigSource(appName)
 	if err != nil {
@@ -120,7 +120,7 @@ func validateSingleReferenceConfig(loader *config.ReferenceEnhancedLoader, appNa
 		return fmt.Errorf("merged config missing name")
 	}
 	if mergedConfig.Path == "" {
-		return fmt.Errorf("merged config missing path")  
+		return fmt.Errorf("merged config missing path")
 	}
 	if mergedConfig.Format == "" {
 		return fmt.Errorf("merged config missing format")
@@ -175,11 +175,11 @@ func validateFieldStructure(mergedConfig *config.AppConfig) []string {
 func printConfigDetails(config *config.AppConfig, title string) {
 	fmt.Printf("\n📋 %s:\n", title)
 	fmt.Printf("  Name: %s\n", config.Name)
-	fmt.Printf("  Path: %s\n", config.Path) 
+	fmt.Printf("  Path: %s\n", config.Path)
 	fmt.Printf("  Format: %s\n", config.Format)
 	fmt.Printf("  Fields: %d\n", len(config.Fields))
 	fmt.Printf("  Presets: %d\n", len(config.Presets))
-	
+
 	if len(config.Fields) > 0 {
 		fmt.Printf("  Field types:\n")
 		typeCount := make(map[string]int)

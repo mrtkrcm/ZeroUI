@@ -36,14 +36,14 @@ func GetSpacer(length int) string {
 	if length <= 0 {
 		return ""
 	}
-	
+
 	spacerMutex.RLock()
 	if spacer, exists := spacerCache[length]; exists {
 		spacerMutex.RUnlock()
 		return spacer
 	}
 	spacerMutex.RUnlock()
-	
+
 	// Create and cache the spacer
 	spacer := strings.Repeat(" ", length)
 	spacerMutex.Lock()
@@ -51,6 +51,6 @@ func GetSpacer(length int) string {
 		spacerCache[length] = spacer
 	}
 	spacerMutex.Unlock()
-	
+
 	return spacer
 }

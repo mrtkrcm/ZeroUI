@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 	"sync"
-	
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -77,22 +77,22 @@ func (sp *SerializerPool) FastJSONMarshal(v interface{}) ([]byte, error) {
 		buf.Reset()
 		sp.buffers.Put(buf)
 	}()
-	
+
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
 	encoder.SetIndent("", "  ")
-	
+
 	err := encoder.Encode(v)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	result := buf.String()
 	// Remove trailing newline added by encoder
 	if len(result) > 0 && result[len(result)-1] == '\n' {
 		result = result[:len(result)-1]
 	}
-	
+
 	return []byte(result), nil
 }
 
@@ -111,22 +111,22 @@ func NewStreamingJSONProcessor() *StreamingJSONProcessor {
 // ProcessJSONStream processes JSON data in chunks for memory efficiency
 func (sjp *StreamingJSONProcessor) ProcessJSONStream(reader io.Reader, processor func(interface{}) error) error {
 	decoder := json.NewDecoder(reader)
-	
+
 	// Enable streaming mode for large objects
 	decoder.UseNumber() // Preserve number precision
-	
+
 	// Process tokens streaming for better memory usage
 	for decoder.More() {
 		var value interface{}
 		if err := decoder.Decode(&value); err != nil {
 			return err
 		}
-		
+
 		if err := processor(value); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -175,7 +175,7 @@ func NewCompressionAwareMarshaler(compressionThreshold int) *CompressionAwareMar
 func (cam *CompressionAwareMarshaler) MarshalWithCompression(v interface{}, format string) ([]byte, bool, error) {
 	var data []byte
 	var err error
-	
+
 	switch format {
 	case "json":
 		data, err = json.Marshal(v)
@@ -184,17 +184,17 @@ func (cam *CompressionAwareMarshaler) MarshalWithCompression(v interface{}, form
 	default:
 		return nil, false, fmt.Errorf("unsupported format: %s", format)
 	}
-	
+
 	if err != nil {
 		return nil, false, err
 	}
-	
+
 	// Compress if data exceeds threshold
 	if len(data) > cam.threshold {
 		compressed := compress(data) // Would need proper compression implementation
 		return compressed, true, nil
 	}
-	
+
 	return data, false, nil
 }
 
@@ -207,9 +207,9 @@ func compress(data []byte) []byte {
 
 // DecompressionCache provides caching for decompressed config data
 type DecompressionCache struct {
-	mu    sync.RWMutex
-	cache map[string][]byte
-	maxSize int64
+	mu          sync.RWMutex
+	cache       map[string][]byte
+	maxSize     int64
 	currentSize int64
 }
 
@@ -225,7 +225,7 @@ func NewDecompressionCache(maxSizeBytes int64) *DecompressionCache {
 func (dc *DecompressionCache) Get(key string) ([]byte, bool) {
 	dc.mu.RLock()
 	defer dc.mu.RUnlock()
-	
+
 	data, exists := dc.cache[key]
 	return data, exists
 }
@@ -234,14 +234,14 @@ func (dc *DecompressionCache) Get(key string) ([]byte, bool) {
 func (dc *DecompressionCache) Put(key string, data []byte) {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
-	
+
 	dataSize := int64(len(data))
-	
+
 	// Evict old entries if necessary
-	if dc.currentSize + dataSize > dc.maxSize {
+	if dc.currentSize+dataSize > dc.maxSize {
 		dc.evictEntries(dataSize)
 	}
-	
+
 	dc.cache[key] = data
 	dc.currentSize += dataSize
 }
@@ -251,8 +251,8 @@ func (dc *DecompressionCache) evictEntries(needed int64) {
 	for key, data := range dc.cache {
 		delete(dc.cache, key)
 		dc.currentSize -= int64(len(data))
-		
-		if dc.currentSize + needed <= dc.maxSize {
+
+		if dc.currentSize+needed <= dc.maxSize {
 			break
 		}
 	}

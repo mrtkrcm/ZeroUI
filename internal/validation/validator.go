@@ -16,7 +16,7 @@ import (
 // Validator provides configuration validation functionality
 // Now optimized with github.com/go-playground/validator/v10
 type Validator struct {
-	schemas map[string]*Schema
+	schemas  map[string]*Schema
 	validate *validator.Validate
 }
 
@@ -44,7 +44,7 @@ type FieldRule struct {
 	ConflictsWith []string    `json:"conflicts_with,omitempty"` // Fields that cannot be set together
 	Format        string      `json:"format,omitempty"`         // Format specification (email, url, etc.)
 	Custom        *CustomRule `json:"custom,omitempty"`         // Custom validation rule
-	
+
 	// Performance optimization: cached enum map for O(1) lookups
 	enumMap       map[string]struct{} `json:"-"` // Cached for fast validation
 	compiledRegex *regexp.Regexp      `json:"-"` // Pre-compiled regex
@@ -70,14 +70,14 @@ type CustomRule struct {
 
 // ValidatedAppConfig represents an app config with validation tags
 type ValidatedAppConfig struct {
-	Name        string                          `validate:"required,min=1,max=100"`
-	Path        string                          `validate:"required,min=1"`
-	Format      string                          `validate:"required,oneof=json yaml yml toml custom"`
-	Description string                          `validate:"max=500"`
-	Fields      map[string]ValidatedFieldConfig `validate:"required,min=1,max=50,dive"`
+	Name        string                           `validate:"required,min=1,max=100"`
+	Path        string                           `validate:"required,min=1"`
+	Format      string                           `validate:"required,oneof=json yaml yml toml custom"`
+	Description string                           `validate:"max=500"`
+	Fields      map[string]ValidatedFieldConfig  `validate:"required,min=1,max=50,dive"`
 	Presets     map[string]ValidatedPresetConfig `validate:"dive"`
-	Hooks       map[string]string               `validate:"dive,max=200"`
-	Env         map[string]string               `validate:"dive,max=200"`
+	Hooks       map[string]string                `validate:"dive,max=200"`
+	Env         map[string]string                `validate:"dive,max=200"`
 }
 
 // ValidatedFieldConfig represents a field config with validation tags
@@ -129,13 +129,13 @@ type ValidationError struct {
 // NewValidator creates a new validator
 func NewValidator() *Validator {
 	v := validator.New()
-	
+
 	// Register custom validation functions
 	v.RegisterValidation("color", validateColorTag)
 	v.RegisterValidation("pathformat", validatePathFormatTag)
 	v.RegisterValidation("regex", validateRegexTag)
 	v.RegisterValidation("fieldtype", validateFieldTypeTag)
-	
+
 	return &Validator{
 		schemas:  make(map[string]*Schema),
 		validate: v,
@@ -162,7 +162,7 @@ func (v *Validator) LoadSchema(schemaPath string) error {
 	if err := optimizeSchema(&schema); err != nil {
 		return fmt.Errorf("failed to optimize schema: %w", err)
 	}
-	
+
 	v.schemas[schema.Name] = &schema
 	return nil
 }
@@ -207,7 +207,7 @@ func (v *Validator) optimizeSchema(schema *Schema) {
 				rule.enumMap[enum] = struct{}{}
 			}
 		}
-		
+
 		// Pre-compile regex patterns
 		if rule.Pattern != "" {
 			if compiled, err := regexp.Compile(rule.Pattern); err == nil {
@@ -236,7 +236,7 @@ func (v *Validator) ValidateAppConfig(appName string, appConfig *config.AppConfi
 	if err := v.validate.Struct(validatedConfig); err != nil {
 		return v.convertValidatorError(err, "app_config")
 	}
-	
+
 	return v.validateBasic(appConfig)
 }
 
@@ -295,8 +295,8 @@ func (v *Validator) validateBasic(appConfig *config.AppConfig) *ValidationResult
 	// Pre-allocate error slice for better performance
 	result := &ValidationResult{
 		Valid:    true,
-		Errors:   make([]*ValidationError, 0, 8),   // Pre-allocate for common error count
-		Warnings: make([]*ValidationError, 0, 4),   // Pre-allocate for warnings
+		Errors:   make([]*ValidationError, 0, 8), // Pre-allocate for common error count
+		Warnings: make([]*ValidationError, 0, 4), // Pre-allocate for warnings
 	}
 
 	// Check required fields
@@ -370,57 +370,6 @@ func (v *Validator) validateBasicConfig(configData map[string]interface{}) *Vali
 	return result
 }
 
-// validateWithSchema validates app config against schema
-func (v *Validator) validateWithSchema(appConfig *config.AppConfig, schema *Schema) *ValidationResult {
-	result := &ValidationResult{Valid: true}
-
-	// Validate global rules
-	if schema.Global != nil {
-		if err := v.validateGlobalRules(appConfig, schema.Global); err != nil {
-			result.Errors = append(result.Errors, err...)
-			if len(err) > 0 {
-				result.Valid = false
-			}
-		}
-	}
-
-	// Validate each field against its rule
-	for fieldName, field := range appConfig.Fields {
-		rule, exists := schema.Fields[fieldName]
-		if !exists {
-			result.Warnings = append(result.Warnings, &ValidationError{
-				Field:   fieldName,
-				Message: fmt.Sprintf("Field '%s' is not defined in schema", fieldName),
-				Code:    "undefined_field",
-			})
-			continue
-		}
-
-		// Validate field definition
-		fieldResult := v.validateFieldDefinition(fieldName, &field, rule)
-		result.Errors = append(result.Errors, fieldResult.Errors...)
-		result.Warnings = append(result.Warnings, fieldResult.Warnings...)
-		if !fieldResult.Valid {
-			result.Valid = false
-		}
-	}
-
-	// Check for missing required fields
-	for fieldName, rule := range schema.Fields {
-		if rule.Required {
-			if _, exists := appConfig.Fields[fieldName]; !exists {
-				result.Errors = append(result.Errors, &ValidationError{
-					Field:   fieldName,
-					Message: fmt.Sprintf("Required field '%s' is missing", fieldName),
-					Code:    "missing_required_field",
-				})
-				result.Valid = false
-			}
-		}
-	}
-
-	return result
-}
 
 // validateConfigWithSchema validates configuration data against schema
 func (v *Validator) validateConfigWithSchema(configData map[string]interface{}, schema *Schema) *ValidationResult {
@@ -571,7 +520,7 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 	// Enum validation for choice types - optimized with pre-built hashmap O(1) lookup
 	if rule.Type == "choice" && len(rule.Enum) > 0 {
 		strValue := fmt.Sprintf("%v", value)
-		
+
 		// Use pre-built enumMap for O(1) lookup, fallback to building if not cached
 		enumMap := rule.enumMap
 		if enumMap == nil {
@@ -580,7 +529,7 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 				enumMap[enum] = struct{}{}
 			}
 		}
-		
+
 		if _, valid := enumMap[strValue]; !valid {
 			result.Errors = append(result.Errors, &ValidationError{
 				Field:   fieldName,
@@ -621,7 +570,7 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 		if rule.Pattern != "" {
 			var matched bool
 			var err error
-			
+
 			// Use pre-compiled regex if available for better performance
 			if rule.compiledRegex != nil {
 				matched = rule.compiledRegex.MatchString(strValue)
@@ -629,7 +578,7 @@ func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, r
 				// Fallback to runtime compilation (slower)
 				matched, err = regexp.MatchString(rule.Pattern, strValue)
 			}
-			
+
 			if err != nil {
 				result.Warnings = append(result.Warnings, &ValidationError{
 					Field:   fieldName,
@@ -973,7 +922,7 @@ func (v *Validator) convertToValidatedAppConfig(appConfig *config.AppConfig) Val
 			Path:        field.Path,
 		}
 	}
-	
+
 	validatedPresets := make(map[string]ValidatedPresetConfig)
 	for name, preset := range appConfig.Presets {
 		validatedPresets[name] = ValidatedPresetConfig{
@@ -982,7 +931,7 @@ func (v *Validator) convertToValidatedAppConfig(appConfig *config.AppConfig) Val
 			Values:      preset.Values,
 		}
 	}
-	
+
 	return ValidatedAppConfig{
 		Name:        appConfig.Name,
 		Path:        appConfig.Path,
@@ -998,7 +947,7 @@ func (v *Validator) convertToValidatedAppConfig(appConfig *config.AppConfig) Val
 // convertValidatorError converts validator errors to ValidationResult
 func (v *Validator) convertValidatorError(err error, context string) *ValidationResult {
 	result := &ValidationResult{Valid: false}
-	
+
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, fieldErr := range validationErrors {
 			result.Errors = append(result.Errors, &ValidationError{
@@ -1016,7 +965,7 @@ func (v *Validator) convertValidatorError(err error, context string) *Validation
 			Path:    context,
 		})
 	}
-	
+
 	return result
 }
 
@@ -1084,12 +1033,12 @@ func (v *Validator) validateFieldWithRuleFast(fieldName string, value interface{
 		Value: value,
 		Type:  rule.Type,
 	}
-	
+
 	// Fast struct validation
 	if err := v.validate.Struct(fieldVal); err != nil {
 		return v.convertValidatorError(err, "field_validation")
 	}
-	
+
 	// Additional type-specific validation
 	return v.validateFieldTypeSpecific(fieldName, value, rule)
 }
@@ -1097,7 +1046,7 @@ func (v *Validator) validateFieldWithRuleFast(fieldName string, value interface{
 // validateFieldTypeSpecific handles type-specific validations
 func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{}, rule *FieldRule) *ValidationResult {
 	result := &ValidationResult{Valid: true}
-	
+
 	// Type validation
 	if !v.validateFieldType(fieldName, value, rule.Type) {
 		result.Errors = append(result.Errors, &ValidationError{
@@ -1109,11 +1058,11 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 		result.Valid = false
 		return result
 	}
-	
+
 	// String-specific validations
 	if rule.Type == "string" {
 		strValue := fmt.Sprintf("%v", value)
-		
+
 		// Length validation
 		if rule.MinLength != nil && len(strValue) < *rule.MinLength {
 			result.Errors = append(result.Errors, &ValidationError{
@@ -1124,7 +1073,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 			})
 			result.Valid = false
 		}
-		
+
 		if rule.MaxLength != nil && len(strValue) > *rule.MaxLength {
 			result.Errors = append(result.Errors, &ValidationError{
 				Field:   fieldName,
@@ -1134,7 +1083,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 			})
 			result.Valid = false
 		}
-		
+
 		// Pattern validation
 		if rule.Pattern != "" {
 			if matched, err := regexp.MatchString(rule.Pattern, strValue); err != nil || !matched {
@@ -1147,7 +1096,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 				result.Valid = false
 			}
 		}
-		
+
 		// Format validation
 		if rule.Format != "" {
 			if err := v.validateFormat(strValue, rule.Format); err != nil {
@@ -1161,7 +1110,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 			}
 		}
 	}
-	
+
 	// Numeric validations
 	if rule.Type == "number" {
 		if numValue, err := convertToFloat64(value); err == nil {
@@ -1174,7 +1123,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 				})
 				result.Valid = false
 			}
-			
+
 			if rule.Max != nil && numValue > *rule.Max {
 				result.Errors = append(result.Errors, &ValidationError{
 					Field:   fieldName,
@@ -1186,7 +1135,7 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 			}
 		}
 	}
-	
+
 	// Choice validation
 	if rule.Type == "choice" && len(rule.Enum) > 0 {
 		strValue := fmt.Sprintf("%v", value)
@@ -1207,14 +1156,14 @@ func (v *Validator) validateFieldTypeSpecific(fieldName string, value interface{
 			result.Valid = false
 		}
 	}
-	
+
 	return result
 }
 
 // validateAppConfigWithSchema performs schema validation on app config
 func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, schema *Schema) *ValidationResult {
 	result := &ValidationResult{Valid: true}
-	
+
 	// Validate global rules first
 	if schema.Global != nil {
 		if err := v.validateGlobalRules(appConfig, schema.Global); err != nil {
@@ -1224,7 +1173,7 @@ func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, sch
 			}
 		}
 	}
-	
+
 	// Validate each field
 	for fieldName, field := range appConfig.Fields {
 		rule, exists := schema.Fields[fieldName]
@@ -1236,7 +1185,7 @@ func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, sch
 			})
 			continue
 		}
-		
+
 		// Validate field definition
 		fieldResult := v.validateFieldDefinition(fieldName, &field, rule)
 		result.Errors = append(result.Errors, fieldResult.Errors...)
@@ -1245,7 +1194,7 @@ func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, sch
 			result.Valid = false
 		}
 	}
-	
+
 	// Check for missing required fields
 	for fieldName, rule := range schema.Fields {
 		if rule.Required {
@@ -1259,7 +1208,7 @@ func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, sch
 			}
 		}
 	}
-	
+
 	return result
 }
 
@@ -1298,21 +1247,21 @@ func (v *Validator) isSimpleSchema(schema *Schema) bool {
 			return false
 		}
 	}
-	
+
 	// Simple schemas have minimal global rules
 	if schema.Global != nil {
 		if len(schema.Global.RequiredFields) > 5 || len(schema.Global.ForbiddenFields) > 0 {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
 // validateAppConfigFast provides fast validation for simple schemas
 func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *Schema) *ValidationResult {
 	result := &ValidationResult{Valid: true}
-	
+
 	// Fast basic structure validation
 	validatedConfig := v.convertToValidatedAppConfig(appConfig)
 	if err := v.validate.Struct(validatedConfig); err != nil {
@@ -1321,14 +1270,14 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 			return result
 		}
 	}
-	
+
 	// Quick field type and basic constraint checks
 	for fieldName, field := range appConfig.Fields {
 		rule, exists := schema.Fields[fieldName]
 		if !exists {
 			continue
 		}
-		
+
 		// Fast type check
 		if field.Type != rule.Type {
 			result.Errors = append(result.Errors, &ValidationError{
@@ -1338,7 +1287,7 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 			})
 			result.Valid = false
 		}
-		
+
 		// Fast default value validation
 		if field.Default != nil {
 			if !v.validateFieldType(fieldName, field.Default, rule.Type) {
@@ -1352,7 +1301,7 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 			}
 		}
 	}
-	
+
 	// Quick required field check
 	if schema.Global != nil {
 		for _, required := range schema.Global.RequiredFields {
@@ -1366,10 +1315,9 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 			}
 		}
 	}
-	
+
 	return result
 }
-
 
 // optimizeSchema pre-processes schema for optimal validation performance
 func optimizeSchema(schema *Schema) error {
@@ -1381,19 +1329,19 @@ func optimizeSchema(schema *Schema) error {
 				rule.enumMap[val] = struct{}{}
 			}
 		}
-		
+
 		// Pre-compile regex patterns
-		if rule.Pattern \!= "" {
+		if rule.Pattern != "" {
 			compiled, err := regexp.Compile(rule.Pattern)
-			if err \!= nil {
+			if err != nil {
 				return fmt.Errorf("invalid regex pattern for field %s: %w", fieldName, err)
 			}
 			rule.compiledRegex = compiled
 		}
-		
+
 		// Update the rule in the schema
 		schema.Fields[fieldName] = rule
 	}
-	
+
 	return nil
 }

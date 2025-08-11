@@ -28,7 +28,7 @@ var (
 func GlobalInterner() *StringInterner {
 	internerOnce.Do(func() {
 		globalInterner = NewStringInterner()
-		
+
 		// Pre-populate with common configuration strings
 		commonStrings := []string{
 			"true", "false", "enabled", "disabled", "default", "auto",
@@ -38,7 +38,7 @@ func GlobalInterner() *StringInterner {
 			"string", "number", "boolean", "array", "object",
 			"required", "optional", "deprecated", "experimental",
 		}
-		
+
 		for _, s := range commonStrings {
 			globalInterner.intern(s)
 		}
@@ -57,7 +57,7 @@ func NewStringInterner() *StringInterner {
 // Intern returns a canonical representation of the string
 func (si *StringInterner) Intern(s string) string {
 	si.stats.Requests++
-	
+
 	// Fast path: read lock only
 	si.mu.RLock()
 	if canonical, exists := si.strings[s]; exists {
@@ -66,7 +66,7 @@ func (si *StringInterner) Intern(s string) string {
 		return canonical
 	}
 	si.mu.RUnlock()
-	
+
 	// Slow path: write lock for new string
 	return si.intern(s)
 }
@@ -74,24 +74,24 @@ func (si *StringInterner) Intern(s string) string {
 func (si *StringInterner) intern(s string) string {
 	si.mu.Lock()
 	defer si.mu.Unlock()
-	
+
 	// Double-check after acquiring write lock
 	if canonical, exists := si.strings[s]; exists {
 		si.stats.Hits++
 		return canonical
 	}
-	
+
 	// Create canonical copy and store it
 	canonical := string([]byte(s)) // Force allocation to ensure it's not sharing underlying array
 	si.strings[s] = canonical
 	si.stats.UniqueCount++
 	si.stats.TotalSaved += int64(len(s))
-	
+
 	// Prevent unbounded growth
 	if len(si.strings) > 10000 {
 		si.evictOldEntries()
 	}
-	
+
 	return canonical
 }
 
@@ -143,12 +143,12 @@ func InternCommonConfigValue(value string) string {
 	if len(value) < 2 || len(value) > 64 {
 		return value
 	}
-	
+
 	// Check if it looks like a common config value
 	if isCommonConfigValue(value) {
 		return GlobalInterner().Intern(value)
 	}
-	
+
 	return value
 }
 
@@ -159,12 +159,12 @@ func isCommonConfigValue(s string) bool {
 	case "true", "false", "yes", "no", "on", "off", "enabled", "disabled":
 		return true
 	}
-	
+
 	// Intern common enum values
 	if len(s) <= 16 && (containsOnlyAlphaNum(s) || containsCommonSeparators(s)) {
 		return true
 	}
-	
+
 	return false
 }
 

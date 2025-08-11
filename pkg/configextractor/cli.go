@@ -17,11 +17,11 @@ type CLI struct {
 
 // CLICommand defines how to extract config from a CLI tool
 type CLICommand struct {
-	Command     string                                     // Command to execute
-	Args        []string                                   // Command arguments
-	Parser      func(app, output string) *Config // Custom parser
-	Timeout     time.Duration                              // Execution timeout
-	Confidence  float64                                    // Confidence score (0-1)
+	Command    string                           // Command to execute
+	Args       []string                         // Command arguments
+	Parser     func(app, output string) *Config // Custom parser
+	Timeout    time.Duration                    // Execution timeout
+	Confidence float64                          // Confidence score (0-1)
 }
 
 // NewCLI creates a new CLI extraction strategy
@@ -29,38 +29,38 @@ func NewCLI() *CLI {
 	return &CLI{
 		commands: map[string]CLICommand{
 			"ghostty": {
-				Command: "ghostty",
-				Args:    []string{"+show-config", "--default", "--docs"},
-				Parser:  parseGhosttyOutput,
-				Timeout: 10 * time.Second,
+				Command:    "ghostty",
+				Args:       []string{"+show-config", "--default", "--docs"},
+				Parser:     parseGhosttyOutput,
+				Timeout:    10 * time.Second,
 				Confidence: 0.95, // High confidence - official CLI
 			},
 			"zed": {
-				Command: "zed",
-				Args:    []string{"--print-config"},
-				Parser:  parseJSONOutput,
-				Timeout: 5 * time.Second,
+				Command:    "zed",
+				Args:       []string{"--print-config"},
+				Parser:     parseJSONOutput,
+				Timeout:    5 * time.Second,
 				Confidence: 0.90,
 			},
 			"wezterm": {
-				Command: "wezterm",
-				Args:    []string{"show-config"},
-				Parser:  parseLuaOutput,
-				Timeout: 5 * time.Second,
+				Command:    "wezterm",
+				Args:       []string{"show-config"},
+				Parser:     parseLuaOutput,
+				Timeout:    5 * time.Second,
 				Confidence: 0.90,
 			},
 			"tmux": {
-				Command: "tmux",
-				Args:    []string{"show-options", "-g"},
-				Parser:  parseTmuxOutput,
-				Timeout: 3 * time.Second,
+				Command:    "tmux",
+				Args:       []string{"show-options", "-g"},
+				Parser:     parseTmuxOutput,
+				Timeout:    3 * time.Second,
 				Confidence: 0.85,
 			},
 			"git": {
-				Command: "git",
-				Args:    []string{"config", "--list", "--show-origin"},
-				Parser:  parseGitOutput,
-				Timeout: 3 * time.Second,
+				Command:    "git",
+				Args:       []string{"config", "--list", "--show-origin"},
+				Parser:     parseGitOutput,
+				Timeout:    3 * time.Second,
 				Confidence: 0.90,
 			},
 		},
@@ -203,14 +203,14 @@ func parseJSONOutput(app, output string) *Config {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Look for key-value pairs: "key": value
 		if strings.Contains(line, ":") && strings.Contains(line, `"`) {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
 				key := strings.Trim(strings.TrimSpace(parts[0]), `"`)
 				value := strings.TrimSpace(strings.Trim(parts[1], `,`))
-				
+
 				if key != "" && !strings.HasPrefix(key, "_") {
 					config.Settings[key] = Setting{
 						Name: key,
@@ -237,18 +237,18 @@ func parseLuaOutput(app, output string) *Config {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Look for assignments: config.key = value
 		if strings.Contains(line, "=") && strings.Contains(line, "config.") {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
 				keyPart := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
-				
+
 				// Extract key from config.key format
 				if strings.HasPrefix(keyPart, "config.") {
 					key := strings.TrimPrefix(keyPart, "config.")
-					
+
 					config.Settings[key] = Setting{
 						Name: key,
 						Type: inferTypeFromLua(value),
@@ -273,13 +273,13 @@ func parseTmuxOutput(app, output string) *Config {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// tmux format: "option value"
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) == 2 {
 			key := parts[0]
 			value := parts[1]
-			
+
 			config.Settings[key] = Setting{
 				Name:    key,
 				Type:    inferType(value),
@@ -303,7 +303,7 @@ func parseGitOutput(app, output string) *Config {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Git config format: "file:key=value"
 		if strings.Contains(line, "=") {
 			// Remove file prefix if present
@@ -313,12 +313,12 @@ func parseGitOutput(app, output string) *Config {
 					line = parts[1]
 				}
 			}
-			
+
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
-				
+
 				config.Settings[key] = Setting{
 					Name:    key,
 					Type:    inferType(value),
@@ -337,7 +337,7 @@ func parseGitOutput(app, output string) *Config {
 // inferType determines setting type from value string
 func inferType(value string) SettingType {
 	value = strings.TrimSpace(value)
-	
+
 	switch {
 	case value == "true" || value == "false":
 		return TypeBoolean
@@ -353,7 +353,7 @@ func inferType(value string) SettingType {
 // inferTypeFromJSON determines type from JSON value
 func inferTypeFromJSON(value string) SettingType {
 	value = strings.TrimSpace(strings.Trim(value, `,`))
-	
+
 	switch {
 	case value == "true" || value == "false":
 		return TypeBoolean
@@ -373,7 +373,7 @@ func inferTypeFromJSON(value string) SettingType {
 // inferTypeFromLua determines type from Lua value
 func inferTypeFromLua(value string) SettingType {
 	value = strings.TrimSpace(value)
-	
+
 	switch {
 	case value == "true" || value == "false":
 		return TypeBoolean
@@ -393,7 +393,7 @@ func isNumeric(s string) bool {
 	if s == "" || s == "-" {
 		return false
 	}
-	
+
 	dotCount := 0
 	for i, r := range s {
 		if r == '.' {
@@ -413,7 +413,7 @@ func isNumeric(s string) bool {
 // parseValue converts string to appropriate Go type
 func parseValue(value string) interface{} {
 	value = strings.TrimSpace(value)
-	
+
 	switch {
 	case value == "true":
 		return true
@@ -429,7 +429,7 @@ func parseValue(value string) interface{} {
 // inferCategory determines setting category from name
 func inferCategory(name string) string {
 	name = strings.ToLower(name)
-	
+
 	switch {
 	case strings.Contains(name, "font"):
 		return "font"

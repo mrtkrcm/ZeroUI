@@ -21,9 +21,9 @@ type Extractor struct {
 
 // Config represents extracted configuration
 type Config struct {
-	App      string            `yaml:"app_name"`
-	Path     string            `yaml:"config_path"`
-	Type     string            `yaml:"config_type"`
+	App      string             `yaml:"app_name"`
+	Path     string             `yaml:"config_path"`
+	Type     string             `yaml:"config_type"`
 	Settings map[string]Setting `yaml:"settings"`
 }
 
@@ -52,17 +52,17 @@ func (c *DefaultHTTPClient) Get(ctx context.Context, url string) (io.ReadCloser,
 	if err != nil {
 		return nil, err
 	}
-	
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
-	
+
 	return resp.Body, nil
 }
 
@@ -110,7 +110,7 @@ func New(opts ...Option) *Extractor {
 		DisableCompression:    false,            // Enable compression for better bandwidth
 		ForceAttemptHTTP2:     true,             // Prefer HTTP/2 when available
 	}
-	
+
 	httpClient := &DefaultHTTPClient{
 		client: &http.Client{
 			Timeout:   30 * time.Second, // Increased timeout for large configs
@@ -162,7 +162,7 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 	}
 
 	results := make(chan result, len(e.strategies))
-	
+
 	for _, strategy := range e.strategies {
 		go func(s Strategy) {
 			cfg, err := s.Extract(ctx, app)
@@ -206,10 +206,10 @@ func (e *Extractor) ExtractBatch(ctx context.Context, apps []string) (map[string
 
 	for _, app := range apps {
 		wg.Add(1)
-		
+
 		// Acquire worker slot
 		e.pool <- struct{}{}
-		
+
 		go func(appName string) {
 			defer func() {
 				<-e.pool // Release worker slot
@@ -243,7 +243,7 @@ func (e *Extractor) ClearCache() {
 
 func inferType(value string) string {
 	value = strings.TrimSpace(value)
-	
+
 	switch {
 	case value == "true" || value == "false":
 		return "boolean"
@@ -260,7 +260,7 @@ func inferType(value string) string {
 
 func inferCategory(key string) string {
 	key = strings.ToLower(key)
-	
+
 	categories := map[string][]string{
 		"font":        {"font", "text"},
 		"appearance":  {"color", "theme", "background", "foreground"},
@@ -286,12 +286,12 @@ func isNumeric(s string) bool {
 	if s == "" {
 		return false
 	}
-	
+
 	// Handle negative numbers
 	if s[0] == '-' {
 		s = s[1:]
 	}
-	
+
 	dotCount := 0
 	for _, r := range s {
 		if r == '.' {
@@ -303,6 +303,6 @@ func isNumeric(s string) bool {
 			return false
 		}
 	}
-	
+
 	return true
 }

@@ -1,13 +1,13 @@
 package tui
 
 import (
-	"testing"
 	"strings"
-	
+	"testing"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -16,11 +16,11 @@ func TestUIInitialization(t *testing.T) {
 	// Create a test engine
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err, "Failed to create engine")
-	
+
 	// Create model without initial app (should show grid view)
 	model, err := NewModel(engine, "")
 	require.NoError(t, err, "Failed to create model")
-	
+
 	// Validate initial state
 	assert.Equal(t, AppGridView, model.state, "Should start with AppGridView")
 	assert.NotNil(t, model.appGrid, "AppGrid should be initialized")
@@ -36,25 +36,25 @@ func TestUIInitialization(t *testing.T) {
 func TestUIRendering(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Test initial render
 	view := model.View()
 	assert.NotEmpty(t, view, "Initial view should not be empty")
-	
+
 	// Simulate window resize
 	model.width = 120
 	model.height = 40
 	resizeMsg := tea.WindowSizeMsg{Width: 120, Height: 40}
 	updatedModel, _ := model.Update(resizeMsg)
 	model = updatedModel.(*Model)
-	
+
 	// Test render after resize
 	view = model.View()
 	assert.NotEmpty(t, view, "View after resize should not be empty")
-	
+
 	// Check that it contains expected elements for AppGridView
 	// The logo uses Unicode box drawing characters
 	assert.Contains(t, view, "███████╗███████╗██████╗", "Should contain app title/logo")
@@ -64,24 +64,24 @@ func TestUIRendering(t *testing.T) {
 func TestFullscreenLayout(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Set fullscreen dimensions
 	model.width = 120
 	model.height = 40
-	
+
 	// Update component sizes
 	model.updateComponentSizes()
-	
+
 	// Render view
 	view := model.View()
-	
+
 	// Validate dimensions
 	lines := strings.Split(view, "\n")
 	assert.LessOrEqual(t, len(lines), 40, "Should not exceed terminal height")
-	
+
 	for _, line := range lines {
 		// Strip ANSI codes for length check
 		cleanLine := stripAnsi(line)
@@ -93,10 +93,10 @@ func TestFullscreenLayout(t *testing.T) {
 func TestKeyboardNavigation(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Test navigation keys
 	testCases := []struct {
 		name     string
@@ -119,15 +119,15 @@ func TestKeyboardNavigation(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset help state
 			model.showingHelp = false
-			
+
 			// Send key message
 			updatedModel, cmd := model.Update(tc.key)
-			
+
 			// Check if it's a quit command
 			if cmd != nil {
 				// Check if it's a quit command by type
@@ -148,15 +148,15 @@ func TestKeyboardNavigation(t *testing.T) {
 func TestComponentInteraction(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Test window size message propagation
 	resizeMsg := tea.WindowSizeMsg{Width: 100, Height: 30}
 	updatedModel, _ := model.Update(resizeMsg)
 	model = updatedModel.(*Model)
-	
+
 	assert.Equal(t, 100, model.width, "Width should be updated")
 	assert.Equal(t, 30, model.height, "Height should be updated")
 }
@@ -165,25 +165,25 @@ func TestComponentInteraction(t *testing.T) {
 func TestStateTransitions(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Start in AppGridView
 	assert.Equal(t, AppGridView, model.state)
-	
+
 	// Transition to AppSelectionView
 	model.state = AppSelectionView
 	model.focusCurrentComponent()
-	
+
 	// Validate focus changed
 	assert.Equal(t, AppSelectionView, model.state)
-	
+
 	// Test back navigation
 	cmd := model.handleBack()
 	assert.Equal(t, AppGridView, model.state, "Should go back to grid view")
 	assert.Nil(t, cmd, "Should not quit from grid view navigation")
-	
+
 	// Test quit from grid view
 	model.state = AppGridView
 	cmd = model.handleBack()
@@ -212,10 +212,10 @@ func stripAnsi(str string) string {
 func TestInitCommand(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Test Init command
 	cmd := model.Init()
 	assert.NotNil(t, cmd, "Init should return a command")
@@ -225,13 +225,13 @@ func TestInitCommand(t *testing.T) {
 func TestErrorHandling(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Set an error
 	model.err = assert.AnError
-	
+
 	// Render with error
 	view := model.View()
 	assert.Contains(t, view, "Error", "Should display error message")
@@ -241,17 +241,17 @@ func TestErrorHandling(t *testing.T) {
 func TestHelpView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
-	
+
 	model, err := NewModel(engine, "")
 	require.NoError(t, err)
-	
+
 	// Enable help
 	model.showingHelp = true
-	
+
 	// Render help view
 	view := model.View()
 	assert.NotEmpty(t, view, "Help view should not be empty")
-	
+
 	// Help view should be wrapped with layout
 	lines := strings.Split(view, "\n")
 	assert.Greater(t, len(lines), 3, "Help view should have multiple lines")

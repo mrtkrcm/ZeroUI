@@ -138,7 +138,7 @@ func (m *ReferenceConfigMapper) GetAvailableApps() ([]string, error) {
 	if staticLoader, ok := m.loader.(*StaticConfigLoader); ok {
 		configDir = staticLoader.configDir
 	}
-	
+
 	if configDir == "" {
 		return []string{"ghostty", "zed", "mise"}, nil // fallback to known apps
 	}
@@ -210,9 +210,9 @@ func (m *ReferenceConfigMapper) generateBasicPresets(appConfig *AppConfig, ref *
 func (m *ReferenceConfigMapper) generateGhosttyPresets(appConfig *AppConfig, ref *ConfigReference) {
 	// Minimal terminal preset
 	minimalValues := map[string]interface{}{
-		"window-decoration": false,
-		"window-padding":    0,
-		"cursor-blink":      false,
+		"window-decoration":  false,
+		"window-padding":     0,
+		"cursor-blink":       false,
 		"background-opacity": 1.0,
 	}
 
@@ -240,11 +240,11 @@ func (m *ReferenceConfigMapper) generateGhosttyPresets(appConfig *AppConfig, ref
 	}
 }
 
-// generateZedPresets creates Zed-specific presets  
+// generateZedPresets creates Zed-specific presets
 func (m *ReferenceConfigMapper) generateZedPresets(appConfig *AppConfig, ref *ConfigReference) {
 	// VS Code-like preset
 	vscodeValues := map[string]interface{}{
-		"base_keymap":    "VSCode",
+		"base_keymap":      "VSCode",
 		"buffer_font_size": 14,
 		"ui_font_size":     14,
 		"tab_size":         4,
@@ -300,7 +300,7 @@ func (m *ReferenceConfigMapper) ValidateReferenceMapping(appName string) error {
 		// Validate type conversion
 		expectedType := convertSettingTypeToFieldType(setting.Type)
 		if fieldConfig.Type != expectedType && fieldConfig.Type != "choice" {
-			return fmt.Errorf("validation failed - setting %s type mismatch: expected %s, got %s", 
+			return fmt.Errorf("validation failed - setting %s type mismatch: expected %s, got %s",
 				key, expectedType, fieldConfig.Type)
 		}
 	}

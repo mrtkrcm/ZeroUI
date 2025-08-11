@@ -33,9 +33,9 @@ func BenchmarkValidator_ValidateAppConfig(b *testing.B) {
 				Default: false,
 			},
 			"email": {
-				Type:     "string",
-				Required: true,
-				Format:   "email",
+				Type:      "string",
+				Required:  true,
+				Format:    "email",
 				MinLength: intPtr(5),
 				MaxLength: intPtr(254),
 			},
@@ -382,11 +382,11 @@ func BenchmarkValidator_ComplexValidation(b *testing.B) {
 
 	// Create test config with OAuth
 	configData := map[string]interface{}{
-		"auth_type":          "oauth",
-		"oauth_client_id":    "1234567890abcdef",
+		"auth_type":           "oauth",
+		"oauth_client_id":     "1234567890abcdef",
 		"oauth_client_secret": "super_secret_oauth_secret_key_123456789",
-		"ssl_verify":         true,
-		"timeout":            30,
+		"ssl_verify":          true,
+		"timeout":             30,
 	}
 
 	b.ResetTimer()
