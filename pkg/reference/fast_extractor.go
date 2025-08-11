@@ -12,7 +12,52 @@ import (
 	"strings"
 	"sync"
 	"time"
+	
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
+
+// Optimized string operations to reduce allocations
+
+// findEqualsByte finds the index of '=' character using byte operations
+func findEqualsByte(s string) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == '=' {
+			return i
+		}
+	}
+	return -1
+}
+
+// trimSpaceFast performs fast space trimming without allocations for common cases
+func trimSpaceFast(s string) string {
+	// Fast path for empty strings
+	if len(s) == 0 {
+		return s
+	}
+	
+	// Find start
+	start := 0
+	for start < len(s) && isSpace(s[start]) {
+		start++
+	}
+	
+	// Find end
+	end := len(s)
+	for end > start && isSpace(s[end-1]) {
+		end--
+	}
+	
+	// Return substring if trimming is needed
+	if start > 0 || end < len(s) {
+		return s[start:end]
+	}
+	return s
+}
+
+// isSpace checks if a byte is a space character (optimized for common cases)
+func isSpace(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
+}
 
 // FastExtractor provides high-performance config extraction
 type FastExtractor struct {
@@ -204,13 +249,14 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 	scanner.Buffer(buf[:cap(buf)], 2*1024*1024) // Use pooled buffer, 2MB max for large configs
 
 	var currentKey string
-	var descBuilder strings.Builder
+	descBuilder := performance.GetBuilder()
+	defer performance.PutBuilder(descBuilder)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		
-		// Fast parsing with minimal allocations
-		if idx := strings.Index(line, "="); idx > 0 {
+		// Fast parsing with single-pass byte operations
+		if idx := findEqualsByte(line); idx > 0 {
 			// Found a setting
 			if currentKey != "" && descBuilder.Len() > 0 {
 				// Save previous setting
@@ -222,8 +268,9 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 				descBuilder.Reset()
 			}
 			
-			currentKey = strings.TrimSpace(line[:idx])
-			value := strings.TrimSpace(line[idx+1:])
+			// Optimized trimming with byte-level operations
+			currentKey = trimSpaceFast(line[:idx])
+			value := trimSpaceFast(line[idx+1:])
 			
 			config.Settings[currentKey] = ConfigSetting{
 				Name:         currentKey,
@@ -231,12 +278,19 @@ func (e *FastExtractor) parseStreamingCLI(app string, r io.Reader) (*ConfigRefer
 				Category:     inferCategoryQuick(currentKey),
 			}
 			
-		} else if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
-			// Description line
+		} else if len(line) > 0 && (line[0] == '#' || (len(line) > 1 && line[0:2] == "//")) {
+			// Description line - optimized prefix check
 			if descBuilder.Len() > 0 {
 				descBuilder.WriteByte(' ')
 			}
-			descBuilder.WriteString(strings.TrimSpace(line[1:]))
+			// Skip comment prefix and trim
+			var content string
+			if line[0] == '#' {
+				content = trimSpaceFast(line[1:])
+			} else {
+				content = trimSpaceFast(line[2:])
+			}
+			descBuilder.WriteString(content)
 		}
 	}
 

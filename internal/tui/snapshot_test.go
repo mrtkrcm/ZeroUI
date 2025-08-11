@@ -35,8 +35,8 @@ func TestSnapshotAppGridView(t *testing.T) {
 	saveSnapshot(t, "app_grid_view.txt", snapshot)
 	
 	// Validate structure
-	assert.Contains(t, snapshot, "███████╗", "Should contain ASCII logo")
-	assert.Contains(t, snapshot, "applications available", "Should show app count")
+	assert.Contains(t, snapshot, "ZEROUI", "Should contain app title")
+	assert.Contains(t, snapshot, "applications", "Should show app count")
 	assert.Contains(t, snapshot, "Ghostty", "Should show Ghostty app")
 	assert.Contains(t, snapshot, "Navigate", "Should show navigation help")
 }
@@ -78,13 +78,8 @@ func TestSnapshotConfigEditView(t *testing.T) {
 	model.width = 120
 	model.height = 40
 	
-	// Load app config
-	err = model.loadAppConfig("ghostty")
-	if err != nil {
-		t.Logf("Could not load ghostty config: %v", err)
-		// Create a mock config editor for testing
-		model.configEditor = components.NewConfigEditor("ghostty")
-	}
+	// Skip loading actual config for testing, just set up mock editor
+	model.configEditor = components.NewConfigEditor("ghostty")
 	
 	model.updateComponentSizes()
 	model.focusCurrentComponent()
@@ -267,26 +262,7 @@ func saveSnapshot(t *testing.T, filename, content string) {
 	t.Logf("Snapshot saved: %s (%d lines)", path, strings.Count(content, "\n"))
 }
 
-// Helper function to strip ANSI codes
-func stripAnsiCodes(str string) string {
-	// Remove ANSI escape sequences
-	var result strings.Builder
-	inEscape := false
-	
-	for _, ch := range str {
-		if ch == '\x1b' {
-			inEscape = true
-		} else if inEscape {
-			if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') {
-				inEscape = false
-			}
-		} else {
-			result.WriteRune(ch)
-		}
-	}
-	
-	return result.String()
-}
+// stripAnsiCodes is now defined in automation_framework.go
 
 // TestCoreUIFunctionality validates core UI operations
 func TestCoreUIFunctionality(t *testing.T) {

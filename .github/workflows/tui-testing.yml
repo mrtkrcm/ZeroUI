@@ -1,0 +1,364 @@
+name: TUI Automated Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'internal/tui/**'
+      - 'cmd/**'
+      - '**.go'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'internal/tui/**'
+      - 'cmd/**'
+      - '**.go'
+  schedule:
+    # Run nightly at 2 AM UTC to catch any regressions
+    - cron: '0 2 * * *'
+
+env:
+  GO_VERSION: '1.21'
+  CI: true
+
+jobs:
+  tui-testing:
+    name: TUI Rendering & Automation Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        terminal-size: ['80x24', '120x40', '160x50']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Setup terminal environment
+      run: |
+        export TERM=xterm-256color
+        export COLUMNS=$(echo ${{ matrix.terminal-size }} | cut -d'x' -f1)
+        export LINES=$(echo ${{ matrix.terminal-size }} | cut -d'x' -f2)
+        echo "COLUMNS=$COLUMNS" >> $GITHUB_ENV
+        echo "LINES=$LINES" >> $GITHUB_ENV
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Create TUI test directories
+      run: |
+        mkdir -p internal/tui/testdata/{snapshots,visual,baseline,diffs,automated,reports}
+        mkdir -p internal/tui/testdata/baseline_images
+        mkdir -p internal/tui/testdata/diff_images
+
+    - name: Run TUI snapshot tests
+      run: |
+        cd internal/tui
+        go test -v -run TestSnapshot -timeout=5m
+      env:
+        TERM: xterm-256color
+
+    - name: Run TUI visual tests  
+      run: |
+        cd internal/tui
+        go test -v -run TestVisual -timeout=5m
+      env:
+        TERM: xterm-256color
+
+    - name: Run automated rendering tests
+      run: |
+        cd internal/tui
+        go test -v -run TestAutomatedTUIRendering -timeout=10m
+      env:
+        TERM: xterm-256color
+        UPDATE_TUI_BASELINES: false
+
+    - name: Run visual regression tests
+      run: |
+        cd internal/tui
+        go test -v -run TestVisualRegression -timeout=10m
+      env:
+        TERM: xterm-256color
+        GENERATE_TUI_IMAGES: true
+
+    - name: Run TUI correctness tests
+      run: |
+        cd internal/tui
+        go test -v -run TestTUIRenderingCorrectness -timeout=5m
+      env:
+        TERM: xterm-256color
+
+    - name: Run CI-specific tests
+      run: |
+        cd internal/tui
+        go test -v -run TestContinuousIntegration -timeout=5m
+
+    - name: Run performance benchmarks
+      run: |
+        cd internal/tui
+        go test -v -bench=BenchmarkTUI -benchmem -run=^$ -timeout=10m
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: tui-test-results-${{ matrix.os }}-${{ matrix.terminal-size }}
+        path: |
+          internal/tui/testdata/snapshots/
+          internal/tui/testdata/visual/
+          internal/tui/testdata/diffs/
+          internal/tui/testdata/reports/
+          internal/tui/testdata/automated/
+        retention-days: 30
+
+    - name: Comment PR with visual changes
+      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.terminal-size == '120x40'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Check if there are visual diffs
+          const diffDir = 'internal/tui/testdata/diffs';
+          if (fs.existsSync(diffDir)) {
+            const files = fs.readdirSync(diffDir);
+            if (files.length > 0) {
+              let comment = '## 🎨 Visual Changes Detected\n\n';
+              comment += `Found ${files.length} visual difference(s) in TUI rendering:\n\n`;
+              
+              files.forEach(file => {
+                comment += `- \`${file}\`\n`;
+              });
+              
+              comment += '\nPlease review the uploaded artifacts to verify these changes are intentional.';
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+          }
+
+  tui-automation-framework:
+    name: TUI Automation Framework Tests
+    runs-on: ubuntu-latest
+    needs: tui-testing
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run automation framework tests
+      run: |
+        cd internal/tui
+        go test -v -run TestAutomation -timeout=15m
+      env:
+        TERM: xterm-256color
+
+    - name: Test framework performance
+      run: |
+        cd internal/tui
+        go test -v -bench=BenchmarkAutomation -run=^$ -timeout=10m
+
+  tui-compatibility:
+    name: Terminal Compatibility Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        terminal: [xterm, xterm-256color, screen, tmux-256color]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Install terminal emulators
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xterm screen tmux
+
+    - name: Test terminal compatibility
+      run: |
+        export TERM=${{ matrix.terminal }}
+        cd internal/tui
+        go test -v -run TestSnapshot -timeout=5m
+      continue-on-error: true
+
+    - name: Generate compatibility report
+      run: |
+        echo "Terminal: ${{ matrix.terminal }}" > compatibility_${{ matrix.terminal }}.txt
+        echo "Status: $(if [ $? -eq 0 ]; then echo 'PASS'; else echo 'FAIL'; fi)" >> compatibility_${{ matrix.terminal }}.txt
+
+    - name: Upload compatibility results
+      uses: actions/upload-artifact@v3
+      with:
+        name: terminal-compatibility
+        path: compatibility_*.txt
+
+  update-baselines:
+    name: Update Visual Baselines
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[update-baselines]')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Update TUI baselines
+      run: |
+        cd internal/tui
+        go test -v -run TestVisualRegression -timeout=10m
+        go test -v -run TestAutomatedTUIRendering -timeout=10m
+      env:
+        TERM: xterm-256color
+        UPDATE_TUI_BASELINES: true
+        GENERATE_TUI_IMAGES: true
+
+    - name: Commit updated baselines
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add internal/tui/testdata/baseline*
+        git add internal/tui/testdata/snapshots/*
+        if ! git diff --cached --quiet; then
+          git commit -m "Update TUI visual baselines [skip ci]"
+          git push
+        else
+          echo "No baseline changes to commit"
+        fi
+
+  performance-monitoring:
+    name: TUI Performance Monitoring
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run performance benchmarks
+      run: |
+        cd internal/tui
+        go test -v -bench=. -benchmem -run=^$ -count=5 > benchmark_results.txt
+
+    - name: Analyze performance trends
+      run: |
+        # Simple performance analysis
+        grep "BenchmarkTUI" internal/tui/benchmark_results.txt > performance_summary.txt
+        echo "Performance Summary Generated"
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: |
+          internal/tui/benchmark_results.txt
+          performance_summary.txt
+
+  security-check:
+    name: TUI Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run Go security checker
+      run: |
+        go install github.com/securecodewarrior/github-action-add-sarif@latest
+        go list -json -m all | go list -json -m all | grep -v "\\bstd\\b" | jq -r '.Path' | sort -u > dependencies.txt
+
+    - name: Check for malicious terminal escape sequences
+      run: |
+        # Check for potentially dangerous ANSI escape sequences
+        cd internal/tui
+        if grep -r "\\\\x1b\\[.*[HJfABCDKST]" --include="*.go" .; then
+          echo "⚠️  Found potentially dangerous ANSI escape sequences"
+          exit 1
+        fi
+        echo "✅ No dangerous escape sequences found"
+
+    - name: Validate terminal input sanitization
+      run: |
+        cd internal/tui
+        # Check that user input is properly sanitized
+        if grep -r "tea\\.KeyMsg" --include="*.go" . | grep -v "sanitiz\\|clean\\|strip"; then
+          echo "ℹ️  Consider adding input sanitization for security"
+        fi
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [tui-testing, tui-automation-framework, tui-compatibility, performance-monitoring]
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Generate test summary
+      run: |
+        echo "# TUI Testing Summary" > test_summary.md
+        echo "Generated: $(date)" >> test_summary.md
+        echo "" >> test_summary.md
+        
+        echo "## Test Results" >> test_summary.md
+        echo "- TUI Testing: ${{ needs.tui-testing.result }}" >> test_summary.md
+        echo "- Automation Framework: ${{ needs.tui-automation-framework.result }}" >> test_summary.md
+        echo "- Compatibility: ${{ needs.tui-compatibility.result }}" >> test_summary.md
+        echo "- Performance: ${{ needs.performance-monitoring.result }}" >> test_summary.md
+        
+        echo "" >> test_summary.md
+        echo "## Artifacts Generated" >> test_summary.md
+        find . -name "*.txt" -o -name "*.png" -o -name "*.md" | head -20 >> test_summary.md
+
+    - name: Upload summary
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-summary
+        path: test_summary.md

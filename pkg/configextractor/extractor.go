@@ -6,7 +6,17 @@ import (
 	"sort"
 	"sync"
 	"time"
+	
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
+
+// min returns the smaller of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
 
 // Extractor is the main configuration extractor
 type Extractor struct {
@@ -15,19 +25,21 @@ type Extractor struct {
 	cache      Cache
 	registry   AppRegistry
 	
-	// Performance controls
-	timeout     time.Duration
-	concurrency int
+	// Performance optimizations
+	timeout        time.Duration
+	concurrency    int
+	concurrentLoader *performance.ConcurrentConfigLoader
 }
 
 // New creates a new extractor with sensible defaults
 func New(opts ...Option) *Extractor {
 	e := &Extractor{
-		strategies:  make([]Strategy, 0),
-		parsers:     make(map[string]Parser),
-		cache:       NewLRUCache(100, 24*time.Hour), // 100 entries, 24h TTL
-		timeout:     30 * time.Second,
-		concurrency: 8,
+		strategies:       make([]Strategy, 0),
+		parsers:          make(map[string]Parser),
+		cache:            NewLRUCache(100, 24*time.Hour), // 100 entries, 24h TTL
+		timeout:          30 * time.Second,
+		concurrency:      8,
+		concurrentLoader: performance.NewConcurrentLoader(8), // Match concurrency
 	}
 	
 	// Apply options
@@ -65,7 +77,7 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 		return nil, fmt.Errorf("no extraction strategies available for app: %s", app)
 	}
 	
-	// Try strategies in parallel, return first success
+	// Try strategies in parallel using worker pool to prevent goroutine leaks
 	type result struct {
 		config *Config
 		err    error
@@ -73,30 +85,56 @@ func (e *Extractor) Extract(ctx context.Context, app string) (*Config, error) {
 	}
 	
 	resultChan := make(chan result, len(strategies))
+	workerPool := make(chan struct{}, min(len(strategies), 5)) // Limit concurrent goroutines
+	var wg sync.WaitGroup
 	
-	// Launch extraction attempts
+	// Launch extraction attempts with worker pool
 	for _, strategy := range strategies {
+		wg.Add(1)
 		go func(s Strategy) {
+			defer wg.Done()
+			
+			// Acquire worker slot
+			workerPool <- struct{}{}
+			defer func() { <-workerPool }()
+			
+			// Check context before expensive operation
+			select {
+			case <-ctx.Done():
+				resultChan <- result{nil, ctx.Err(), s.Name()}
+				return
+			default:
+			}
+			
 			config, err := s.Extract(ctx, app)
 			resultChan <- result{config, err, s.Name()}
 		}(strategy)
 	}
 	
+	// Close result channel when all workers complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+	
 	// Collect results, return best one
 	var bestConfig *Config
 	var lastErr error
 	
-	for i := 0; i < len(strategies); i++ {
+	// Process results as they arrive
+	for res := range resultChan {
+		if res.err == nil && res.config != nil {
+			// Success! Cache and return
+			e.cache.Set(cacheKey, res.config)
+			return res.config, nil
+		}
+		lastErr = res.err
+		
+		// Check context cancellation
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case res := <-resultChan:
-			if res.err == nil && res.config != nil {
-				// Success! Cache and return
-				e.cache.Set(cacheKey, res.config)
-				return res.config, nil
-			}
-			lastErr = res.err
+		default:
 		}
 	}
 	

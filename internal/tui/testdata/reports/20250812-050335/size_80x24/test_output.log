@@ -1,0 +1,35 @@
+[0;34m[INFO][0m Running TUI snapshot tests...
+--- FAIL: TestSnapshotConfigEditView (0.03s)
+panic: runtime error: invalid memory address or nil pointer dereference [recovered]
+	panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x2 addr=0xa0 pc=0x1049c95b8]
+
+goroutine 29 [running]:
+testing.tRunner.func1.2({0x104b43bc0, 0x104e70f40})
+	/opt/homebrew/Cellar/go/1.24.5/libexec/src/testing/testing.go:1734 +0x1ac
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.24.5/libexec/src/testing/testing.go:1737 +0x334
+panic({0x104b43bc0?, 0x104e70f40?})
+	/opt/homebrew/Cellar/go/1.24.5/libexec/src/runtime/panic.go:792 +0x124
+github.com/charmbracelet/huh.(*Group).getContent(0x140001d1508)
+	/Users/m/go/pkg/mod/github.com/charmbracelet/huh@v0.7.0/group.go:304 +0xd8
+github.com/charmbracelet/huh.(*Group).Content(...)
+	/Users/m/go/pkg/mod/github.com/charmbracelet/huh@v0.7.0/group.go:376
+github.com/charmbracelet/huh.(*Group).rawHeight(0x140001d1508)
+	/Users/m/go/pkg/mod/github.com/charmbracelet/huh@v0.7.0/group.go:357 +0x20
+github.com/charmbracelet/huh.NewGroup({0x140000ea080, 0x5, 0x8})
+	/Users/m/go/pkg/mod/github.com/charmbracelet/huh@v0.7.0/group.go:58 +0x144
+github.com/mrtkrcm/ZeroUI/internal/tui/components.(*HuhConfigEditorModel).buildForm(0x14001058008)
+	/Users/m/code/muka-hq/configtoggle/internal/tui/components/huh_config_editor.go:246 +0xdf8
+github.com/mrtkrcm/ZeroUI/internal/tui/components.(*HuhConfigEditorModel).SetFields(...)
+	/Users/m/code/muka-hq/configtoggle/internal/tui/components/huh_config_editor.go:559
+github.com/mrtkrcm/ZeroUI/internal/tui.(*Model).loadAppConfig(0x14000f04a08, {0x104a45990, 0x7})
+	/Users/m/code/muka-hq/configtoggle/internal/tui/app.go:843 +0x4c0
+github.com/mrtkrcm/ZeroUI/internal/tui.TestSnapshotConfigEditView(0x14000003880)
+	/Users/m/code/muka-hq/configtoggle/internal/tui/snapshot_test.go:82 +0xdc
+testing.tRunner(0x14000003880, 0x104bb5038)
+	/opt/homebrew/Cellar/go/1.24.5/libexec/src/testing/testing.go:1792 +0xe4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.5/libexec/src/testing/testing.go:1851 +0x374
+exit status 2
+FAIL	github.com/mrtkrcm/ZeroUI/internal/tui	0.058s

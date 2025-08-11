@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -400,11 +401,27 @@ func (l *Loader) Close() error {
 	return nil
 }
 
-// copyFile creates a copy of a file
+// copyFile creates a copy of a file using streaming I/O for efficiency
 func copyFile(src, dst string) error {
-	data, err := os.ReadFile(src)
+	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, data, 0644)
+	defer srcFile.Close()
+
+	// Get source file info for future optimizations (permissions, size hints)
+	_, err = srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	// Use io.Copy for optimal streaming - handles buffer management automatically
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
