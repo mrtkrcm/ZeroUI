@@ -29,6 +29,8 @@ const (
 	ConfigEditView                       // Legacy config editing (fallback)
 	PresetSelectionView
 	HelpView
+	DelightfulUIView                     // New delightful animated UI
+	AnimatedListView                     // New animated list view
 )
 
 // App represents the TUI application
@@ -95,6 +97,10 @@ type Model struct {
 	huhConfigEditor *components.HuhConfigEditorModel
 	huhGrid         *components.HuhGridModel // New grid component
 
+	// Delightful new components
+	delightfulUI   *components.DelightfulUIModel
+	animatedList   *components.AnimatedListModel
+
 	// Legacy components (fallback)
 	appGrid        *components.AppGridModel
 	appSelector    *components.AppSelectorModel
@@ -143,6 +149,9 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 		huhGrid:         components.NewHuhGrid(),
 		huhAppSelector:  components.NewHuhAppSelector(),
 		huhConfigEditor: components.NewHuhConfigEditor(""),
+		// Initialize delightful components
+		delightfulUI:   components.NewDelightfulUI(),
+		animatedList:   components.NewAnimatedList(),
 		// Keep legacy components for fallback
 		appGrid:        components.NewAppGrid(),
 		appSelector:    components.NewAppSelector(apps),
@@ -192,6 +201,15 @@ func (m *Model) Init() tea.Cmd {
 	}
 
 	if cmd := m.huhConfigEditor.Init(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	// Initialize delightful components
+	if cmd := m.delightfulUI.Init(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	if cmd := m.animatedList.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
 
@@ -294,9 +312,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Handle view switching keys
 		switch {
+		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+d"))):
+			// Switch to delightful UI
+			m.state = DelightfulUIView
+			m.focusCurrentComponent()
+			return m, nil
+		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+a"))):
+			// Switch to animated list
+			m.state = AnimatedListView
+			m.focusCurrentComponent()
+			return m, nil
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+h"))):
 			// Switch to Huh interface
-			if m.state == AppGridView {
+			if m.state == AppGridView || m.state == DelightfulUIView || m.state == AnimatedListView {
 				m.state = HuhAppSelectionView
 			} else if m.state == ConfigEditView {
 				m.state = HuhConfigEditView
@@ -305,7 +333,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+l"))):
 			// Switch to legacy interface
-			if m.state == HuhAppSelectionView {
+			if m.state == HuhAppSelectionView || m.state == DelightfulUIView || m.state == AnimatedListView {
 				m.state = AppGridView
 			} else if m.state == HuhConfigEditView {
 				m.state = ConfigEditView
@@ -313,13 +341,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusCurrentComponent()
 			return m, nil
 		case key.Matches(msg, key.NewBinding(key.WithKeys("l"))):
-			// Quick toggle: grid <-> list view
-			if m.state == AppGridView {
-				m.state = HuhAppSelectionView // Switch to Huh list
-			} else if m.state == HuhAppSelectionView {
-				m.state = AppGridView // Switch back to grid
-			} else if m.state == HuhGridView {
-				m.state = AppGridView // Switch from Huh grid to traditional grid
+			// Quick toggle: cycle through views
+			switch m.state {
+			case AppGridView:
+				m.state = HuhAppSelectionView
+			case HuhAppSelectionView:
+				m.state = DelightfulUIView
+			case DelightfulUIView:
+				m.state = AnimatedListView
+			case AnimatedListView:
+				m.state = AppGridView
+			case HuhGridView:
+				m.state = DelightfulUIView
 			}
 			m.focusCurrentComponent()
 			return m, nil
@@ -424,6 +457,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update legacy config editor
 		if model, cmd := m.configEditor.Update(msg); cmd != nil || model != m.configEditor {
 			m.configEditor = model.(*components.ConfigEditorModel)
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+
+	case DelightfulUIView:
+		// Update delightful UI component
+		if model, cmd := m.delightfulUI.Update(msg); cmd != nil {
+			if delightfulModel, ok := model.(*components.DelightfulUIModel); ok {
+				m.delightfulUI = delightfulModel
+			}
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+
+	case AnimatedListView:
+		// Update animated list component
+		if model, cmd := m.animatedList.Update(msg); cmd != nil {
+			if animatedModel, ok := model.(*components.AnimatedListModel); ok {
+				m.animatedList = animatedModel
+			}
 			if cmd != nil {
 				cmds = append(cmds, cmd)
 			}
@@ -654,6 +709,12 @@ func (m *Model) renderMainContent() string {
 	case ConfigEditView:
 		// Legacy config editor (fallback)
 		return m.configEditor.View()
+	case DelightfulUIView:
+		// Render the delightful animated UI
+		return m.delightfulUI.View()
+	case AnimatedListView:
+		// Render the animated list view
+		return m.animatedList.View()
 	case PresetSelectionView:
 		return m.styles.Muted.Render("Preset selection coming soon...")
 	case HelpView:
