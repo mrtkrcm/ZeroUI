@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 ConfigToggle Reference System Demo"
+echo "🚀 ZeroUI Reference System Demo"
 echo "======================================"
 echo
 
@@ -27,8 +27,8 @@ echo "   Details for font-size setting:"
 go run . reference show ghostty font-size
 echo
 
-echo "🔧 5. Integration with ConfigToggle:"
-echo "   The reference system is now integrated into ConfigToggle and provides:"
+echo "🔧 5. Integration with ZeroUI:"
+echo "   The reference system is now integrated into ZeroUI and provides:"
 echo "   • Automatic discovery of configuration options"
 echo "   • Real-time validation of configuration values" 
 echo "   • Intelligent suggestions for similar settings"
@@ -44,6 +44,6 @@ echo "   • Extensible architecture for adding more applications"
 echo
 
 echo "🌟 Demo Complete!"
-echo "The ConfigToggle reference system is now ready to automatically"
+echo "The ZeroUI reference system is now ready to automatically"
 echo "discover, validate, and help manage configuration options across"
 echo "multiple applications with intelligent suggestions and validation."

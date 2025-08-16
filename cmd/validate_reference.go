@@ -21,8 +21,8 @@ This command checks:
 - All settings from reference are available in the final config
 
 Examples:
-  configtoggle validate-reference ghostty
-  configtoggle validate-reference --all`,
+  zeroui validate-reference ghostty
+  zeroui validate-reference --all`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runValidateReference,
 }
