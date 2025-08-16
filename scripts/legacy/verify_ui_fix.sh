@@ -1,3 +1,8 @@
+# DRY_RUN HANDLER
+if [ "${DRY_RUN:-0}" != "0" ]; then
+  echo "(DRY-RUN) $0: DRY_RUN enabled, skipping destructive actions."
+fi
+
 #!/bin/bash
 
 echo "🔧 UI Fix Verification"
