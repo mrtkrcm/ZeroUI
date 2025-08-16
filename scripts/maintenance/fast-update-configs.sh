@@ -1,25 +1,5 @@
 #!/bin/bash
-# DRY_RUN HANDLER
-if [ "${DRY_RUN:-0}" != "0" ]; then
-  echo "(DRY-RUN) $0: DRY_RUN enabled — switching to dry-run mode"
-  # Prefer explicit BINARY override to use dry-run wrapper if present
-  if [ -x "/Users/m/code/muka-hq/configtoggle/scripts/_dry_run_wrapper.sh" ]; then
-    BINARY="/Users/m/code/muka-hq/configtoggle/scripts/_dry_run_wrapper.sh"
-    export BINARY
-    echo "(DRY-RUN) using BINARY=$BINARY"
-  fi
-  # Prepend drybin to PATH if available to override go/nproc during dry-run
-  if [ -d "/Users/m/code/muka-hq/configtoggle/scripts/drybin" ]; then
-    PATH="/Users/m/code/muka-hq/configtoggle/scripts/drybin:$PATH"
-    export PATH
-    echo "(DRY-RUN) using PATH prefix: /Users/m/code/muka-hq/configtoggle/scripts/drybin"
-  fi
-  # Mark that we are skipping builds and destructive ops
-  SKIP_BUILD=1
-  export SKIP_BUILD
-fi
-
-#!/bin/bash
+source "/Users/m/code/muka-hq/configtoggle/scripts/lib/dry_run.sh" && dry_run_init
 
 # High-performance config updater using parallel extraction
 # This script leverages the fast batch extraction for maximum efficiency
@@ -29,7 +9,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CONFIG_DIR="$PROJECT_ROOT/configs"
-BINARY="$PROJECT_ROOT/build/zeroui"
+# Respect an externally provided BINARY; otherwise use the default build path
+if [ -n "${BINARY:-}" ]; then
+  echo "Using externally provided BINARY: $BINARY"
+else
+  BINARY="$PROJECT_ROOT/build/zeroui"
+fi
 
 # Color codes
 GREEN='\033[0;32m'
@@ -43,19 +28,48 @@ echo -e "${CYAN}║        ⚡ Fast Config Extractor v2.0 ⚡                   
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Build if needed
-if [ ! -f "$BINARY" ] || [ "$1" == "--rebuild" ]; then
+# Build if needed (safe)
+# If SKIP_BUILD is set (e.g. in DRY_RUN) we will prefer not to build the binary.
+if [ -z "${SKIP_BUILD:-}" ] || [ "${SKIP_BUILD}" = "0" ]; then
+  if [ ! -f "$BINARY" ] || [ "$1" = "--rebuild" ]; then
     echo -e "${YELLOW}🔨 Building zeroui binary...${NC}"
-    cd "$PROJECT_ROOT"
-    go build -o build/zeroui . &
-    BUILD_PID=$!
-    
-    # Show progress while building
-    while kill -0 $BUILD_PID 2>/dev/null; do
+    cd "$PROJECT_ROOT" || exit 1
+
+    # Prefer to use 'timeout' if available to avoid indefinite builds
+    if command -v timeout >/dev/null 2>&1; then
+      if timeout 30s go build -o build/zeroui .; then
+        echo -e " ${GREEN}Done!${NC}"
+      else
+        echo -e "${RED}❌ Build failed or timed out${NC}"
+        exit 1
+      fi
+    else
+      # Fallback: run build in background and enforce a max wait
+      go build -o build/zeroui . &
+      BUILD_PID=$!
+      MAX_ATTEMPTS=120
+      ATTEMPT=0
+      # Wait with a bounded loop
+      while kill -0 $BUILD_PID 2>/dev/null && [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
         echo -n "."
         sleep 0.5
-    done
-    echo -e " ${GREEN}Done!${NC}"
+        ATTEMPT=$((ATTEMPT+1))
+      done
+      if kill -0 $BUILD_PID 2>/dev/null; then
+        echo -e "${RED}❌ Build still running after timeout; killing${NC}"
+        kill -9 $BUILD_PID 2>/dev/null || true
+        exit 1
+      fi
+      # Ensure we capture a non-zero build exit
+      if ! wait $BUILD_PID; then
+        echo -e "${RED}❌ Build failed${NC}"
+        exit 1
+      fi
+      echo -e " ${GREEN}Done!${NC}"
+    fi
+  fi
+else
+  echo -e "${YELLOW}🔨 Skipping build due to DRY_RUN/SKIP_BUILD${NC}"
 fi
 
 # Determine number of workers
@@ -74,16 +88,16 @@ if $BINARY batch-extract \
     --workers "$WORKERS" \
     --update \
     --verbose; then
-    
+
     END_TIME=$(date +%s%N)
     DURATION=$((($END_TIME - $START_TIME) / 1000000)) # Convert to milliseconds
-    
+
     echo ""
     echo -e "${GREEN}✨ Extraction complete in ${DURATION}ms${NC}"
-    
+
     # Quick validation
     echo -e "${BLUE}🔍 Running quick validation...${NC}"
-    
+
     VALID_COUNT=0
     TOTAL_COUNT=0
     for config in "$CONFIG_DIR"/*.yaml; do
@@ -94,15 +108,15 @@ if $BINARY batch-extract \
             fi
         fi
     done
-    
+
     echo -e "${GREEN}✅ $VALID_COUNT/$TOTAL_COUNT configs validated${NC}"
-    
+
     # Performance metrics
     if [ $DURATION -gt 0 ]; then
         CONFIGS_PER_SEC=$(( (TOTAL_COUNT * 1000) / DURATION ))
         echo -e "${CYAN}⚡ Performance: ~$CONFIGS_PER_SEC configs/second${NC}"
     fi
-    
+
 else
     echo -e "${RED}❌ Extraction failed${NC}"
     exit 1

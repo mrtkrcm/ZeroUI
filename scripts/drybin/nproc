@@ -1,0 +1,3 @@
+#!/bin/bash
+# Fake nproc
+echo 2

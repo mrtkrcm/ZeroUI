@@ -1,0 +1,6 @@
+#!/bin/bash
+# Fake go binary for dry-run: print args and exit quickly
+echo "[DRY-GO] go $@"
+# simulate short work
+sleep 0.05
+exit 0
