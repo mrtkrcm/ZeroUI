@@ -71,30 +71,6 @@ zeroui preset vscode minimal
 zeroui ui
 
 # Launch improved TUI with better patterns
-zeroui ui-improved
-```
-
-## 📖 Documentation
-
-> For the full documentation index, see [docs/README.md](docs/README.md).
-
-### Command Reference
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `list` | List apps, presets, or configurable keys | `zeroui list apps` |
-| `toggle` | Set a specific configuration value | `zeroui toggle app key value` |
-| `cycle` | Cycle to next value in a list | `zeroui cycle app key` |
-| `preset` | Apply a preset configuration | `zeroui preset app preset-name` |
-| `ui` | Launch interactive TUI | `zeroui ui` |
-| `backup` | Manage configuration backups | `zeroui backup list` |
-| `ref` | Configuration reference system | `zeroui ref show app` |
-
-### Configuration Structure
-
-ZeroUI uses YAML files to define application configurations:
-
-```yaml
 # ~/.config/zeroui/apps/ghostty.yaml
 name: ghostty
 path: ~/.config/ghostty/config
