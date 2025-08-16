@@ -370,7 +370,6 @@ func (v *Validator) validateBasicConfig(configData map[string]interface{}) *Vali
 	return result
 }
 
-
 // validateConfigWithSchema validates configuration data against schema
 func (v *Validator) validateConfigWithSchema(configData map[string]interface{}, schema *Schema) *ValidationResult {
 	result := &ValidationResult{Valid: true}

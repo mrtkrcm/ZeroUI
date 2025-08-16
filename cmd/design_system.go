@@ -11,7 +11,7 @@ import (
 var designSystemCmd = &cobra.Command{
 	Use:   "design-system",
 	Short: "Launch native design system showcase",
-	Long: `Launch an interactive showcase of the ConfigToggle design system.
+	Long: `Launch an interactive showcase of the ZeroUI design system.
 This demonstrates all TUI components, styles, and patterns used in the application
 including Bubble Tea components, Lipgloss styles, color schemes, typography,
 and interactive elements as they appear in the actual terminal.

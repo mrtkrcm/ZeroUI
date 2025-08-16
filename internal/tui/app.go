@@ -29,8 +29,8 @@ const (
 	ConfigEditView                       // Legacy config editing (fallback)
 	PresetSelectionView
 	HelpView
-	DelightfulUIView                     // New delightful animated UI
-	AnimatedListView                     // New animated list view
+	DelightfulUIView // New delightful animated UI
+	AnimatedListView // New animated list view
 )
 
 // App represents the TUI application
@@ -98,8 +98,8 @@ type Model struct {
 	huhGrid         *components.HuhGridModel // New grid component
 
 	// Delightful new components
-	delightfulUI   *components.DelightfulUIModel
-	animatedList   *components.AnimatedListModel
+	delightfulUI *components.DelightfulUIModel
+	animatedList *components.AnimatedListModel
 
 	// Legacy components (fallback)
 	appGrid        *components.AppGridModel
@@ -150,8 +150,8 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 		huhAppSelector:  components.NewHuhAppSelector(),
 		huhConfigEditor: components.NewHuhConfigEditor(""),
 		// Initialize delightful components
-		delightfulUI:   components.NewDelightfulUI(),
-		animatedList:   components.NewAnimatedList(),
+		delightfulUI: components.NewDelightfulUI(),
+		animatedList: components.NewAnimatedList(),
 		// Keep legacy components for fallback
 		appGrid:        components.NewAppGrid(),
 		appSelector:    components.NewAppSelector(apps),

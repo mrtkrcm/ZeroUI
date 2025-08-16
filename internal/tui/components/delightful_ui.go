@@ -24,36 +24,36 @@ type DelightfulUIModel struct {
 	selectedIndex int
 	width         int
 	height        int
-	
-	spinner       spinner.Model
-	progress      progress.Model
-	
-	sparklines    map[string][]float64
-	particles     []Particle
-	waves         []Wave
-	
+
+	spinner  spinner.Model
+	progress progress.Model
+
+	sparklines map[string][]float64
+	particles  []Particle
+	waves      []Wave
+
 	animationTick int
 	showSparkles  bool
 	rainbowMode   bool
-	
-	styles        *styles.Styles
-	keyMap        key.Binding
-	
+
+	styles *styles.Styles
+	keyMap key.Binding
+
 	lastInteraction time.Time
 	idleAnimations  bool
 }
 
 type Particle struct {
-	x, y     float64
-	vx, vy   float64
-	life     float64
-	char     string
-	color    lipgloss.Color
+	x, y   float64
+	vx, vy float64
+	life   float64
+	char   string
+	color  lipgloss.Color
 }
 
 type Wave struct {
-	offset   int
-	speed    float64
+	offset    int
+	speed     float64
 	amplitude float64
 	frequency float64
 }
@@ -62,16 +62,16 @@ func NewDelightfulUI() *DelightfulUIModel {
 	s := spinner.New()
 	s.Spinner = spinner.Points
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	
+
 	p := progress.New(progress.WithDefaultGradient())
-	
+
 	apps := registry.GetAppStatuses()
 	sparklines := make(map[string][]float64)
-	
+
 	for _, app := range apps {
 		sparklines[app.Definition.Name] = generateSparklineData(20)
 	}
-	
+
 	return &DelightfulUIModel{
 		apps:            apps,
 		selectedIndex:   0,
@@ -96,77 +96,77 @@ func (m *DelightfulUIModel) Init() tea.Cmd {
 
 func (m *DelightfulUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		m.progress.Width = msg.Width - 40
-		
+
 	case tea.KeyMsg:
 		m.lastInteraction = time.Now()
 		m.idleAnimations = false
-		
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-			
+
 		case "up", "k":
 			m.moveSelection(-1)
 			m.createBurstParticles(m.selectedIndex)
-			
+
 		case "down", "j":
 			m.moveSelection(1)
 			m.createBurstParticles(m.selectedIndex)
-			
+
 		case "left", "h":
 			m.moveSelectionHorizontal(-1)
 			m.createWaveEffect()
-			
+
 		case "right", "l":
 			m.moveSelectionHorizontal(1)
 			m.createWaveEffect()
-			
+
 		case "enter", " ":
 			m.activateApp()
 			m.createCelebrationParticles()
-			
+
 		case "r":
 			m.rainbowMode = !m.rainbowMode
-			
+
 		case "s":
 			m.showSparkles = !m.showSparkles
-			
+
 		case "tab":
 			m.cycleTheme()
 		}
-		
+
 	case TickMsg:
 		m.animationTick++
 		m.updateParticles()
 		m.updateWaves()
-		
+
 		if time.Since(m.lastInteraction) > 5*time.Second {
 			m.idleAnimations = true
 			if m.animationTick%30 == 0 {
 				m.createIdleParticles()
 			}
 		}
-		
+
 		cmds = append(cmds, tickCmd())
-		
+
 	case SparklineMsg:
 		for name := range m.sparklines {
 			m.sparklines[name] = append(m.sparklines[name][1:], rand.Float64())
 		}
 		cmds = append(cmds, sparklineCmd())
-		
+
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -174,9 +174,9 @@ func (m *DelightfulUIModel) View() string {
 	if m.width == 0 || m.height == 0 {
 		return "Loading..."
 	}
-	
+
 	var b strings.Builder
-	
+
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n\n")
 	b.WriteString(m.renderAppGrid())
@@ -184,23 +184,23 @@ func (m *DelightfulUIModel) View() string {
 	b.WriteString(m.renderSparklines())
 	b.WriteString("\n")
 	b.WriteString(m.renderFooter())
-	
+
 	if m.showSparkles {
 		return m.addParticleOverlay(b.String())
 	}
-	
+
 	return b.String()
 }
 
 func (m *DelightfulUIModel) renderHeader() string {
 	title := "✨ ConfigToggle Deluxe ✨"
-	
+
 	if m.rainbowMode {
 		title = m.rainbowText(title)
 	}
-	
+
 	wave := m.generateWavePattern()
-	
+
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("212")).
@@ -208,7 +208,7 @@ func (m *DelightfulUIModel) renderHeader() string {
 		Padding(1, 2).
 		Width(m.width).
 		Align(lipgloss.Center)
-	
+
 	return headerStyle.Render(wave + "\n" + title + "\n" + wave)
 }
 
@@ -220,20 +220,20 @@ func (m *DelightfulUIModel) renderAppGrid() string {
 	if m.width < 80 {
 		cols = 2
 	}
-	
+
 	var rows []string
 	var currentRow []string
-	
+
 	for i, app := range m.apps {
 		card := m.renderAppCard(app, i == m.selectedIndex)
 		currentRow = append(currentRow, card)
-		
+
 		if len(currentRow) >= cols || i == len(m.apps)-1 {
 			rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, currentRow...))
 			currentRow = []string{}
 		}
 	}
-	
+
 	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
 
@@ -242,35 +242,35 @@ func (m *DelightfulUIModel) renderAppCard(app registry.AppStatus, selected bool)
 	if width < 20 {
 		width = 20
 	}
-	
+
 	icon := m.getAnimatedIcon(app.Definition.Name)
 	status := m.getStatusIndicator(app.HasConfig)
-	
+
 	cardStyle := lipgloss.NewStyle().
 		Width(width).
 		Height(8).
 		Padding(1).
 		Margin(1).
 		Border(lipgloss.RoundedBorder())
-	
+
 	if selected {
 		cardStyle = cardStyle.
 			BorderForeground(lipgloss.Color("212")).
 			Background(lipgloss.Color("235"))
-		
+
 		if m.animationTick%10 < 5 {
 			cardStyle = cardStyle.BorderForeground(lipgloss.Color("213"))
 		}
 	} else {
 		cardStyle = cardStyle.BorderForeground(lipgloss.Color("240"))
 	}
-	
+
 	content := fmt.Sprintf("%s %s\n\n%s\n\n%s",
 		icon,
 		lipgloss.NewStyle().Bold(true).Render(app.Definition.Name),
 		status,
 		m.renderMiniSparkline(app.Definition.Name))
-	
+
 	return cardStyle.Render(content)
 }
 
@@ -278,19 +278,19 @@ func (m *DelightfulUIModel) renderSparklines() string {
 	if m.height < 30 {
 		return ""
 	}
-	
+
 	sparkStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		Padding(1).
 		Width(m.width - 4)
-	
+
 	selectedApp := m.apps[m.selectedIndex]
 	data := m.sparklines[selectedApp.Definition.Name]
-	
+
 	sparkline := m.generateSparkline(data, m.width-10, 5)
-	
-	return sparkStyle.Render(fmt.Sprintf("Activity Monitor: %s\n%s", 
+
+	return sparkStyle.Render(fmt.Sprintf("Activity Monitor: %s\n%s",
 		selectedApp.Definition.Name, sparkline))
 }
 
@@ -303,15 +303,15 @@ func (m *DelightfulUIModel) renderFooter() string {
 		"Tab Theme",
 		"Q Quit",
 	}
-	
+
 	footerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241")).
 		Width(m.width).
 		Align(lipgloss.Center).
 		Margin(1, 0)
-	
+
 	progressBar := m.progress.ViewAs(float64(m.selectedIndex+1) / float64(len(m.apps)))
-	
+
 	return footerStyle.Render(progressBar + "\n" + strings.Join(help, " • "))
 }
 
@@ -324,12 +324,12 @@ func (m *DelightfulUIModel) getAnimatedIcon(name string) string {
 		"iTerm2":    {"🍎", "🖥️", "💻", "📟"},
 		"Neovim":    {"📗", "🌙", "✨", "🎯"},
 	}
-	
+
 	iconSet, exists := icons[name]
 	if !exists {
 		iconSet = []string{"🔧", "⚙️", "🛠️", "🔨"}
 	}
-	
+
 	return iconSet[(m.animationTick/10)%len(iconSet)]
 }
 
@@ -347,10 +347,10 @@ func (m *DelightfulUIModel) generateSparkline(data []float64, width, height int)
 	if len(data) == 0 {
 		return ""
 	}
-	
+
 	chars := []string{" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 	var result strings.Builder
-	
+
 	for h := height - 1; h >= 0; h-- {
 		for i := 0; i < len(data) && i < width; i++ {
 			level := int(data[i] * float64(height))
@@ -366,7 +366,7 @@ func (m *DelightfulUIModel) generateSparkline(data []float64, width, height int)
 			result.WriteString("\n")
 		}
 	}
-	
+
 	return result.String()
 }
 
@@ -375,22 +375,22 @@ func (m *DelightfulUIModel) renderMiniSparkline(name string) string {
 	if len(data) < 10 {
 		return ""
 	}
-	
+
 	chars := []string{" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇"}
 	var result strings.Builder
-	
+
 	for i := len(data) - 10; i < len(data); i++ {
 		idx := int(data[i] * 7)
 		result.WriteString(chars[idx])
 	}
-	
+
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("105")).Render(result.String())
 }
 
 func (m *DelightfulUIModel) generateWavePattern() string {
 	chars := []string{"~", "≈", "∼", "〜", "～"}
 	var pattern strings.Builder
-	
+
 	for i := 0; i < m.width; i++ {
 		wave := m.waves[0]
 		y := math.Sin(float64(i)*wave.frequency + float64(m.animationTick)*wave.speed)
@@ -401,13 +401,13 @@ func (m *DelightfulUIModel) generateWavePattern() string {
 			pattern.WriteString("~")
 		}
 	}
-	
+
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(pattern.String())
 }
 
 func (m *DelightfulUIModel) rainbowText(text string) string {
 	colors := []string{"196", "202", "208", "214", "220", "226", "190", "154", "118", "82", "46", "47", "48", "49", "50", "51", "45", "39", "33", "27", "21", "57", "93", "129", "165", "201"}
-	
+
 	var result strings.Builder
 	for i, ch := range text {
 		colorIdx := (i + m.animationTick/5) % len(colors)
@@ -415,7 +415,7 @@ func (m *DelightfulUIModel) rainbowText(text string) string {
 			Foreground(lipgloss.Color(colors[colorIdx])).
 			Render(string(ch)))
 	}
-	
+
 	return result.String()
 }
 
@@ -431,13 +431,13 @@ func (m *DelightfulUIModel) moveSelectionHorizontal(delta int) {
 	if m.width < 80 {
 		cols = 2
 	}
-	
+
 	row := m.selectedIndex / cols
 	col := m.selectedIndex % cols
-	
+
 	col = (col + delta + cols) % cols
 	newIdx := row*cols + col
-	
+
 	if newIdx < len(m.apps) {
 		m.selectedIndex = newIdx
 	}
@@ -453,9 +453,9 @@ func (m *DelightfulUIModel) cycleTheme() {
 
 func (m *DelightfulUIModel) createBurstParticles(index int) {
 	cols := 4
-	x := float64((index % cols) * (m.width / cols) + m.width/cols/2)
-	y := float64((index / cols) * 10 + 5)
-	
+	x := float64((index%cols)*(m.width/cols) + m.width/cols/2)
+	y := float64((index/cols)*10 + 5)
+
 	for i := 0; i < 10; i++ {
 		angle := float64(i) * (math.Pi * 2 / 10)
 		m.particles = append(m.particles, Particle{
@@ -477,7 +477,7 @@ func (m *DelightfulUIModel) createWaveEffect() {
 		amplitude: 2,
 		frequency: 0.1,
 	})
-	
+
 	if len(m.waves) > 3 {
 		m.waves = m.waves[1:]
 	}
@@ -486,13 +486,13 @@ func (m *DelightfulUIModel) createWaveEffect() {
 func (m *DelightfulUIModel) createCelebrationParticles() {
 	centerX := float64(m.width / 2)
 	centerY := float64(m.height / 2)
-	
+
 	confetti := []string{"🎉", "🎊", "✨", "⭐", "💫", "🌟"}
-	
+
 	for i := 0; i < 30; i++ {
 		angle := rand.Float64() * math.Pi * 2
 		speed := rand.Float64()*3 + 1
-		
+
 		m.particles = append(m.particles, Particle{
 			x:     centerX,
 			y:     centerY,
@@ -509,7 +509,7 @@ func (m *DelightfulUIModel) createIdleParticles() {
 	if !m.idleAnimations {
 		return
 	}
-	
+
 	m.particles = append(m.particles, Particle{
 		x:     rand.Float64() * float64(m.width),
 		y:     0,
@@ -523,18 +523,18 @@ func (m *DelightfulUIModel) createIdleParticles() {
 
 func (m *DelightfulUIModel) updateParticles() {
 	var alive []Particle
-	
+
 	for _, p := range m.particles {
 		p.x += p.vx
 		p.y += p.vy
 		p.vy += 0.1
 		p.life -= 0.02
-		
+
 		if p.life > 0 && p.y < float64(m.height) && p.x >= 0 && p.x < float64(m.width) {
 			alive = append(alive, p)
 		}
 	}
-	
+
 	m.particles = alive
 }
 
@@ -546,11 +546,11 @@ func (m *DelightfulUIModel) updateWaves() {
 
 func (m *DelightfulUIModel) addParticleOverlay(base string) string {
 	lines := strings.Split(base, "\n")
-	
+
 	for _, p := range m.particles {
 		x := int(p.x)
 		y := int(p.y)
-		
+
 		if y >= 0 && y < len(lines) && x >= 0 {
 			line := []rune(lines[y])
 			if x < len(line) {
@@ -563,7 +563,7 @@ func (m *DelightfulUIModel) addParticleOverlay(base string) string {
 			}
 		}
 	}
-	
+
 	return strings.Join(lines, "\n")
 }
 

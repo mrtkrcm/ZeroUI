@@ -1,4 +1,4 @@
-# ConfigToggle Performance Optimization Summary
+# ZeroUI Performance Optimization Summary
 
 ## 🚀 Performance Improvements Implemented
 

@@ -1,8 +1,9 @@
 package configextractor
 
 import (
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor/cache"
 	"time"
+
+	"github.com/mrtkrcm/ZeroUI/pkg/configextractor/cache"
 )
 
 // CacheAdapter adapts the cache.LRUCache to the Cache interface

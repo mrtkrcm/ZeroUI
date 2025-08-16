@@ -38,7 +38,7 @@ NC := \033[0m # No Color
 
 ## help: Show this help message
 help:
-	@echo "$(CYAN)ConfigToggle - State-of-the-art Go Development$(NC)"
+	@echo "$(CYAN)ZeroUI - State-of-the-art Go Development$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Available commands:$(NC)"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
@@ -186,7 +186,7 @@ clean:
 
 ## version: Show version information
 version:
-	@echo "$(CYAN)ConfigToggle Version Information$(NC)"
+	@echo "$(CYAN)ZeroUI Version Information$(NC)"
 	@echo "Version:    $(GREEN)$(VERSION)$(NC)"
 	@echo "Commit:     $(GREEN)$(COMMIT)$(NC)"
 	@echo "Build Time: $(GREEN)$(BUILD_TIME)$(NC)"

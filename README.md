@@ -76,6 +76,8 @@ zeroui ui-improved
 
 ## 📖 Documentation
 
+> For the full documentation index, see [docs/README.md](docs/README.md).
+
 ### Command Reference
 
 | Command | Description | Example |
