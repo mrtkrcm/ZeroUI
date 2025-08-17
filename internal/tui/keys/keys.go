@@ -44,11 +44,11 @@ func DefaultKeyMap() AppKeyMap {
 		),
 		Left: key.NewBinding(
 			key.WithKeys("left", "h"),
-			key.WithHelp("←/h", "move left/previous value"),
+			key.WithHelp("←/h", "move left"),
 		),
 		Right: key.NewBinding(
 			key.WithKeys("right", "l"),
-			key.WithHelp("→/l", "move right/next value"),
+			key.WithHelp("→/l", "move right"),
 		),
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
@@ -79,7 +79,7 @@ func DefaultKeyMap() AppKeyMap {
 			key.WithHelp("esc", "go back"),
 		),
 		Help: key.NewBinding(
-			key.WithKeys("?", "h"),
+			key.WithKeys("?"),
 			key.WithHelp("?", "toggle help"),
 		),
 		Quit: key.NewBinding(

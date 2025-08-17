@@ -1,13 +1,13 @@
                                       🔧 Application Grid (2 columns)                                     
                                                                                                           
-            📱 9 apps • ✅ 3 installed • ⚙️ 0 configured • 👁️ 3 visible • Mode: Available Only            
+            📱 9 apps • ✅ 4 installed • ⚙️ 0 configured • 👁️ 4 visible • Mode: Available Only            
                       ╭────────────────────────────────────────────────────────────╮                      
                       │                                                            │                      
                       │                     Applications Grid                      │                      
                       │                      Select Application                    │                      
                       │         Navigate with arrow keys, select with Enter        │                      
                       │                         > 👻 Ghostty                       │                      
-                      │                          [○] Terminal                      │                      
+                      │                          [✓] Terminal                      │                      
                       │                          🖥️ Alacritty                      │                      
                       │                          [○] Terminal                      │                      
                       │                           🪟 WezTerm                       │                      

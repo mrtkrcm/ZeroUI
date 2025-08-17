@@ -35,4 +35,4 @@
                                                                                                                         
                                                                                                                         
 Status: Ready • Theme: Default                                                                                          
-q quit • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up • →/l move right/next value                 
+q quit • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up • →/l move right • ←/h move left            

@@ -3,9 +3,13 @@
                     ZEROUI                          
                                                     
                                                     
-3 applications • 3 available • installed only       
+4 applications • 4 available • installed only       
                                                     
  ╭───────────────                                   
+│                                                   
+│    Ghostty                                        
+│       ●                                           
+│                 ╭───────────────                  
 │                                                   
 │    VS Code                                        
 │       ●                                           

@@ -30,14 +30,8 @@ type AppGridModel struct {
 	showAll          bool
 	filterByCategory string
 
-	// Performance optimizations
-	viewport      viewport.Model
-	cachedView    string
-	lastCacheTime time.Time
-	cacheDuration time.Duration
-	lastWidth     int
-	lastHeight    int
-	lastSelection int
+	// Simple state tracking
+	viewport viewport.Model
 
 	// Responsive design
 	minCardSize int
@@ -75,11 +69,10 @@ func NewAppGrid() *AppGridModel {
 		styles:        styles.GetStyles(),
 		showAll:       false,
 		viewport:      vp,
-		cacheDuration: 16 * time.Millisecond, // 60fps optimization
-		minCardSize:   12, // Minimum size for compact cards
-		maxCardSize:   18, // Maximum size for compact cards
-		cardSpacing:   2,  // Optimized spacing for 4 columns
-		showAnimation: true,
+		minCardSize:   12,
+		maxCardSize:   18,
+		cardSpacing:   2,
+		showAnimation: false, // Disabled for stability
 	}
 }
 
@@ -107,7 +100,6 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 			m.width = msg.Width
 			m.height = msg.Height
 			m.updateResponsiveLayout()
-			m.invalidateCache()
 
 			// Update viewport size
 			m.viewport.Width = m.width
@@ -119,32 +111,13 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 		// Handle navigation with smooth animation
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
-			cmd := m.moveSelectionAnimated(-m.columns)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return m, tea.Batch(cmds...)
-
+			m.moveSelection(-m.columns)
 		case key.Matches(msg, m.keyMap.Down):
-			cmd := m.moveSelectionAnimated(m.columns)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return m, tea.Batch(cmds...)
-
+			m.moveSelection(m.columns)
 		case key.Matches(msg, m.keyMap.Left):
-			cmd := m.moveSelectionAnimated(-1)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return m, tea.Batch(cmds...)
-
+			m.moveSelection(-1)
 		case key.Matches(msg, m.keyMap.Right):
-			cmd := m.moveSelectionAnimated(1)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return m, tea.Batch(cmds...)
+			m.moveSelection(1)
 
 		case key.Matches(msg, m.keyMap.Enter):
 			if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) {
@@ -152,7 +125,6 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 				if app.IsInstalled || app.HasConfig {
 					// Set loading state for visual feedback
 					m.cards[m.selectedIdx].SetLoadingState(true)
-					m.invalidateCache()
 					return m, SelectAppCmd(app.Definition.Name)
 				}
 			}
@@ -161,7 +133,6 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("a"))):
 			m.showAll = !m.showAll
 			m.updateFilter()
-			m.invalidateCache()
 			return m, nil
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("i"))):
@@ -169,18 +140,15 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 			m.filterByCategory = ""
 			m.showAll = false
 			m.updateFilter()
-			m.invalidateCache()
 			return m, nil
 
 		// Viewport scrolling
 		case key.Matches(msg, key.NewBinding(key.WithKeys("pgup"))):
 			m.viewport.HalfViewUp()
-			m.invalidateCache()
 			return m, nil
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("pgdown"))):
 			m.viewport.HalfViewDown()
-			m.invalidateCache()
 			return m, nil
 		}
 	}
@@ -207,25 +175,35 @@ func (m *AppGridModel) Update(msg tea.Msg) (*AppGridModel, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the app grid with advanced caching and performance optimization
+// View renders the app grid with simple, fast rendering
 func (m *AppGridModel) View() string {
-	// Check cache for performance (60fps optimization)
-	if m.isCacheValid() {
-		return m.cachedView
-	}
-
 	if len(m.cards) == 0 {
 		return m.renderEmptyState()
 	}
+	return m.renderSimpleGrid()
+}
 
-	// Render the grid with advanced layout
-	renderedGrid := m.renderAdvancedGrid()
+// renderSimpleGrid creates a simple, fast grid layout
+func (m *AppGridModel) renderSimpleGrid() string {
+	visibleCards := m.getVisibleCards()
+	if len(visibleCards) == 0 {
+		return m.renderEmptyState()
+	}
 
-	// Update cache
-	m.cachedView = renderedGrid
-	m.lastCacheTime = time.Now()
+	var rows []string
+	for i := 0; i < len(visibleCards); i += m.columns {
+		var rowCards []string
+		for j := 0; j < m.columns && i+j < len(visibleCards); j++ {
+			card := visibleCards[i+j]
+			card.SetSize(m.cardSize, m.cardHeight)
+			rowCards = append(rowCards, card.View())
+		}
+		
+		row := strings.Join(rowCards, strings.Repeat(" ", m.cardSpacing))
+		rows = append(rows, row)
+	}
 
-	return renderedGrid
+	return strings.Join(rows, "\n")
 }
 
 // renderAdvancedGrid creates the grid with rectangular cards and responsive design
@@ -447,6 +425,11 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 	if len(visibleCards) == 0 {
 		return nil
 	}
+	
+	// Safety check to prevent crashes
+	if m.cards == nil || len(m.cards) == 0 {
+		return nil
+	}
 
 	// Map visible cards to their indices in the main array
 	visibleIndices := m.getVisibleCardIndices()
@@ -522,8 +505,6 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 		m.animationStep++
 	}
 
-	// Invalidate cache for smooth updates
-	m.invalidateCache()
 
 	// Return animation command
 	if m.showAnimation {
@@ -633,19 +614,17 @@ func (m *AppGridModel) updateResponsiveLayout() {
 
 // updateFilter updates the visible cards based on filter with animation
 func (m *AppGridModel) updateFilter() {
-	// Reset selection with animation
-	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) {
-		m.cards[m.selectedIdx].SetSelected(false)
-	}
-
 	// Select first visible card using proper index mapping
 	visibleIndices := m.getVisibleCardIndices()
 	if len(visibleIndices) > 0 {
+		// Always select first visible card when filtering
 		m.selectedIdx = visibleIndices[0]
-		m.cards[m.selectedIdx].SetSelected(true)
 	} else {
 		m.selectedIdx = -1
 	}
+
+	// Update card selection states
+	m.updateCardSelection()
 
 	// Update layout after filter change
 	m.updateResponsiveLayout()
@@ -656,28 +635,6 @@ func (m *AppGridModel) updateFilter() {
 // AnimationTickMsg represents animation frame updates
 type AnimationTickMsg struct{}
 
-// isCacheValid checks if the cached view is still valid
-func (m *AppGridModel) isCacheValid() bool {
-	if m.cachedView == "" {
-		return false
-	}
-
-	// Invalidate cache if layout changed
-	if m.lastWidth != m.width || m.lastHeight != m.height || m.lastSelection != m.selectedIdx {
-		return false
-	}
-
-	return time.Since(m.lastCacheTime) < m.cacheDuration
-}
-
-// invalidateCache forces a re-render on next View() call
-func (m *AppGridModel) invalidateCache() {
-	m.cachedView = ""
-	m.lastCacheTime = time.Time{}
-	m.lastWidth = m.width
-	m.lastHeight = m.height
-	m.lastSelection = m.selectedIdx
-}
 
 // calculateHeaderHeight calculates dynamic header height based on screen size
 func (m *AppGridModel) calculateHeaderHeight() int {
@@ -715,6 +672,71 @@ func (m *AppGridModel) renderEnhancedFooter() string {
 		Padding(1, 0)
 
 	return footerStyle.Render(footer)
+}
+
+// updateCardSelection updates the visual selection state of all cards
+func (m *AppGridModel) updateCardSelection() {
+	// Safety check
+	if m.cards == nil || len(m.cards) == 0 {
+		return
+	}
+	
+	// Clear all selections first
+	for _, card := range m.cards {
+		if card != nil {
+			card.SetSelected(false)
+		}
+	}
+	
+	// Set the current selection if valid
+	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) && m.cards[m.selectedIdx] != nil {
+		m.cards[m.selectedIdx].SetSelected(true)
+	}
+}
+
+// moveSelection moves selection with simple, predictable logic
+func (m *AppGridModel) moveSelection(offset int) {
+	if !m.isValidState() {
+		return
+	}
+
+	visibleIndices := m.getVisibleCardIndices()
+	if len(visibleIndices) == 0 {
+		return
+	}
+
+	currentPos := m.findCurrentPosition(visibleIndices)
+	newPos := m.calculateNewPosition(currentPos, offset, len(visibleIndices))
+	
+	m.selectedIdx = visibleIndices[newPos]
+	m.updateCardSelection()
+}
+
+// isValidState checks if the grid is in a valid state
+func (m *AppGridModel) isValidState() bool {
+	return m.cards != nil && len(m.cards) > 0
+}
+
+// findCurrentPosition finds the current position in visible cards
+func (m *AppGridModel) findCurrentPosition(visibleIndices []int) int {
+	for i, idx := range visibleIndices {
+		if idx == m.selectedIdx {
+			return i
+		}
+	}
+	return 0 // Default to first position
+}
+
+// calculateNewPosition calculates the new position with simple wrapping
+func (m *AppGridModel) calculateNewPosition(current, offset, total int) int {
+	newPos := current + offset
+	if newPos < 0 {
+		return total - 1 // Wrap to end
+	}
+	if newPos >= total {
+		return 0 // Wrap to beginning
+	}
+	return newPos
 }
 
 // GetSelectedApp returns the currently selected app name

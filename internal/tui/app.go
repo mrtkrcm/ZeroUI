@@ -23,16 +23,15 @@ import (
 type ViewState int
 
 const (
-	HuhAppSelectionView ViewState = iota // New Huh-based app selection (primary view)
-	HuhConfigEditView                    // New Huh-based config editing
-	HuhGridView                          // New Huh-based grid view (enhanced)
-	AppGridView                          // Legacy grid view (fallback)
-	AppSelectionView                     // Legacy app selection (fallback)
-	ConfigEditView                       // Legacy config editing (fallback)
-	PresetSelectionView
-	HelpView
-	DelightfulUIView // New delightful animated UI
-	AnimatedListView // New animated list view
+	// Primary states - stable and tested
+	AppGridView ViewState = iota // Main application grid (default)
+	ConfigEditView               // Configuration editor
+	HelpView                     // Help display
+	
+	// Secondary states - for advanced features
+	HuhAppSelectionView // Modern app selection
+	HuhConfigEditView   // Modern config editing
+	PresetSelectionView // Preset management
 )
 
 // App represents the TUI application
@@ -282,14 +281,18 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// Update handles messages with performance optimization and non-blocking patterns
+// Update handles messages with defensive error handling
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Defensive check - ensure model is valid
+	if m == nil {
+		return m, tea.Quit
+	}
+	
 	var cmds []tea.Cmd
 
-	// Handle message with proper error recovery
+	// Panic recovery with detailed logging
 	defer func() {
 		if r := recover(); r != nil {
-			// Convert panic to error for graceful handling
 			m.err = fmt.Errorf("UI panic recovered: %v", r)
 		}
 	}()
@@ -314,69 +317,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
-		// Handle global keys first with proper key mapping
-		switch {
-		case key.Matches(msg, m.keyMap.Help):
-			m.showingHelp = !m.showingHelp
-			return m, nil
-		case key.Matches(msg, m.keyMap.Quit, m.keyMap.ForceQuit):
-			// Graceful shutdown
-			return m, tea.Sequence(
-				tea.Printf("Shutting down ZeroUI..."),
-				tea.Quit,
-			)
-		case key.Matches(msg, m.keyMap.Back):
-			return m, m.handleBack()
+		// Handle keys in priority order for predictability
+		if cmd := m.handleGlobalKeys(msg); cmd != nil {
+			return m, cmd
 		}
-
-		// Handle state-specific keys (non-blocking)
+		
 		if !m.showingHelp {
-			cmd := m.handleStateKeys(msg)
-			if cmd != nil {
+			if cmd := m.handleStateKeys(msg); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
-		}
-
-		// Handle view switching keys
-		switch {
-		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+d"))):
-			// Switch to delightful UI
-			m.state = DelightfulUIView
-			m.focusCurrentComponent()
-			return m, nil
-		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+a"))):
-			// Switch to animated list
-			m.state = AnimatedListView
-			m.focusCurrentComponent()
-			return m, nil
-		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+h"))):
-			// Huh interface disabled for stability
-			return m, nil
-		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+l"))):
-			// Switch to legacy interface
-			if m.state == HuhAppSelectionView || m.state == DelightfulUIView || m.state == AnimatedListView {
-				m.state = AppGridView
-			} else if m.state == HuhConfigEditView {
-				m.state = ConfigEditView
-			}
-			m.focusCurrentComponent()
-			return m, nil
-		case key.Matches(msg, key.NewBinding(key.WithKeys("l"))):
-			// Quick toggle: cycle through views
-			switch m.state {
-			case AppGridView:
-				m.state = HuhAppSelectionView
-			case HuhAppSelectionView:
-				m.state = DelightfulUIView
-			case DelightfulUIView:
-				m.state = AnimatedListView
-			case AnimatedListView:
-				m.state = AppGridView
-			case HuhGridView:
-				m.state = DelightfulUIView
-			}
-			m.focusCurrentComponent()
-			return m, nil
 		}
 
 	case components.AppSelectedMsg:
@@ -430,91 +379,51 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}))
 	}
 
-	// Update components based on current state (performance optimized)
+	// Update components with defensive checks
 	switch m.state {
-	case HuhAppSelectionView:
-		// Update Huh app selector with enhanced styling
-		updatedHuhSelector, cmd := m.huhAppSelector.Update(msg)
-		m.huhAppSelector = updatedHuhSelector
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-
-	case HuhConfigEditView:
-		// Update Huh config editor with forms
-		if model, cmd := m.huhConfigEditor.Update(msg); cmd != nil || model != m.huhConfigEditor {
-			m.huhConfigEditor = model.(*components.HuhConfigEditorModel)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-
-	case HuhGridView:
-		// Update Huh grid component
-		updatedHuhGrid, cmd := m.huhGrid.Update(msg)
-		m.huhGrid = updatedHuhGrid
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-
 	case AppGridView:
-		// Update legacy app grid component
-		updatedGrid, cmd := m.appGrid.Update(msg)
-		m.appGrid = updatedGrid
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-
-	case AppSelectionView:
-		// Update legacy app selector
-		if model, cmd := m.appSelector.Update(msg); cmd != nil || model != m.appSelector {
-			m.appSelector = model.(*components.AppSelectorModel)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
+		if m.appGrid != nil {
+			if updatedGrid, cmd := m.appGrid.Update(msg); updatedGrid != nil {
+				m.appGrid = updatedGrid
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 		}
 
 	case ConfigEditView:
-		// Update legacy config editor
-		if model, cmd := m.configEditor.Update(msg); cmd != nil || model != m.configEditor {
-			m.configEditor = model.(*components.ConfigEditorModel)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
+		if m.configEditor != nil {
+			if model, cmd := m.configEditor.Update(msg); model != nil {
+				if editor, ok := model.(*components.ConfigEditorModel); ok {
+					m.configEditor = editor
+				}
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 		}
 
-	case DelightfulUIView:
-		// Update delightful UI component
-		if model, cmd := m.delightfulUI.Update(msg); cmd != nil {
-			if delightfulModel, ok := model.(*components.DelightfulUIModel); ok {
-				m.delightfulUI = delightfulModel
-			}
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-
-	case AnimatedListView:
-		// Update animated list component
-		if model, cmd := m.animatedList.Update(msg); cmd != nil {
-			if animatedModel, ok := model.(*components.AnimatedListModel); ok {
-				m.animatedList = animatedModel
-			}
-			if cmd != nil {
-				cmds = append(cmds, cmd)
+	case HuhAppSelectionView:
+		if m.huhAppSelector != nil {
+			if updatedSelector, cmd := m.huhAppSelector.Update(msg); updatedSelector != nil {
+				m.huhAppSelector = updatedSelector
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 		}
-	}
 
-	// Always update status bar and help components
-	if statusModel, cmd := m.statusBar.Update(msg); cmd != nil {
-		m.statusBar = statusModel.(*components.StatusBarModel)
-		cmds = append(cmds, cmd)
-	}
-
-	if helpModel, cmd := m.responsiveHelp.Update(msg); cmd != nil {
-		m.responsiveHelp = helpModel.(*components.ResponsiveHelpModel)
-		cmds = append(cmds, cmd)
+	case HuhConfigEditView:
+		if m.huhConfigEditor != nil {
+			if model, cmd := m.huhConfigEditor.Update(msg); model != nil {
+				if editor, ok := model.(*components.HuhConfigEditorModel); ok {
+					m.huhConfigEditor = editor
+				}
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+			}
+		}
 	}
 
 	// Return with batched commands for optimal performance
@@ -524,29 +433,27 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleGlobalKeys handles global key presses with predictable priority
+func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
+	switch {
+	case key.Matches(msg, m.keyMap.Quit, m.keyMap.ForceQuit):
+		return tea.Quit
+	case key.Matches(msg, m.keyMap.Help):
+		m.showingHelp = !m.showingHelp
+		return nil
+	case key.Matches(msg, m.keyMap.Back):
+		return m.handleBack()
+	}
+	return nil
+}
+
 // handleStateKeys handles state-specific key presses
 func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
-	switch m.state {
-	case HuhAppSelectionView:
-		// Keys are handled by the Huh app selector component
-		return nil
-	case HuhConfigEditView:
-		// Keys are handled by the Huh config editor component
-		return nil
-	case AppSelectionView:
-		// Keys are handled by the legacy app selector component
-		return nil
-	case ConfigEditView:
-		// Keys are handled by the legacy config editor component
-		return nil
-	case AppGridView:
-		// Keys are handled by the app grid component
-		return nil
-	case PresetSelectionView:
-		// Handle preset selection keys
+	// Most keys are handled by individual components
+	// Only handle special cases here
+	if m.state == PresetSelectionView {
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
-			// Apply selected preset (simplified implementation - apply first available preset)
 			if m.currentApp != "" {
 				return func() tea.Msg {
 					presets, err := m.engine.GetPresets(m.currentApp)
@@ -557,7 +464,6 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 						}
 					}
 					
-					// Apply the first preset for now (would be selected preset in full implementation)
 					presetName := presets[0]
 					if err := m.engine.ApplyPreset(m.currentApp, presetName); err != nil {
 						return util.InfoMsg{
@@ -571,54 +477,32 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 					}
 				}
 			}
-		case key.Matches(msg, key.NewBinding(key.WithKeys("q", "esc"))):
-			// Return to previous view
-			m.handleBack()
 		}
-		return nil
-	case HelpView:
-		// Help view doesn't need special key handling
-		return nil
 	}
 	return nil
 }
 
-// handleBack handles the back/escape key
+// handleBack handles the back/escape key with predictable transitions
 func (m *Model) handleBack() tea.Cmd {
 	if m.showingHelp {
 		m.showingHelp = false
 		return nil
 	}
 
+	// Simple state machine - always go back to grid or quit
 	switch m.state {
-	case HuhAppSelectionView:
-		return tea.Quit
-	case HuhConfigEditView:
-		// Return to the appropriate app selection view
-		m.state = AppGridView
-		m.currentApp = ""
-		m.focusCurrentComponent()
-	case HuhGridView:
-		return tea.Quit
 	case AppGridView:
 		return tea.Quit
-	case AppSelectionView:
-		if m.currentApp == "" {
-			m.state = AppGridView
-		} else {
-			return tea.Quit
-		}
-	case ConfigEditView, PresetSelectionView:
-		if m.currentApp == "" {
-			m.state = AppGridView
-		} else {
-			m.state = AppSelectionView
-		}
-		m.focusCurrentComponent()
-	case HelpView:
-		m.state = HuhAppSelectionView
-		m.focusCurrentComponent()
+	case ConfigEditView, PresetSelectionView, HuhConfigEditView:
+		m.state = AppGridView
+		m.currentApp = ""
+	case HuhAppSelectionView, HelpView:
+		m.state = AppGridView
+	default:
+		return tea.Quit
 	}
+	
+	m.focusCurrentComponent()
 	return nil
 }
 
@@ -634,15 +518,19 @@ func (m *Model) focusCurrentComponent() {
 	// Focus the current component based on state
 	switch m.state {
 	case HuhAppSelectionView:
-		m.huhAppSelector.Focus()
+		if m.huhAppSelector != nil {
+			m.huhAppSelector.Focus()
+		}
 	case HuhConfigEditView:
-		m.huhConfigEditor.Focus()
-	case HuhGridView:
-		m.huhGrid.Focus()
-	case AppSelectionView:
-		m.appSelector.Focus()
+		if m.huhConfigEditor != nil {
+			m.huhConfigEditor.Focus()
+		}
+	case AppGridView:
+		// App grid handles its own internal selection state
 	case ConfigEditView:
-		m.configEditor.Focus()
+		if m.configEditor != nil {
+			m.configEditor.Focus()
+		}
 	}
 }
 
@@ -686,17 +574,18 @@ func (m *Model) updateHelpBindings() {
 
 	switch m.state {
 	case HuhAppSelectionView:
-		bindings = m.huhAppSelector.Bindings()
+		if m.huhAppSelector != nil {
+			bindings = m.huhAppSelector.Bindings()
+		}
 	case HuhConfigEditView:
-		bindings = m.huhConfigEditor.Bindings()
-	case HuhGridView:
-		bindings = m.huhGrid.Bindings()
-	case AppSelectionView:
-		bindings = m.appSelector.Bindings()
+		if m.huhConfigEditor != nil {
+			bindings = m.huhConfigEditor.Bindings()
+		}
 	case ConfigEditView:
-		bindings = m.configEditor.Bindings()
+		if m.configEditor != nil {
+			bindings = m.configEditor.Bindings()
+		}
 	case PresetSelectionView:
-		// Preset selection bindings
 		bindings = []key.Binding{
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "apply preset")),
 			key.NewBinding(key.WithKeys("q", "esc"), key.WithHelp("q/esc", "back")),
@@ -730,13 +619,8 @@ func (m *Model) View() string {
 		content = m.renderMainContent()
 	}
 
-	// For modern Huh views, return content directly (they handle their own layout)
-	if (m.state == HuhAppSelectionView || m.state == HuhConfigEditView || m.state == HuhGridView) && !m.showingHelp {
-		return content
-	}
-
-	// For legacy AppGridView, return content directly without layout wrapping
-	if m.state == AppGridView && !m.showingHelp {
+	// Return content directly for simpler rendering
+	if (m.state == HuhAppSelectionView || m.state == HuhConfigEditView || m.state == AppGridView) && !m.showingHelp {
 		return content
 	}
 
@@ -746,37 +630,28 @@ func (m *Model) View() string {
 // renderMainContent renders the main application content
 func (m *Model) renderMainContent() string {
 	switch m.state {
-	case HuhAppSelectionView:
-		// Render the modern Huh app selector with elegant styling
-		return m.huhAppSelector.View()
-	case HuhConfigEditView:
-		// Render the modern Huh config editor with forms
-		return m.huhConfigEditor.View()
-	case HuhGridView:
-		// Render the modern Huh grid component (primary grid view)
-		return m.huhGrid.View()
 	case AppGridView:
-		// Legacy grid view (fallback)
-		return m.appGrid.View()
-	case AppSelectionView:
-		// Legacy list selector (fallback)
-		return m.appSelector.View()
+		if m.appGrid != nil {
+			return m.appGrid.View()
+		}
 	case ConfigEditView:
-		// Legacy config editor (fallback)
-		return m.configEditor.View()
-	case DelightfulUIView:
-		// Render the delightful animated UI
-		return m.delightfulUI.View()
-	case AnimatedListView:
-		// Render the animated list view
-		return m.animatedList.View()
+		if m.configEditor != nil {
+			return m.configEditor.View()
+		}
+	case HuhAppSelectionView:
+		if m.huhAppSelector != nil {
+			return m.huhAppSelector.View()
+		}
+	case HuhConfigEditView:
+		if m.huhConfigEditor != nil {
+			return m.huhConfigEditor.View()
+		}
 	case PresetSelectionView:
-		// Render preset selection with available presets
 		return m.renderPresetSelection()
 	case HelpView:
 		return m.renderHelp()
 	}
-	return ""
+	return "Loading..."
 }
 
 // renderHelp renders the help content
@@ -785,15 +660,17 @@ func (m *Model) renderHelp() string {
 
 	switch m.state {
 	case HuhAppSelectionView:
-		bindings = m.huhAppSelector.Bindings()
+		if m.huhAppSelector != nil {
+			bindings = m.huhAppSelector.Bindings()
+		}
 	case HuhConfigEditView:
-		bindings = m.huhConfigEditor.Bindings()
-	case HuhGridView:
-		bindings = m.huhGrid.Bindings()
-	case AppSelectionView:
-		bindings = m.appSelector.Bindings()
+		if m.huhConfigEditor != nil {
+			bindings = m.huhConfigEditor.Bindings()
+		}
 	case ConfigEditView:
-		bindings = m.configEditor.Bindings()
+		if m.configEditor != nil {
+			bindings = m.configEditor.Bindings()
+		}
 	}
 
 	// Add global bindings
@@ -856,21 +733,19 @@ func (m *Model) renderTitle() string {
 
 	switch m.state {
 	case HuhAppSelectionView:
-		titleText = "🔧 ZeroUI - Select Application (Modern)"
+		titleText = "🔧 ZeroUI - Select Application"
 	case HuhConfigEditView:
-		titleText = fmt.Sprintf("⚙️ ZeroUI - %s Configuration (Huh Forms)", m.currentApp)
-	case HuhGridView:
-		titleText = "🔧 ZeroUI - Application Grid (Enhanced)"
-	case AppSelectionView:
-		titleText = "ZeroUI - Select Application (Legacy)"
+		titleText = fmt.Sprintf("⚙️ ZeroUI - %s Configuration", m.currentApp)
 	case ConfigEditView:
-		titleText = fmt.Sprintf("ZeroUI - %s Configuration (Legacy)", m.currentApp)
+		titleText = fmt.Sprintf("⚙️ ZeroUI - %s Configuration", m.currentApp)
 	case AppGridView:
-		titleText = "ZeroUI - Application Grid (Legacy)"
+		titleText = "🔧 ZeroUI - Applications"
 	case PresetSelectionView:
-		titleText = fmt.Sprintf("ZeroUI - %s Presets", m.currentApp)
+		titleText = fmt.Sprintf("🎨 ZeroUI - %s Presets", m.currentApp)
 	case HelpView:
-		titleText = "ZeroUI - Help"
+		titleText = "❓ ZeroUI - Help"
+	default:
+		titleText = "🔧 ZeroUI"
 	}
 
 	titleStyle := m.styles.Title.
@@ -905,8 +780,6 @@ func (m *Model) renderQuickHelp() string {
 	var bindings []key.Binding
 
 	switch m.state {
-	case AppSelectionView:
-		bindings = []key.Binding{m.keyMap.Up, m.keyMap.Down, m.keyMap.Enter}
 	case ConfigEditView:
 		bindings = []key.Binding{m.keyMap.Up, m.keyMap.Down, m.keyMap.Left, m.keyMap.Right, m.keyMap.Enter}
 	}
