@@ -23,7 +23,7 @@ func TestLoader_LoadAppConfig(t *testing.T) {
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err := os.MkdirAll(appsDir, 0755); err != nil {
+	if err = os.MkdirAll(appsDir, 0755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -39,7 +39,7 @@ fields:
     values: ["dark", "light"]
     default: "dark"
     description: "Application theme"
-  
+
   font-size:
     type: number
     values: ["12", "14", "16"]
@@ -59,7 +59,7 @@ hooks:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err = os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -162,7 +162,7 @@ func TestLoader_ListApps(t *testing.T) {
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err := os.MkdirAll(appsDir, 0755); err != nil {
+	if err = os.MkdirAll(appsDir, 0755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -171,7 +171,7 @@ func TestLoader_ListApps(t *testing.T) {
 	for _, app := range testApps {
 		configContent := fmt.Sprintf("name: %s\npath: ~/.config/%s/config.json", app, app)
 		configPath := filepath.Join(appsDir, app+".yaml")
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err = os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write test config for %s: %v", app, err)
 		}
 	}
@@ -274,7 +274,7 @@ presets:
 `
 
 	configPath := filepath.Join(appsDir, "bench-app.yaml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err = os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
 		b.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -528,7 +528,7 @@ func TestLoader_SaveTargetConfig(t *testing.T) {
 
 		// Parse back to verify
 		var parsed map[string]interface{}
-		if err := json.Unmarshal(content, &parsed); err != nil {
+		if err = json.Unmarshal(content, &parsed); err != nil {
 			t.Fatalf("Failed to parse saved JSON: %v", err)
 		}
 
