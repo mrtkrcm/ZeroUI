@@ -31,6 +31,7 @@ func TestCLI_BasicCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "list", "apps")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list apps: %v\nOutput: %s", err, output)
@@ -45,6 +46,7 @@ func TestCLI_BasicCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "list", "keys", "test-app")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list keys: %v\nOutput: %s", err, output)
@@ -59,6 +61,7 @@ func TestCLI_BasicCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "list", "presets", "test-app")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list presets: %v\nOutput: %s", err, output)
@@ -73,6 +76,7 @@ func TestCLI_BasicCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "test-app", "theme", "light", "--dry-run")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to toggle (dry-run): %v\nOutput: %s", err, output)
@@ -101,6 +105,7 @@ func TestCLI_ErrorHandling(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "nonexistent", "theme", "dark")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			t.Error("Expected error for non-existent app")
@@ -118,6 +123,7 @@ func TestCLI_ErrorHandling(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "test-app", "nonexistent", "value")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			t.Error("Expected error for non-existent field")
@@ -132,6 +138,7 @@ func TestCLI_ErrorHandling(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "test-app", "theme", "invalid")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			t.Error("Expected error for invalid value")
@@ -160,6 +167,7 @@ func TestCLI_BackupCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "backup", "create", "test-app")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to create backup: %v\nOutput: %s", err, output)
@@ -174,6 +182,7 @@ func TestCLI_BackupCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "backup", "list")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list backups: %v\nOutput: %s", err, output)
@@ -188,6 +197,7 @@ func TestCLI_BackupCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "backup", "cleanup", "test-app", "--keep", "3")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to cleanup backups: %v\nOutput: %s", err, output)
@@ -218,6 +228,7 @@ func buildBinary(t testing.TB) string {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "go", "build", "-o", binaryPath, ".")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		if err := cmd.Run(); err != nil {
 			t.Fatalf("Failed to build binary: %v", err)
 		}
@@ -309,6 +320,7 @@ func TestCLI_CycleCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "cycle", "test-app", "theme")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to cycle theme: %v\nOutput: %s", err, output)
@@ -323,6 +335,7 @@ func TestCLI_CycleCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "cycle", "test-app", "font-size", "--dry-run")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to cycle (dry-run): %v\nOutput: %s", err, output)
@@ -348,6 +361,7 @@ func TestCLI_PresetCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "preset", "test-app", "default")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to apply preset: %v\nOutput: %s", err, output)
@@ -362,6 +376,7 @@ func TestCLI_PresetCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "preset", "test-app", "default", "--dry-run")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to apply preset (dry-run): %v\nOutput: %s", err, output)
@@ -387,6 +402,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "list", "apps")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list apps: %v", err)
@@ -401,6 +417,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "backup", "create", "test-app")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		_, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to create backup: %v", err)
@@ -412,6 +429,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "test-app", "theme", "light")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		_, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to toggle theme: %v", err)
@@ -423,6 +441,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "cycle", "test-app", "font-size")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		_, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to cycle font-size: %v", err)
@@ -434,6 +453,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "preset", "test-app", "default")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		_, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to apply preset: %v", err)
@@ -445,6 +465,7 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "backup", "list")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to list backups: %v", err)
@@ -470,6 +491,7 @@ func TestCLI_MultipleFormats(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "yaml-app", "theme", "light")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to toggle YAML app: %v\nOutput: %s", err, output)
@@ -503,6 +525,7 @@ func TestCLI_CustomFormat(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "custom-app", "theme", "GruvboxLight")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to toggle custom app: %v\nOutput: %s", err, output)
@@ -531,6 +554,7 @@ func TestCLI_HelpCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "--help")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to get help: %v", err)
@@ -548,6 +572,7 @@ func TestCLI_HelpCommands(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "--help")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("Failed to get toggle help: %v", err)
@@ -575,6 +600,7 @@ func TestCLI_ConcurrentOperations(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "toggle", "test-app", "theme", "light")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		done <- cmd.Run()
 	}()
 
@@ -582,6 +608,7 @@ func TestCLI_ConcurrentOperations(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "cycle", "test-app", "font-size")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		done <- cmd.Run()
 	}()
 
@@ -589,6 +616,7 @@ func TestCLI_ConcurrentOperations(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "list", "apps")
+		cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 		done <- cmd.Run()
 	}()
 
