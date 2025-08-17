@@ -50,7 +50,7 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 	require.NoError(t, err)
 
 	// Switch to app selection view
-	model.state = AppSelectionView
+	model.state = HuhAppSelectionView
 	model.width = 120
 	model.height = 40
 	model.updateComponentSizes()
@@ -315,7 +315,7 @@ func TestCoreUIFunctionality(t *testing.T) {
 	// Test 4: State Transitions
 	t.Run("StateTransitions", func(t *testing.T) {
 		// AppGrid -> AppSelection
-		model.state = AppSelectionView
+		model.state = HuhAppSelectionView
 		model.focusCurrentComponent()
 
 		snapshot := model.View()
@@ -365,8 +365,8 @@ func TestUILayoutCoverage(t *testing.T) {
 			},
 		},
 		{
-			name:  "AppSelectionView",
-			state: AppSelectionView,
+			name:  "HuhAppSelectionView",
+			state: HuhAppSelectionView,
 			setup: func(m *Model) {
 				m.appSelector.Focus()
 			},

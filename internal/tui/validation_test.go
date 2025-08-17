@@ -172,12 +172,12 @@ func TestStateTransitions(t *testing.T) {
 	// Start in AppGridView
 	assert.Equal(t, AppGridView, model.state)
 
-	// Transition to AppSelectionView
-	model.state = AppSelectionView
+	// Transition to HuhAppSelectionView
+	model.state = HuhAppSelectionView
 	model.focusCurrentComponent()
 
 	// Validate focus changed
-	assert.Equal(t, AppSelectionView, model.state)
+	assert.Equal(t, HuhAppSelectionView, model.state)
 
 	// Test back navigation
 	cmd := model.handleBack()

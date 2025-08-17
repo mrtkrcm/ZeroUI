@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/prometheus"
+	// "go.opentelemetry.io/otel/exporters/prometheus" // Disabled due to API compatibility issue
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
@@ -65,14 +65,14 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 		return &Metrics{}, nil // Return empty metrics if disabled
 	}
 
-	// Create Prometheus exporter
-	exporter, err := prometheus.New()
-	if err != nil {
-		return nil, err
-	}
+	// TODO: Re-enable Prometheus exporter when API compatibility is resolved
+	// exporter, err := prometheus.New()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	// Create meter provider
-	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	// Create meter provider (without prometheus exporter for now)
+	provider := sdkmetric.NewMeterProvider() // sdkmetric.WithReader(exporter)
 	otel.SetMeterProvider(provider)
 
 	// Get meter
@@ -80,6 +80,7 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 
 	// Initialize metrics
 	m := &Metrics{}
+	var err error
 
 	// Operation counters
 	if m.toggleOperations, err = meter.Int64Counter(

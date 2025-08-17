@@ -38,7 +38,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_large_screen",
 			width:  120,
 			height: 40,
-			state:  HuhGridView,
+			state:  AppGridView,
 			setup: func(m *Model) {
 				// Default setup with 4 columns
 			},
@@ -52,7 +52,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_medium_screen",
 			width:  100,
 			height: 30,
-			state:  HuhGridView,
+			state:  AppGridView,
 			setup: func(m *Model) {
 				// Should adapt to 3 columns
 			},
@@ -65,7 +65,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_small_screen",
 			width:  80,
 			height: 24,
-			state:  HuhGridView,
+			state:  AppGridView,
 			setup: func(m *Model) {
 				// Should adapt to 2 columns
 			},
@@ -111,7 +111,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "help_view",
 			width:  100,
 			height: 30,
-			state:  HuhGridView,
+			state:  AppGridView,
 			setup: func(m *Model) {
 				m.showingHelp = true
 			},
@@ -123,7 +123,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "error_state",
 			width:  100,
 			height: 30,
-			state:  HuhGridView,
+			state:  AppGridView,
 			setup: func(m *Model) {
 				m.err = fmt.Errorf("test error for visual testing")
 			},
@@ -195,7 +195,7 @@ func TestResponsiveLayout(t *testing.T) {
 			require.NoError(t, err)
 
 			// Test both modern and legacy grids
-			states := []ViewState{HuhGridView, AppGridView}
+			states := []ViewState{AppGridView}
 
 			for _, state := range states {
 				stateStr := "huh"
@@ -242,7 +242,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = HuhGridView
+	model.state = AppGridView
 
 	// Test state transitions
 	transitions := []struct {
@@ -253,7 +253,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 	}{
 		{
 			name:      "grid_to_selector",
-			fromState: HuhGridView,
+			fromState: AppGridView,
 			toState:   HuhAppSelectionView,
 			action: func(m *Model) {
 				m.state = HuhAppSelectionView
@@ -272,7 +272,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 		},
 		{
 			name:      "modern_to_legacy",
-			fromState: HuhGridView,
+			fromState: AppGridView,
 			toState:   AppGridView,
 			action: func(m *Model) {
 				m.state = AppGridView
@@ -314,7 +314,7 @@ func TestPerformance(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = HuhGridView
+	model.state = AppGridView
 
 	// Warm up
 	for i := 0; i < 10; i++ {
@@ -354,7 +354,7 @@ func TestUIKeyboardNavigation(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = HuhGridView
+	model.state = AppGridView
 	model.focusCurrentComponent()
 
 	// Test navigation keys
@@ -450,7 +450,7 @@ func TestErrorRecovery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset model
 			model.err = nil
-			model.state = HuhGridView
+			model.state = AppGridView
 
 			// Apply error condition
 			tc.setup(model)
@@ -507,11 +507,9 @@ func TestVisualRegression(t *testing.T) {
 
 	// Generate reference snapshots for all major states
 	states := []ViewState{
-		HuhGridView,
+		AppGridView,
 		HuhAppSelectionView,
 		HuhConfigEditView,
-		AppGridView,
-		AppSelectionView,
 		ConfigEditView,
 	}
 
