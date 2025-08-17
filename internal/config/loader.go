@@ -49,7 +49,7 @@ func NewLoader() (*Loader, error) {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".config", "configtoggle")
+	configDir := filepath.Join(home, ".config", "zeroui")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create config directory: %w", err)
 	}
