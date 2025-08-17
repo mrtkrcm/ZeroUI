@@ -33,6 +33,8 @@ type ConfigField struct {
 	Min         *float64
 	Max         *float64
 	Pattern     string
+	IsSet       bool   // Whether this field has a value in the config file
+	Source      string // Where this value comes from (e.g., "config file", "default", "available")
 }
 
 // HuhConfigFormModel provides dynamic configuration editing with Huh forms
@@ -74,44 +76,83 @@ func (m *HuhConfigFormModel) buildForm() {
 	
 	var huhGroups []*huh.Group
 	for groupName, groupFields := range groups {
-		group := huh.NewGroup()
-		
-		// Add group title if not the default group
-		if groupName != "General" {
-			group = group.Title(groupName)
+		if len(groupFields) == 0 {
+			continue // Skip empty groups
 		}
-
+		
+		var fields []huh.Field
+		
 		// Add fields to the group
 		for _, field := range groupFields {
 			huhField := m.createHuhField(field)
 			if huhField != nil {
-				// Add field to group (correct API)
-				// Note: Actual Huh API may differ, this is a placeholder
+				fields = append(fields, huhField)
 			}
 		}
 		
-		huhGroups = append(huhGroups, group)
+		// Only create group if we have fields
+		if len(fields) > 0 {
+			group := huh.NewGroup(fields...)
+			
+			// Add group title if not the default group
+			if groupName != "General" {
+				group = group.Title(groupName)
+			}
+			
+			huhGroups = append(huhGroups, group)
+		}
 	}
 
 	// Create the form with enhanced styling
-	m.form = huh.NewForm(huhGroups...).
-		WithTheme(m.createCustomTheme()).
-		WithWidth(m.width - 4).
-		WithHeight(m.height - 8)
+	if len(huhGroups) > 0 {
+		m.form = huh.NewForm(huhGroups...).
+			WithTheme(m.createCustomTheme()).
+			WithWidth(m.width - 4).
+			WithHeight(m.height - 8)
+	} else {
+		// Create empty form if no groups
+		m.form = huh.NewForm().
+			WithTheme(m.createCustomTheme()).
+			WithWidth(m.width - 4).
+			WithHeight(m.height - 8)
+	}
 }
 
-// groupFields organizes fields into logical groups
+// groupFields organizes fields into logical groups with existing vs available separation
 func (m *HuhConfigFormModel) groupFields() map[string][]ConfigField {
 	groups := make(map[string][]ConfigField)
 	
+	// First, separate existing configurations from available options
+	var existingFields []ConfigField
+	var availableFields []ConfigField
+	
 	for _, field := range m.fields {
-		groupName := m.determineGroup(field.Key)
-		groups[groupName] = append(groups[groupName], field)
+		if field.IsSet {
+			existingFields = append(existingFields, field)
+		} else {
+			availableFields = append(availableFields, field)
+		}
+	}
+	
+	// Group existing configurations
+	if len(existingFields) > 0 {
+		for _, field := range existingFields {
+			groupName := "[*] Current Configuration - " + m.determineGroup(field.Key)
+			groups[groupName] = append(groups[groupName], field)
+		}
+	}
+	
+	// Group available options
+	if len(availableFields) > 0 {
+		for _, field := range availableFields {
+			groupName := "[+] Available Options - " + m.determineGroup(field.Key)
+			groups[groupName] = append(groups[groupName], field)
+		}
 	}
 	
 	// Ensure we have at least one group
 	if len(groups) == 0 {
-		groups["General"] = m.fields
+		groups["[*] Configuration"] = m.fields
 	}
 	
 	return groups
@@ -160,8 +201,8 @@ func (m *HuhConfigFormModel) createHuhField(field ConfigField) huh.Field {
 	case FieldTypeString:
 		input := huh.NewInput().
 			Key(field.Key).
-			Title(m.formatTitle(field.Key)).
-			Description(field.Description).
+			Title(m.formatTitle(field)).
+			Description(m.formatDescription(field)).
 			Value(m.getStringPointer(field.Key, field.Value))
 		
 		if field.Required {
@@ -178,8 +219,8 @@ func (m *HuhConfigFormModel) createHuhField(field ConfigField) huh.Field {
 	case FieldTypeInt:
 		input := huh.NewInput().
 			Key(field.Key).
-			Title(m.formatTitle(field.Key)).
-			Description(field.Description).
+			Title(m.formatTitle(field)).
+			Description(m.formatDescription(field)).
 			Value(m.getStringPointer(field.Key, field.Value)).
 			Validate(func(s string) error {
 				if s == "" && !field.Required {
@@ -216,8 +257,8 @@ func (m *HuhConfigFormModel) createHuhField(field ConfigField) huh.Field {
 		
 		return huh.NewConfirm().
 			Key(field.Key).
-			Title(m.formatTitle(field.Key)).
-			Description(field.Description).
+			Title(m.formatTitle(field)).
+			Description(m.formatDescription(field)).
 			Value(&currentValue)
 
 	case FieldTypeSelect:
@@ -239,16 +280,16 @@ func (m *HuhConfigFormModel) createHuhField(field ConfigField) huh.Field {
 		
 		return huh.NewSelect[string]().
 			Key(field.Key).
-			Title(m.formatTitle(field.Key)).
-			Description(field.Description).
+			Title(m.formatTitle(field)).
+			Description(m.formatDescription(field)).
 			Options(options...).
 			Value(&currentValue)
 
 	case FieldTypeFloat:
 		input := huh.NewInput().
 			Key(field.Key).
-			Title(m.formatTitle(field.Key)).
-			Description(field.Description).
+			Title(m.formatTitle(field)).
+			Description(m.formatDescription(field)).
 			Value(m.getStringPointer(field.Key, field.Value)).
 			Validate(func(s string) error {
 				if s == "" && !field.Required {
@@ -295,10 +336,10 @@ func (m *HuhConfigFormModel) getStringPointer(key string, value interface{}) *st
 	return &str
 }
 
-// formatTitle converts a field key to a human-readable title
-func (m *HuhConfigFormModel) formatTitle(key string) string {
+// formatTitle converts a field key to a human-readable title with visual indicators
+func (m *HuhConfigFormModel) formatTitle(field ConfigField) string {
 	// Convert snake_case and kebab-case to title case
-	words := strings.FieldsFunc(key, func(c rune) bool {
+	words := strings.FieldsFunc(field.Key, func(c rune) bool {
 		return c == '_' || c == '-' || c == '.'
 	})
 	
@@ -308,7 +349,37 @@ func (m *HuhConfigFormModel) formatTitle(key string) string {
 		}
 	}
 	
-	return strings.Join(words, " ")
+	title := strings.Join(words, " ")
+	
+	// Add visual indicators based on field status
+	if field.IsSet {
+		if field.Value != nil && field.Value != "" {
+			return fmt.Sprintf("[*] %s (current: %v)", title, field.Value)
+		} else {
+			return fmt.Sprintf("[!] %s (set but empty)", title)
+		}
+	} else {
+		return fmt.Sprintf("[ ] %s (available)", title)
+	}
+}
+
+// formatDescription enhances the description with source information
+func (m *HuhConfigFormModel) formatDescription(field ConfigField) string {
+	baseDesc := field.Description
+	if baseDesc == "" {
+		baseDesc = fmt.Sprintf("Configure %s", field.Key)
+	}
+	
+	// Add source information
+	if field.IsSet {
+		if field.Source != "" {
+			return fmt.Sprintf("%s\n>> Source: %s", baseDesc, field.Source)
+		} else {
+			return fmt.Sprintf("%s\n>> Currently configured", baseDesc)
+		}
+	} else {
+		return fmt.Sprintf("%s\n>> Available option - not currently set", baseDesc)
+	}
 }
 
 // createCustomTheme creates a custom theme for the form

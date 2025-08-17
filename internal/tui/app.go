@@ -590,11 +590,18 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 			Required:    false, // Default to false since Required field may not exist
 		}
 
-		// Set current value
+		// Set current value and track if it's configured
 		if val, exists := currentValues[key]; exists {
 			field.Value = val
+			field.IsSet = true
+			field.Source = "config file"
 		} else if fieldConfig.Default != nil {
 			field.Value = fieldConfig.Default
+			field.IsSet = false
+			field.Source = "default value"
+		} else {
+			field.IsSet = false
+			field.Source = "available option"
 		}
 
 		// Map field type
