@@ -61,3 +61,19 @@ func MustGetHomeDir() string {
 	}
 	return dir
 }
+
+// ClearHomeDirCache clears any cached home directory result.
+//
+// This is intended as a test helper so tests can reset the cached value when
+// they manipulate environment variables such as HOME. Tests should call this
+// after setting or unsetting HOME to ensure subsequent calls to GetHomeDir()
+// reflect the updated environment.
+//
+// Note: exported so package tests (or other packages) can call it. This should
+// only be used in test code.
+func ClearHomeDirCache() {
+	homeDirMu.Lock()
+	homeDir = ""
+	homeDirCached = false
+	homeDirMu.Unlock()
+}

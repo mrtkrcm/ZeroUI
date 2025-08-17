@@ -29,10 +29,12 @@ type Model struct {
 	logger *logging.CharmLogger
 
 	// Modern components using Charm libraries
-	appList    *components.ApplicationListModel
-	configForm *components.HuhConfigFormModel
-	helpSystem *components.GlamourHelpModel
-	presetSel  *components.PresetsSelector
+	appList           *components.ApplicationListModel
+	configForm        *components.HuhConfigFormModel
+	intuitiveConfig   *components.IntuitiveConfigModel
+	streamlinedConfig *components.StreamlinedConfigModel
+	helpSystem        *components.GlamourHelpModel
+	presetSel         *components.PresetsSelector
 
 	// UI state
 	keyMap      keybindings.AppKeyMap
@@ -211,8 +213,73 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		targetConfig = make(map[string]interface{})
 	}
 
-	// Create configuration form
+	// Create streamlined configuration interface (primary)
+	m.streamlinedConfig = components.NewStreamlinedConfig(appName)
+	
+	// Keep legacy interfaces for backward compatibility
 	m.configForm = components.NewHuhConfigForm(appName)
+	m.intuitiveConfig = components.NewIntuitiveConfig(appName)
+
+	// Convert config fields to the format expected by components
+	var configFields []components.ConfigField
+	for key, field := range appConfig.Fields {
+		configField := components.ConfigField{
+			Key:         key,
+			Description: field.Description,
+			Required:    false, // AppConfig doesn't carry required info; validator/schema can enrich later
+			IsSet:       false,
+			Source:      "default",
+		}
+
+		// If the targetConfig (actual values from the user's config file) contains
+		// a value for this key, prefer that and mark the field as set.
+		if targetConfig != nil {
+			if v, ok := targetConfig[key]; ok {
+				configField.IsSet = true
+				configField.Source = "file"
+				configField.Value = v
+				// If the runtime value gives better type information, infer from it.
+				configField.Type = inferFieldType(v)
+			}
+		}
+
+		// If no value came from targetConfig, use the app-config default (if present).
+		if !configField.IsSet {
+			if field.Default != nil {
+				configField.Value = field.Default
+				configField.Source = "default"
+				configField.Type = inferFieldType(field.Default)
+			} else {
+				// Fall back to type declared in AppConfig if provided.
+				switch field.Type {
+				case "choice":
+					configField.Type = components.FieldTypeSelect
+				case "boolean":
+					configField.Type = components.FieldTypeBool
+				case "number":
+					configField.Type = components.FieldTypeInt
+				default:
+					configField.Type = components.FieldTypeString
+				}
+			}
+		}
+
+		// Attach options for select/choice fields when available in the AppConfig.
+		if len(field.Values) > 0 {
+			configField.Options = field.Values
+			// Ensure select type if not already set by runtime/default
+			if configField.Type == components.FieldTypeString {
+				configField.Type = components.FieldTypeSelect
+			}
+		}
+
+		configFields = append(configFields, configField)
+	}
+
+	// Set fields on all interfaces
+	m.streamlinedConfig.SetFields(configFields)
+	m.configForm.SetFields(configFields)
+	m.intuitiveConfig.SetFields(configFields)
 
 	// TODO: Use targetConfig to populate form values
 	_ = targetConfig // Suppress unused variable warning for now
@@ -333,6 +400,20 @@ func (m *Model) isStatusActive() bool {
 		return true
 	}
 	return time.Now().Before(m.statusUntil)
+}
+
+// inferFieldType determines the field type from the value
+func inferFieldType(value interface{}) components.ConfigFieldType {
+	switch value.(type) {
+	case bool:
+		return components.FieldTypeBool
+	case int, int32, int64:
+		return components.FieldTypeInt
+	case float32, float64:
+		return components.FieldTypeFloat
+	default:
+		return components.FieldTypeString
+	}
 }
 
 // HandleRefreshApps performs a debounced refresh of the application list.

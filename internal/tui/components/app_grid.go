@@ -544,7 +544,7 @@ func (m *AppGridModel) getVisibleCardIndices() []int {
 	}
 
 	var indices []int
-	for i, _ := range m.cards {
+	for i := range m.cards {
 		status := m.statuses[i]
 		if status.IsInstalled || status.HasConfig {
 			indices = append(indices, i)

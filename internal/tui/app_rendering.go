@@ -143,6 +143,16 @@ func (m *Model) renderListView() string {
 
 // renderFormView renders the configuration form view
 func (m *Model) renderFormView() string {
+	// Use the streamlined interface as primary
+	if m.streamlinedConfig != nil {
+		return m.renderStreamlinedConfigView()
+	}
+	
+	// Fallback to intuitive interface if available
+	if m.intuitiveConfig != nil {
+		return m.renderIntuitiveConfigView()
+	}
+	
 	if m.configForm == nil {
 		return m.styles.Error.Render("Configuration form not initialized")
 	}
@@ -175,6 +185,46 @@ func (m *Model) renderFormView() string {
 	// Render through base styles first, then wrap to the model width to avoid overflow.
 	styled := m.styles.Base.Render(content)
 	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(styled)
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Left,
+		lipgloss.Top,
+		wrapped,
+	)
+}
+
+// renderStreamlinedConfigView renders the streamlined configuration interface
+func (m *Model) renderStreamlinedConfigView() string {
+	if m.streamlinedConfig == nil {
+		return m.styles.Error.Render("Streamlined configuration not initialized")
+	}
+
+	// Get the streamlined config view
+	configView := m.streamlinedConfig.View()
+
+	// Ensure the content fits within the terminal bounds
+	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(configView)
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Left,
+		lipgloss.Top,
+		wrapped,
+	)
+}
+
+// renderIntuitiveConfigView renders the new intuitive configuration interface
+func (m *Model) renderIntuitiveConfigView() string {
+	if m.intuitiveConfig == nil {
+		return m.styles.Error.Render("Intuitive configuration not initialized")
+	}
+
+	// Get the intuitive config view
+	configView := m.intuitiveConfig.View()
+
+	// Ensure the content fits within the terminal bounds
+	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(configView)
 	return lipgloss.Place(
 		m.width,
 		m.height,

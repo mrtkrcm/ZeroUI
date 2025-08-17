@@ -108,7 +108,16 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 	switch {
 	case key.Matches(msg, m.keyMap.Quit):
-		if m.state == FormView && m.configForm != nil && m.configForm.HasUnsavedChanges() {
+		hasUnsavedChanges := false
+		if m.state == FormView {
+			if m.intuitiveConfig != nil && m.intuitiveConfig.HasUnsavedChanges() {
+				hasUnsavedChanges = true
+			} else if m.configForm != nil && m.configForm.HasUnsavedChanges() {
+				hasUnsavedChanges = true
+			}
+		}
+		
+		if hasUnsavedChanges {
 			m.logger.Info("Quit requested with unsaved changes")
 			// TODO: Show confirmation dialog
 			return tea.Quit
@@ -156,6 +165,13 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 	case FormView:
 		switch {
 		case key.Matches(msg, m.keyMap.Save):
+			// Try intuitive config first
+			if m.intuitiveConfig != nil && m.intuitiveConfig.IsValid() {
+				values := m.intuitiveConfig.GetValues()
+				m.logger.Info("Saving configuration", "app", m.currentApp)
+				return m.saveConfiguration(m.currentApp, values)
+			}
+			// Fallback to old config form
 			if m.configForm != nil && m.configForm.IsValid() {
 				values := m.configForm.GetValues()
 				m.logger.Info("Saving configuration", "app", m.currentApp)
@@ -204,6 +220,35 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case FormView:
+		// Handle streamlined config first (primary interface)
+		if m.streamlinedConfig != nil {
+			updatedModel, cmd := m.safeUpdateComponent(
+				func() (interface{}, tea.Cmd) {
+					return m.streamlinedConfig.Update(msg)
+				},
+				"streamlinedConfig",
+			)
+			if updated, ok := updatedModel.(*components.StreamlinedConfigModel); ok {
+				m.streamlinedConfig = updated
+			}
+			return m, cmd
+		}
+		
+		// Fallback to intuitive config
+		if m.intuitiveConfig != nil {
+			updatedModel, cmd := m.safeUpdateComponent(
+				func() (interface{}, tea.Cmd) {
+					return m.intuitiveConfig.Update(msg)
+				},
+				"intuitiveConfig",
+			)
+			if updated, ok := updatedModel.(*components.IntuitiveConfigModel); ok {
+				m.intuitiveConfig = updated
+			}
+			return m, cmd
+		}
+		
+		// Final fallback to old config form
 		if m.configForm != nil {
 			updatedModel, cmd := m.safeUpdateComponent(
 				func() (interface{}, tea.Cmd) {
@@ -253,6 +298,21 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case FormView:
+		// Handle intuitive config first if available
+		if m.intuitiveConfig != nil {
+			updatedModel, cmd := m.safeUpdateComponent(
+				func() (interface{}, tea.Cmd) {
+					return m.intuitiveConfig.Update(msg)
+				},
+				"intuitiveConfig",
+			)
+			if updated, ok := updatedModel.(*components.IntuitiveConfigModel); ok {
+				m.intuitiveConfig = updated
+			}
+			return m, cmd
+		}
+		
+		// Fallback to old config form
 		if m.configForm != nil {
 			updatedModel, cmd := m.safeUpdateComponent(
 				func() (interface{}, tea.Cmd) {
@@ -295,6 +355,7 @@ func (m *Model) handleBack() tea.Cmd {
 		m.state = ListView
 		m.currentApp = ""
 		m.configForm = nil
+		m.intuitiveConfig = nil
 		m.presetSel = nil
 		m.invalidateCache()
 
@@ -345,6 +406,7 @@ func (m *Model) handleConfigSaved(msg components.ConfigSavedMsg) (tea.Model, tea
 	m.state = ListView
 	m.currentApp = ""
 	m.configForm = nil
+	m.intuitiveConfig = nil
 	m.invalidateCache()
 
 	return m, func() tea.Msg {

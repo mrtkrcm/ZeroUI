@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
 
 // TestMain configures a deterministic environment for the package tests.
@@ -42,6 +44,9 @@ func TestMain(m *testing.M) {
 			log.Printf("internal/config: TestMain: failed to set HOME: %v", err)
 		} else {
 			log.Printf("internal/config: TestMain: set HOME=%s", tmpHome)
+			// Ensure any cached home directory lookup is cleared so other packages
+			// (which may cache home discovery) pick up the new HOME value.
+			performance.ClearHomeDirCache()
 		}
 	}
 
