@@ -1,1 +1,1 @@
-No configuration fields available
+Configuration form not initialized

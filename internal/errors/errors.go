@@ -53,6 +53,21 @@ const (
 	CommandLineError ErrorType = "COMMAND_LINE_ERROR"
 )
 
+// Severity represents the severity level for ZeroUI errors.
+// This is used by observability and logging layers to determine log level.
+type Severity int
+
+const (
+	// Info indicates informational, non-problematic conditions.
+	Info Severity = iota
+	// Warning indicates a recoverable or noteworthy condition.
+	Warning
+	// Error indicates an error that should be surfaced to users.
+	Error
+	// Critical indicates a severe error requiring immediate attention.
+	Critical
+)
+
 // ZeroUIError represents a structured error with context
 type ZeroUIError struct {
 	Type        ErrorType
@@ -160,6 +175,22 @@ func (e *ZeroUIError) WithValue(value string) *ZeroUIError {
 // WithSuggestions adds helpful suggestions
 func (e *ZeroUIError) WithSuggestions(suggestions ...string) *ZeroUIError {
 	e.Suggestions = suggestions
+	return e
+}
+
+// WithActions adds actionable next steps to the error and supports chaining.
+// This is used in tests and logging to provide suggested remediation commands
+// or steps for the user.
+func (e *ZeroUIError) WithActions(actions ...string) *ZeroUIError {
+	e.Actions = actions
+	return e
+}
+
+// WithSeverity sets the severity level for the ZeroUIError.
+// This helper allows callers to fluently mark errors with an intended severity
+// for logging and observability integration.
+func (e *ZeroUIError) WithSeverity(s Severity) *ZeroUIError {
+	e.Severity = s
 	return e
 }
 

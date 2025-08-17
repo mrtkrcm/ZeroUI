@@ -8,13 +8,13 @@ import (
 
 // AccessibilityOptions holds accessibility configuration
 type AccessibilityOptions struct {
-	Enabled           bool
-	ScreenReaderMode  bool
-	HighContrast      bool
-	ReducedMotion     bool
-	NoColor           bool
+	Enabled             bool
+	ScreenReaderMode    bool
+	HighContrast        bool
+	ReducedMotion       bool
+	NoColor             bool
 	VerboseDescriptions bool
-	SimplifiedUI      bool
+	SimplifiedUI        bool
 }
 
 // DetectAccessibilityNeeds detects accessibility requirements from environment
@@ -22,7 +22,7 @@ func DetectAccessibilityNeeds() AccessibilityOptions {
 	opts := AccessibilityOptions{}
 
 	// Check environment variables for accessibility preferences
-	opts.Enabled = os.Getenv("ACCESSIBLE") != "" || 
+	opts.Enabled = os.Getenv("ACCESSIBLE") != "" ||
 		os.Getenv("ACCESSIBILITY") != "" ||
 		os.Getenv("A11Y") != ""
 
@@ -101,7 +101,7 @@ func parseEnvBool(key string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	
+
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
 		// Try common string representations
@@ -114,7 +114,7 @@ func parseEnvBool(key string, defaultValue bool) bool {
 			return defaultValue
 		}
 	}
-	
+
 	return parsed
 }
 
@@ -143,11 +143,11 @@ func (opts AccessibilityOptions) GetAccessibleTitle(title, context string) strin
 	if !opts.Enabled {
 		return title
 	}
-	
+
 	if context != "" && opts.VerboseDescriptions {
 		return title + " - " + context
 	}
-	
+
 	return title
 }
 
@@ -174,21 +174,21 @@ func (opts AccessibilityOptions) GetStatusDescription(status string) string {
 	if !opts.Enabled {
 		return status
 	}
-	
+
 	statusDescriptions := map[string]string{
-		"configured":    "Application is configured and ready",
-		"needs_config":  "Application needs configuration",
-		"error":         "Application has configuration errors",
-		"unknown":       "Application status is unknown",
-		"loading":       "Loading application information",
-		"success":       "Operation completed successfully",
-		"warning":       "Warning: attention required",
+		"configured":   "Application is configured and ready",
+		"needs_config": "Application needs configuration",
+		"error":        "Application has configuration errors",
+		"unknown":      "Application status is unknown",
+		"loading":      "Loading application information",
+		"success":      "Operation completed successfully",
+		"warning":      "Warning: attention required",
 	}
-	
+
 	if description, exists := statusDescriptions[status]; exists {
 		return description
 	}
-	
+
 	return status
 }
 
@@ -205,12 +205,12 @@ func (opts AccessibilityOptions) ShouldUseSpinner() bool {
 // GetFocusIndicator returns appropriate focus indication
 func (opts AccessibilityOptions) GetFocusIndicator() string {
 	if opts.ScreenReaderMode {
-		return "► "  // Clear focus indicator for screen readers
+		return "► " // Clear focus indicator for screen readers
 	}
 	if opts.HighContrast {
 		return ">> " // High contrast focus indicator
 	}
-	return "• "     // Standard focus indicator
+	return "• " // Standard focus indicator
 }
 
 // GetKeyboardHelp returns context-appropriate keyboard help
@@ -231,11 +231,11 @@ func ValidateAccessibilitySettings(opts *AccessibilityOptions) {
 		opts.Enabled = true
 		opts.VerboseDescriptions = true
 	}
-	
+
 	if opts.HighContrast {
 		opts.Enabled = true
 	}
-	
+
 	if opts.SimplifiedUI {
 		opts.ReducedMotion = true
 	}

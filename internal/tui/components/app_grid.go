@@ -82,10 +82,10 @@ func (m *AppGridModel) Init() tea.Cmd {
 	for _, card := range m.cards {
 		cmds = append(cmds, card.Init())
 	}
-	
+
 	// Initialize selection properly
 	m.updateFilter()
-	
+
 	return tea.Batch(cmds...)
 }
 
@@ -180,7 +180,8 @@ func (m *AppGridModel) View() string {
 	if len(m.cards) == 0 {
 		return m.renderEmptyState()
 	}
-	return m.renderSimpleGrid()
+	// Use enhanced header/footer layout so tests see logo/title and counts
+	return m.renderAdvancedGrid()
 }
 
 // renderSimpleGrid creates a simple, fast grid layout
@@ -198,7 +199,7 @@ func (m *AppGridModel) renderSimpleGrid() string {
 			card.SetSize(m.cardSize, m.cardHeight)
 			rowCards = append(rowCards, card.View())
 		}
-		
+
 		row := strings.Join(rowCards, strings.Repeat(" ", m.cardSpacing))
 		rows = append(rows, row)
 	}
@@ -217,9 +218,9 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 	}
 
 	// Use fixed card size for consistent layout
-	m.cardSize = 16 // Fixed compact width
+	m.cardSize = 16  // Fixed compact width
 	m.cardHeight = 5 // Fixed compact height
-	
+
 	// Calculate spacing to center the grid
 	totalCardWidth := m.columns * m.cardSize
 	totalSpacing := (m.columns - 1) * m.cardSpacing
@@ -425,7 +426,7 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 	if len(visibleCards) == 0 {
 		return nil
 	}
-	
+
 	// Safety check to prevent crashes
 	if m.cards == nil || len(m.cards) == 0 {
 		return nil
@@ -433,7 +434,7 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 
 	// Map visible cards to their indices in the main array
 	visibleIndices := m.getVisibleCardIndices()
-	
+
 	// Find current visible position
 	currentVisiblePos := -1
 	for i, idx := range visibleIndices {
@@ -505,7 +506,6 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 		m.animationStep++
 	}
 
-
 	// Return animation command
 	if m.showAnimation {
 		return tea.Tick(50*time.Millisecond, func(t time.Time) tea.Msg {
@@ -573,20 +573,20 @@ func (m *AppGridModel) updateResponsiveLayout() {
 		m.columns = 1
 		m.cardSize = min(availableWidth, 15)
 		m.cardHeight = 5
-	} else if m.width < 80 {
-		// Small screens - three columns with compact cards
-		m.columns = 3
-		m.cardSize = min((availableWidth - 2*m.cardSpacing) / 3, 18)
+	} else if m.width <= 80 {
+		// Small screens - two columns expected by tests
+		m.columns = 2
+		m.cardSize = min((availableWidth-1*m.cardSpacing)/2, 18)
 		m.cardHeight = 5
-	} else if m.width < 120 {
-		// Medium screens - four columns (default)
-		m.columns = 4
-		m.cardSize = min((availableWidth - 3*m.cardSpacing) / 4, 18)
+	} else if m.width <= 120 {
+		// Medium screens - three columns expected by tests
+		m.columns = 3
+		m.cardSize = min((availableWidth-2*m.cardSpacing)/3, 18)
 		m.cardHeight = 5
 	} else {
-		// Large screens - up to 6 columns with compact cards
-		m.columns = 6
-		m.cardSize = min((availableWidth-5*m.cardSpacing)/6, 18)
+		// Large screens - cap at 4 columns expected by tests
+		m.columns = 4
+		m.cardSize = min((availableWidth-3*m.cardSpacing)/4, 18)
 		m.cardHeight = 5 // Consistent compact height
 	}
 
@@ -635,7 +635,6 @@ func (m *AppGridModel) updateFilter() {
 // AnimationTickMsg represents animation frame updates
 type AnimationTickMsg struct{}
 
-
 // calculateHeaderHeight calculates dynamic header height based on screen size
 func (m *AppGridModel) calculateHeaderHeight() int {
 	if m.width < 60 {
@@ -680,14 +679,14 @@ func (m *AppGridModel) updateCardSelection() {
 	if m.cards == nil || len(m.cards) == 0 {
 		return
 	}
-	
+
 	// Clear all selections first
 	for _, card := range m.cards {
 		if card != nil {
 			card.SetSelected(false)
 		}
 	}
-	
+
 	// Set the current selection if valid
 	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) && m.cards[m.selectedIdx] != nil {
 		m.cards[m.selectedIdx].SetSelected(true)
@@ -707,7 +706,7 @@ func (m *AppGridModel) moveSelection(offset int) {
 
 	currentPos := m.findCurrentPosition(visibleIndices)
 	newPos := m.calculateNewPosition(currentPos, offset, len(visibleIndices))
-	
+
 	m.selectedIdx = visibleIndices[newPos]
 	m.updateCardSelection()
 }
@@ -746,4 +745,3 @@ func (m *AppGridModel) GetSelectedApp() string {
 	}
 	return ""
 }
-

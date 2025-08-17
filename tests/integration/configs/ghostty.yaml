@@ -430,7 +430,7 @@ settings:
         type: string
         default_value: ""
         description: Swap the foreground and background colors of the cell under the cursor. This option overrides the `cursor-color` and `cursor-text` options.
-        category: appearance
+        category: editor
     cursor-invert-fg-bg:
         name: cursor-invert-fg-bg
         type: boolean
@@ -496,7 +496,7 @@ settings:
         type: string
         default_value: ""
         description: Draw fonts with a thicker stroke, if supported. This is currently only supported on macOS.
-        category: font
+        category: keybindings
     font-family:
         name: font-family
         type: string
@@ -930,7 +930,7 @@ settings:
         type: string
         default_value: ""
         description: 'The command to run, usually a shell. If this is not an absolute path, it''ll be looked up in the `PATH`. If this is not set, a default will be looked up from your system. The rules for the default lookup are: * `SHELL` environment variable * `passwd` entry (user information) This can contain additional arguments to run the command with. If additional arguments are provided, the command will be executed using `/bin/sh -c`. Ghostty does not do any shell command parsing. This command will be used for all new terminal surfaces, i.e. new windows, tabs, etc. If you want to run a command only for the first terminal surface created when Ghostty starts, use the `initial-command` configuration. Ghostty supports the common `-e` flag for executing a command with arguments. For example, `ghostty -e fish --with --custom --args`. This flag sets the `initial-command` configuration, see that for more information.'
-        category: appearance
+        category: window
     term:
         name: term
         type: string
@@ -1025,7 +1025,7 @@ settings:
         type: string
         default_value: background
         description: Synchronize rendering with the screen refresh rate. If true, this will minimize tearing and align redraws with the screen but may cause input latency. If false, this will maximize redraw frequency but may cause tearing, and under heavy load may use more CPU and power. This defaults to true because out-of-sync rendering on macOS can cause kernel panics (macOS 14.4+) and performance issues for external displays over some hardware such as DisplayLink. If you want to minimize input latency, set this to false with the known aforementioned risks. Changing this value at runtime will only affect new terminals. This setting is only supported currently on macOS.
-        category: window
+        category: appearance
     window-padding-x:
         name: window-padding-x
         type: number
@@ -1084,7 +1084,7 @@ settings:
         type: string
         default_value: ""
         description: Foreground color for the window titlebar. This only takes effect if window-theme is set to ghostty. Currently only supported in the GTK app runtime. Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
-        category: appearance
+        category: window
     window-titlebar-foreground:
         name: window-titlebar-foreground
         type: string

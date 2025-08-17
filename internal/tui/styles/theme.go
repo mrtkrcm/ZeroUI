@@ -121,19 +121,19 @@ type Styles struct {
 
 // ApplicationListStyles holds styles for the application list component
 type ApplicationListStyles struct {
-	Title            lipgloss.Style
-	NormalTitle      lipgloss.Style
-	SelectedTitle    lipgloss.Style
-	NormalDesc       lipgloss.Style
-	SelectedDesc     lipgloss.Style
-	StatusConfigured lipgloss.Style
+	Title             lipgloss.Style
+	NormalTitle       lipgloss.Style
+	SelectedTitle     lipgloss.Style
+	NormalDesc        lipgloss.Style
+	SelectedDesc      lipgloss.Style
+	StatusConfigured  lipgloss.Style
 	StatusNeedsConfig lipgloss.Style
-	StatusError      lipgloss.Style
-	StatusUnknown    lipgloss.Style
-	Pagination       lipgloss.Style
-	Help             lipgloss.Style
-	FilterPrompt     lipgloss.Style
-	FilterCursor     lipgloss.Style
+	StatusError       lipgloss.Style
+	StatusUnknown     lipgloss.Style
+	Pagination        lipgloss.Style
+	Help              lipgloss.Style
+	FilterPrompt      lipgloss.Style
+	FilterCursor      lipgloss.Style
 }
 
 // BuildStyles creates lipgloss styles from theme
@@ -366,7 +366,7 @@ func GetStyles() *Styles {
 func SetTheme(theme *Theme) {
 	currentTheme = theme
 	currentStyles = theme.BuildStyles()
-	
+
 	// Update the current theme index
 	themes := AllThemes()
 	for i, t := range themes {
@@ -382,10 +382,10 @@ func CycleTheme() *Theme {
 	themes := AllThemes()
 	currentThemeIndex = (currentThemeIndex + 1) % len(themes)
 	nextTheme := themes[currentThemeIndex]
-	
+
 	currentTheme = nextTheme
 	currentStyles = nextTheme.BuildStyles()
-	
+
 	return nextTheme
 }
 

@@ -189,7 +189,6 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 		Background(lipgloss.Color("233"))
 }
 
-
 // SetSelected sets the selected state
 func (m *AppCardModel) SetSelected(selected bool) {
 	m.Selected = selected
@@ -250,7 +249,7 @@ func (m *AppCardModel) getAdaptiveAppName() string {
 
 	// Programmatic adaptation strategies
 	adaptedName := m.adaptNameProgrammatically(name, maxWidth)
-	
+
 	// If still too long, truncate with ellipsis
 	if len(adaptedName) > maxWidth && maxWidth > 1 {
 		if maxWidth <= 3 {
@@ -298,7 +297,7 @@ func (m *AppCardModel) adaptNameProgrammatically(name string, maxWidth int) stri
 func (m *AppCardModel) splitIntoWords(name string) []string {
 	var words []string
 	var current []rune
-	
+
 	for _, r := range name {
 		if r == ' ' || r == '-' || r == '_' {
 			if len(current) > 0 {
@@ -309,11 +308,11 @@ func (m *AppCardModel) splitIntoWords(name string) []string {
 			current = append(current, r)
 		}
 	}
-	
+
 	if len(current) > 0 {
 		words = append(words, string(current))
 	}
-	
+
 	return words
 }
 
@@ -321,7 +320,7 @@ func (m *AppCardModel) splitIntoWords(name string) []string {
 func (m *AppCardModel) tryRemoveSuffixes(words []string, maxWidth int) string {
 	// Common suffixes to try removing
 	suffixes := []string{"Code", "Editor", "Terminal", "IDE", "App"}
-	
+
 	for _, suffix := range suffixes {
 		if len(words) > 1 && words[len(words)-1] == suffix {
 			candidate := ""
@@ -336,7 +335,7 @@ func (m *AppCardModel) tryRemoveSuffixes(words []string, maxWidth int) string {
 			}
 		}
 	}
-	
+
 	// Return original joined words if no suffix removal helped
 	result := ""
 	for i, word := range words {
@@ -353,7 +352,7 @@ func (m *AppCardModel) createAcronym(words []string) string {
 	if len(words) <= 1 {
 		return ""
 	}
-	
+
 	acronym := ""
 	for _, word := range words {
 		if len(word) > 0 {
@@ -368,10 +367,10 @@ func (m *AppCardModel) removeVowels(name string) string {
 	if len(name) <= 1 {
 		return name
 	}
-	
+
 	vowels := "aeiouAEIOU"
 	result := []rune{rune(name[0])} // Keep first character
-	
+
 	for _, r := range name[1:] {
 		isVowel := false
 		for _, v := range vowels {
@@ -384,7 +383,7 @@ func (m *AppCardModel) removeVowels(name string) string {
 			result = append(result, r)
 		}
 	}
-	
+
 	return string(result)
 }
 

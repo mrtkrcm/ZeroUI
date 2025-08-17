@@ -74,7 +74,7 @@ func (d ApplicationDelegate) Render(w io.Writer, m list.Model, index int, item l
 		)
 
 		isSelected := index == m.Index()
-		
+
 		// Title styling
 		if isSelected {
 			title = s.SelectedTitle.Render(appItem.Title())
@@ -139,10 +139,10 @@ type ApplicationListModel struct {
 
 // ApplicationKeyMap defines key bindings for the application list
 type ApplicationKeyMap struct {
-	Select   key.Binding
-	Refresh  key.Binding
-	Filter   key.Binding
-	Help     key.Binding
+	Select  key.Binding
+	Refresh key.Binding
+	Filter  key.Binding
+	Help    key.Binding
 }
 
 // DefaultApplicationKeyMap returns default key bindings
@@ -183,14 +183,14 @@ func (k ApplicationKeyMap) FullHelp() [][]key.Binding {
 // NewApplicationList creates a new application list
 func NewApplicationList() *ApplicationListModel {
 	delegate := NewApplicationDelegate()
-	
+
 	// Create list with delegate
 	l := list.New([]list.Item{}, delegate, 0, 0)
 	l.Title = "ZeroUI Applications"
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(true)
 	l.SetShowHelp(true)
-	
+
 	// Style the list
 	l.Styles.Title = styles.GetStyles().ApplicationList.Title
 	l.Styles.PaginationStyle = styles.GetStyles().ApplicationList.Pagination
@@ -259,7 +259,7 @@ func (m *ApplicationListModel) Update(msg tea.Msg) (*ApplicationListModel, tea.C
 			// Note: Would need logger passed in for proper logging
 		}
 	}()
-	
+
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
 	if cmd != nil {
@@ -283,6 +283,12 @@ func max(a, b int) int {
 
 // View implements tea.Model
 func (m *ApplicationListModel) View() string {
+	if len(m.list.Items()) == 0 {
+		empty := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(
+			"No applications detected. Press 'r' to refresh.\nAdd schemas to apps/ or install plugins.")
+		header := styles.GetStyles().ApplicationList.Title.Render("ZeroUI Applications")
+		return lipgloss.JoinVertical(lipgloss.Left, header, "", empty)
+	}
 	return m.list.View()
 }
 
@@ -308,6 +314,11 @@ func (m *ApplicationListModel) GetSelectedApp() string {
 		}
 	}
 	return ""
+}
+
+// SelectedApp is an alias for GetSelectedApp for consistency
+func (m *ApplicationListModel) SelectedApp() string {
+	return m.GetSelectedApp()
 }
 
 // SetSize updates the component size

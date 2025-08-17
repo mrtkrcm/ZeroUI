@@ -453,7 +453,6 @@ func (l *Logger) logZeroUIError(ctErr *errors.ZeroUIError) {
 	l.log(level, "ZeroUI error occurred", args...)
 }
 
-
 // Global logger and metrics instances
 var (
 	globalLogger  *Logger

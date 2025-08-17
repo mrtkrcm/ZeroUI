@@ -1,38 +1,40 @@
-   ZeroUI Applications   
-                         
-  No items               
-                         
-No items.                
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-                         
-q quit • ? more          
+                                                                                                                        
+  📚 Help                                                                                                             
+                                                                                                                        
+ ╭──────────────────────────────────────
+ │                                                                                                                    
+ │ Help                                                                                                               
+ │  1:Overview   2:Navigation   3:Configuration   4:Keyboard   5:Troubleshooting                                      
+ │                                                                                                                    
+ │ # ZeroUI Help                                                                                                      
+ │                                                                                                                    
+ │   ZeroUI is a zero-configuration UI toolkit manager that simplifies managing UI configurations, themes, and        
+ │   settings across development tools.                                                                               
+ │                                                                                                                    
+ │   ## Quick Start                                                                                                   
+ │                                                                                                                    
+ │   • **Navigate**: Use arrow keys or hjkl (vim-style)                                                             
+ │   • **Select**: Press Enter to configure an application                                                          
+ │   • **Search**: Press / to search for applications                                                               
+ │   • **Filter**: Press 'a' to toggle between all/installed apps                                                   
+ │   • **Help**: Press ? to toggle this help system                                                                 
+ │   • **Quit**: Press q or Ctrl+C to exit                                                                          
+ │                                                                                                                    
+ │   ## Features                                                                                                      
+ │                                                                                                                    
+ │   • 🔧 **Zero Configuration**: Works out of the box                                                            
+ │   • 🎨 **Theme Management**: Consistent themes across tools                                                    
+ │   • ⚡ **Fast Performance**: Optimized for speed                                                                
+ │   • 🔍 **Smart Search**: Find apps quickly                                                                     
+ │   • 💅 **Beautiful UI**: Modern terminal interface                                                             
+ │                                                                                                                    
+ │ ←→/hl: Navigate pages • 1-5: Jump to page • ?: Close help                                                  
+ │                                                                                                                    
+ │                                                                                                                    
+ │                                                                                                                    
+ │                                                                                                                    
+ │                                                                                                                    
+ ╰──────────────────────────────────────
+                                                                                                                        
+ Esc: Back • q: Quit                                                                                                  
+                                                                                                                        

@@ -1,7 +1,30 @@
-╭───────────────────────────────────────╮
-│                                       │
-│ Error: test error for visual testing  │
-│                                       │
-│ Press 'q' to quit or Esc to continue. │
-│                                       │
-╰───────────────────────────────────────╯
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                              ❌ Error: test error for visual testing                               
+                                                                                                    
+                               Press 'q' to quit or 'Esc' to go back                                
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    

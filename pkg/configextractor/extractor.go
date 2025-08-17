@@ -247,10 +247,10 @@ func (e *Extractor) registerDefaultStrategies() {
 		// NewBuiltin(),  // Always available fallback
 		NewGitHub(), // Network dependent, slower
 	}
-	
+
 	// Append default strategies to existing ones
 	e.strategies = append(e.strategies, defaultStrategies...)
-	
+
 	// Re-sort by priority (higher first)
 	sort.Slice(e.strategies, func(i, j int) bool {
 		return e.strategies[i].Priority() > e.strategies[j].Priority()

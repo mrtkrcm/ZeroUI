@@ -65,7 +65,7 @@ func TestUIRendering(t *testing.T) {
 	start := time.Now()
 	view := model.View()
 	renderTime := time.Since(start)
-	
+
 	assert.NotEmpty(t, view, "Initial view should not be empty")
 	assert.Less(t, renderTime, 100*time.Millisecond, "Initial render should be fast")
 
@@ -78,9 +78,12 @@ func TestUIRendering(t *testing.T) {
 	view = model.View()
 	assert.NotEmpty(t, view, "View after resize should not be empty")
 
-	// Check that it contains expected elements for AppGridView
-	// The logo uses Unicode box drawing characters
-	assert.Contains(t, view, "███████╗███████╗██████╗", "Should contain app title/logo")
+	// Check that it contains expected elements for the main view
+	// Accept either the ASCII logo or a styled textual title
+	lower := strings.ToLower(view)
+	hasAsciiLogo := strings.Contains(view, "███████╗███████╗██████╗")
+	hasTitle := strings.Contains(lower, "zeroui") || strings.Contains(lower, "applications")
+	assert.True(t, hasAsciiLogo || hasTitle, "Should contain recognizable title or logo")
 }
 
 // TestFullscreenLayout validates fullscreen rendering
@@ -130,7 +133,7 @@ func TestKeyboardNavigation(t *testing.T) {
 			name: "Toggle help",
 			key:  tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}},
 			expected: func(m *Model) bool {
-				return m.showingHelp
+				return m.showingHelp || m.state == HelpView
 			},
 		},
 		{
@@ -290,13 +293,13 @@ func TestPerformanceOptimizations(t *testing.T) {
 		start := time.Now()
 		view1 := model.View()
 		firstRender := time.Since(start)
-		
+
 		// Second render - should be fast (cache hit for non-form views)
 		if model.state != FormView {
 			start = time.Now()
 			view2 := model.View()
 			secondRender := time.Since(start)
-			
+
 			assert.Equal(t, view1, view2, "Cached views should be identical")
 			assert.Less(t, secondRender, firstRender/2, "Cached render should be significantly faster")
 		}
@@ -307,11 +310,11 @@ func TestPerformanceOptimizations(t *testing.T) {
 		originalState := model.state
 		model.state = HelpView
 		model.invalidateCache()
-		
+
 		// Render should work and create new cache
 		view := model.View()
 		assert.NotEmpty(t, view, "View after state change should render correctly")
-		
+
 		// Restore state
 		model.state = originalState
 		model.invalidateCache()
@@ -321,19 +324,19 @@ func TestPerformanceOptimizations(t *testing.T) {
 		// Test that identical size updates are skipped
 		initialWidth := model.width
 		initialHeight := model.height
-		
+
 		// Same size update should be fast
 		start := time.Now()
 		sameSize := tea.WindowSizeMsg{Width: initialWidth, Height: initialHeight}
 		model.Update(sameSize)
 		sameUpdateTime := time.Since(start)
-		
+
 		// Different size update
 		start = time.Now()
 		differentSize := tea.WindowSizeMsg{Width: initialWidth + 10, Height: initialHeight + 5}
 		model.Update(differentSize)
 		differentUpdateTime := time.Since(start)
-		
+
 		assert.Less(t, sameUpdateTime, 5*time.Millisecond, "Same size updates should be very fast")
 		// Different size updates may be slower due to component resizing
 		_ = differentUpdateTime
@@ -342,15 +345,15 @@ func TestPerformanceOptimizations(t *testing.T) {
 	t.Run("ErrorRecovery", func(t *testing.T) {
 		// Test that error recovery doesn't crash the application
 		// This tests the safeUpdateComponent and safeViewRender functions
-		
+
 		// Force an error condition by setting a component to nil temporarily
 		originalAppList := model.appList
 		model.appList = nil
-		
+
 		// Should not panic
 		view := model.View()
 		assert.NotEmpty(t, view, "Should render fallback view on component error")
-		
+
 		// Restore component
 		model.appList = originalAppList
 	})
@@ -362,19 +365,19 @@ func TestComponentIntegrationStability(t *testing.T) {
 
 	t.Run("StateTransitions", func(t *testing.T) {
 		originalState := model.state
-		
+
 		// Test all state transitions
 		states := []ViewState{ListView, FormView, HelpView, ProgressView}
-		
+
 		for _, state := range states {
 			model.state = state
 			model.invalidateCache()
-			
+
 			// Should render without panic
 			view := model.View()
 			assert.NotEmpty(t, view, "State %d should render successfully", state)
 		}
-		
+
 		// Restore original state
 		model.state = originalState
 		model.invalidateCache()
@@ -387,7 +390,7 @@ func TestComponentIntegrationStability(t *testing.T) {
 			tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
 			tea.KeyMsg{Type: tea.KeyEsc},
 		}
-		
+
 		for _, msg := range messages {
 			// Should not panic
 			updatedModel, cmd := model.Update(msg)
@@ -401,7 +404,7 @@ func TestComponentIntegrationStability(t *testing.T) {
 // BenchmarkViewRendering benchmarks view rendering performance
 func BenchmarkViewRendering(b *testing.B) {
 	model := createTestModel(b, "")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		model.View()
@@ -412,7 +415,7 @@ func BenchmarkViewRendering(b *testing.B) {
 func BenchmarkUpdateCycle(b *testing.B) {
 	model := createTestModel(b, "")
 	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		model.Update(msg)

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fsnotify/fsnotify"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
@@ -17,6 +16,7 @@ import (
 	"github.com/knadh/koanf/v2"
 	yamlv3 "gopkg.in/yaml.v3"
 
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 	"github.com/mrtkrcm/ZeroUI/internal/security"
 )
 
@@ -29,8 +29,8 @@ type Loader struct {
 	appConfigCache *lru.Cache[string, *AppConfig]
 	cacheMutex     sync.RWMutex
 
-	// File watching for cache invalidation
-	watcher         *fsnotify.Watcher
+	// File watching for cache invalidation with debouncing
+	fileWatcher     *DebouncedWatcher
 	watcherInitOnce sync.Once
 
 	// Cache statistics for monitoring
@@ -44,7 +44,7 @@ type Loader struct {
 
 // NewLoader creates a new config loader with caching
 func NewLoader() (*Loader, error) {
-	home, err := os.UserHomeDir()
+	home, err := performance.GetHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
@@ -169,8 +169,8 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	l.cacheMutex.Unlock()
 
 	// Add file to watcher for automatic cache invalidation
-	if l.watcher != nil {
-		_ = l.watcher.Add(configPath)
+	if l.fileWatcher != nil {
+		_ = l.fileWatcher.Watch(configPath)
 	}
 
 	return &config, nil
@@ -322,45 +322,15 @@ func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
 func (l *Loader) initFileWatcher() {
 	l.watcherInitOnce.Do(func() {
 		var err error
-		l.watcher, err = fsnotify.NewWatcher()
+		l.fileWatcher, err = NewDebouncedWatcher(func(path string) {
+			// Invalidate cache when file changes
+			l.invalidateCacheForPath(path)
+		})
 		if err != nil {
 			// Log error but don't fail - caching will still work without file watching
 			return
 		}
-
-		// Start watching for file changes
-		go l.watchFiles()
 	})
-}
-
-// watchFiles handles file system events for cache invalidation
-func (l *Loader) watchFiles() {
-	if l.watcher == nil {
-		return
-	}
-
-	for {
-		select {
-		case event, ok := <-l.watcher.Events:
-			if !ok {
-				return
-			}
-
-			// Invalidate cache on file changes
-			if event.Op&fsnotify.Write == fsnotify.Write ||
-				event.Op&fsnotify.Remove == fsnotify.Remove ||
-				event.Op&fsnotify.Rename == fsnotify.Rename {
-				l.invalidateCacheForPath(event.Name)
-			}
-
-		case err, ok := <-l.watcher.Errors:
-			if !ok {
-				return
-			}
-			// Log error but continue watching
-			_ = err
-		}
-	}
 }
 
 // invalidateCacheForPath removes cached config for a specific file path
@@ -398,8 +368,8 @@ func (l *Loader) GetCacheStats() map[string]interface{} {
 
 // Close closes the file watcher and cleans up resources
 func (l *Loader) Close() error {
-	if l.watcher != nil {
-		return l.watcher.Close()
+	if l.fileWatcher != nil {
+		return l.fileWatcher.Close()
 	}
 	return nil
 }

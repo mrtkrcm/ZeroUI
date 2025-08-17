@@ -1,0 +1,54 @@
+name: Nightly Visual Regression
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 03:00 UTC nightly
+  workflow_dispatch: {}
+
+jobs:
+  visual:
+    name: Go ${{ matrix.go-version }} • strict visual regression
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [ '1.23.x' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+            ${{ runner.os }}-go-
+
+      - name: Install deps
+        run: make deps
+
+      - name: Run strict visual regression (no deterministic relaxations)
+        env:
+          ZEROUI_TEST_MODE: ""
+          FAST_TUI_TESTS: ""
+        run: |
+          go test ./internal/tui -run TestTUIVisualRegression -v
+
+      - name: Upload visual diff artifacts (if any)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: |
+            internal/tui/testdata/diff_images/**/*
+            internal/tui/testdata/visual_regression/regression_report.md
+          if-no-files-found: ignore

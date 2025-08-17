@@ -1,0 +1,4 @@
+ ZeroUI Applications                           
+                                               
+No applications detected. Press 'r' to refresh.
+Add schemas to apps/ or install plugins.       

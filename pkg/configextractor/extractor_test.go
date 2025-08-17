@@ -282,7 +282,7 @@ func TestExtractor_StrategyPriority(t *testing.T) {
 		t.Error("expected config to be non-nil")
 		return
 	}
-	
+
 	if config.Format != "high-priority" {
 		t.Errorf("expected high-priority result, got %s", config.Format)
 	}

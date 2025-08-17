@@ -255,7 +255,7 @@ func (m *HuhConfigEditorModel) buildForm() {
 						// Use reflection or type assertion to verify field is valid
 						safeFields = append(safeFields, field)
 					}
-					
+
 					if len(safeFields) > 0 {
 						// Wrap in defer to catch any remaining panics
 						func() {

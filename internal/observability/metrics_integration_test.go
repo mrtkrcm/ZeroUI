@@ -18,7 +18,7 @@ func TestMetricsIntegration(t *testing.T) {
 	t.Run("Toggle operations", func(t *testing.T) {
 		// Test successful toggle
 		metrics.RecordToggleOperation(ctx, "test-app", "theme", true, 100*time.Millisecond)
-		
+
 		// Test failed toggle
 		metrics.RecordToggleOperation(ctx, "test-app", "theme", false, 50*time.Millisecond)
 	})
@@ -26,7 +26,7 @@ func TestMetricsIntegration(t *testing.T) {
 	t.Run("Cycle operations", func(t *testing.T) {
 		// Test successful cycle
 		metrics.RecordCycleOperation(ctx, "test-app", "font-size", true, 200*time.Millisecond)
-		
+
 		// Test failed cycle
 		metrics.RecordCycleOperation(ctx, "test-app", "font-size", false, 150*time.Millisecond)
 	})
@@ -34,7 +34,7 @@ func TestMetricsIntegration(t *testing.T) {
 	t.Run("Preset operations", func(t *testing.T) {
 		// Test successful preset
 		metrics.RecordPresetOperation(ctx, "test-app", "dark-theme", true, 300*time.Millisecond)
-		
+
 		// Test failed preset
 		metrics.RecordPresetOperation(ctx, "test-app", "dark-theme", false, 250*time.Millisecond)
 	})
@@ -51,10 +51,10 @@ func TestMetricsIntegration(t *testing.T) {
 
 	t.Run("Operation timer", func(t *testing.T) {
 		timer := metrics.NewOperationTimer(ctx)
-		
+
 		// Simulate some work
 		time.Sleep(10 * time.Millisecond)
-		
+
 		timer.RecordToggle("test-app", "theme", true)
 		timer.RecordCycle("test-app", "font-size", true)
 		timer.RecordPreset("test-app", "minimal", true)
@@ -66,7 +66,7 @@ func TestMetricsDisabled(t *testing.T) {
 	config := &MetricsConfig{
 		EnableMetrics: false,
 	}
-	
+
 	metrics, err := NewMetrics(config)
 	if err != nil {
 		t.Fatalf("Failed to create disabled metrics: %v", err)
@@ -78,7 +78,7 @@ func TestMetricsDisabled(t *testing.T) {
 	metrics.RecordToggleOperation(ctx, "test-app", "theme", true, 100*time.Millisecond)
 	metrics.RecordError(ctx, "test_operation", "test_error")
 	metrics.RecordActiveApps(ctx, 3)
-	
+
 	timer := metrics.NewOperationTimer(ctx)
 	timer.RecordToggle("test-app", "theme", true)
 }
@@ -86,9 +86,9 @@ func TestMetricsDisabled(t *testing.T) {
 // TestMetricsConfiguration tests various metrics configurations
 func TestMetricsConfiguration(t *testing.T) {
 	tests := []struct {
-		name     string
-		config   *MetricsConfig
-		wantErr  bool
+		name    string
+		config  *MetricsConfig
+		wantErr bool
 	}{
 		{
 			name:    "Default config",
@@ -114,15 +114,15 @@ func TestMetricsConfiguration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics, err := NewMetrics(tt.config)
-			
+
 			if tt.wantErr && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.wantErr && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			if metrics == nil {
 				t.Error("Expected metrics instance")
 			}

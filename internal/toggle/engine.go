@@ -76,8 +76,13 @@ func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
-		loader:    configLoader,
-		logger:    log,
+		loader: configLoader,
+		logger: func() *logger.Logger {
+			if log != nil {
+				return log
+			}
+			return logger.New(logger.DefaultConfig())
+		}(),
 		homeDir:   homeDir,
 		pathCache: pathCache,
 	}

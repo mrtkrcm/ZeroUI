@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,10 +43,15 @@ type LoggerConfig struct {
 // DefaultConfig returns a sensible default configuration
 func DefaultConfig() LoggerConfig {
 	return LoggerConfig{
-		Level:           LevelInfo,
+		Level: func() LogLevel {
+			if os.Getenv("ZEROUI_TEST_MODE") == "true" {
+				return LevelWarn
+			}
+			return LevelInfo
+		}(),
 		EnableFile:      true,
 		FileLocation:    getDefaultLogPath(),
-		EnableTimestamp: true,
+		EnableTimestamp: os.Getenv("ZEROUI_TEST_MODE") != "true",
 		EnableCaller:    false,
 		Prefix:          "zeroui",
 	}
@@ -174,19 +180,19 @@ func createZeroUIStyles() *log.Styles {
 // createFileStyles creates plain styles for file output
 func createFileStyles() *log.Styles {
 	styles := log.DefaultStyles()
-	
+
 	// Remove colors and fancy formatting for files
 	for level := range styles.Levels {
 		styles.Levels[level] = lipgloss.NewStyle()
 	}
-	
+
 	styles.Timestamp = lipgloss.NewStyle()
 	styles.Prefix = lipgloss.NewStyle()
 	styles.Message = lipgloss.NewStyle()
 	styles.Key = lipgloss.NewStyle()
 	styles.Value = lipgloss.NewStyle()
 	styles.Separator = lipgloss.NewStyle().SetString(" ")
-	
+
 	return styles
 }
 
@@ -262,15 +268,15 @@ func (cl *CharmLogger) Fatal(msg string, fields ...interface{}) {
 // WithFields creates a sub-logger with additional fields
 func (cl *CharmLogger) WithFields(fields ...interface{}) *CharmLogger {
 	newLogger := &CharmLogger{
-		logger: cl.logger.With(fields...),
-		level:  cl.level,
+		logger:  cl.logger.With(fields...),
+		level:   cl.level,
 		logFile: cl.logFile,
 	}
-	
+
 	if cl.fileLogger != nil {
 		newLogger.fileLogger = cl.fileLogger.With(fields...)
 	}
-	
+
 	return newLogger
 }
 
@@ -347,6 +353,14 @@ func (cl *CharmLogger) LogUIEvent(event, view string, fields ...interface{}) {
 func (cl *CharmLogger) LogPerformance(operation string, duration time.Duration, fields ...interface{}) {
 	allFields := append([]interface{}{"operation", operation, "duration_ms", duration.Milliseconds()}, fields...)
 	cl.WithComponent("performance").Info("Performance metric", allFields...)
+}
+
+// LogPanic logs a panic with context
+func (cl *CharmLogger) LogPanic(r interface{}, context string, fields ...interface{}) {
+	cl.Error("panic occurred",
+		"context", context,
+		"panic", fmt.Sprintf("%v", r),
+		"fields", fields)
 }
 
 // LogError logs an error with context

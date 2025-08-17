@@ -7,28 +7,28 @@ import (
 // AppKeyMap defines the key bindings for the application
 type AppKeyMap struct {
 	// Navigation
-	Up       key.Binding
-	Down     key.Binding
-	Left     key.Binding
-	Right    key.Binding
-	Enter    key.Binding
-	Select   key.Binding
-	Back     key.Binding
-	Home     key.Binding
-	End      key.Binding
+	Up     key.Binding
+	Down   key.Binding
+	Left   key.Binding
+	Right  key.Binding
+	Enter  key.Binding
+	Select key.Binding
+	Back   key.Binding
+	Home   key.Binding
+	End    key.Binding
 
 	// Application actions
-	Refresh  key.Binding
-	Edit     key.Binding
-	Save     key.Binding
-	Cancel   key.Binding
-	Reset    key.Binding
+	Refresh key.Binding
+	Edit    key.Binding
+	Save    key.Binding
+	Cancel  key.Binding
+	Reset   key.Binding
 
 	// UI controls
-	Search   key.Binding
-	Filter   key.Binding
-	Help     key.Binding
-	Quit     key.Binding
+	Search    key.Binding
+	Filter    key.Binding
+	Help      key.Binding
+	Quit      key.Binding
 	ForceQuit key.Binding
 
 	// View switching
@@ -37,10 +37,10 @@ type AppKeyMap struct {
 	ToggleHelp    key.Binding
 
 	// Form navigation
-	NextField     key.Binding
-	PrevField     key.Binding
-	SubmitForm    key.Binding
-	CancelForm    key.Binding
+	NextField  key.Binding
+	PrevField  key.Binding
+	SubmitForm key.Binding
+	CancelForm key.Binding
 
 	// Advanced
 	Debug    key.Binding
@@ -189,11 +189,11 @@ func (k AppKeyMap) FullHelp() [][]key.Binding {
 		// Navigation
 		{k.Up, k.Down, k.Left, k.Right},
 		{k.Home, k.End, k.Enter, k.Back},
-		
+
 		// Actions
 		{k.Select, k.Edit, k.Refresh, k.Save},
 		{k.Search, k.Filter, k.Reset, k.Cancel},
-		
+
 		// UI Controls
 		{k.Help, k.ToggleMode, k.TogglePreview, k.Settings},
 		{k.Quit, k.ForceQuit, k.Debug},
@@ -202,12 +202,12 @@ func (k AppKeyMap) FullHelp() [][]key.Binding {
 
 // FormKeyMap provides key bindings specific to forms
 type FormKeyMap struct {
-	NextField  key.Binding
-	PrevField  key.Binding
-	Submit     key.Binding
-	Cancel     key.Binding
-	Reset      key.Binding
-	Clear      key.Binding
+	NextField key.Binding
+	PrevField key.Binding
+	Submit    key.Binding
+	Cancel    key.Binding
+	Reset     key.Binding
+	Clear     key.Binding
 }
 
 // NewFormKeyMap creates form-specific key bindings

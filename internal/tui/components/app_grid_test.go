@@ -109,7 +109,7 @@ func TestAppGridCacheInvalidation(t *testing.T) {
 	view1 := grid.View()
 	assert.NotEmpty(t, view1, "First view should render")
 
-	// Second render should work consistently  
+	// Second render should work consistently
 	view2 := grid.View()
 	assert.NotEmpty(t, view2, "Second view should render")
 

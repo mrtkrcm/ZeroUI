@@ -106,13 +106,42 @@ install:
 	@echo "$(GREEN)✅ Installed $(BINARY_NAME)$(NC)"
 
 ## test: Run tests
+
+# Prepare test stubs and ensure test binaries under testdata/bin are executable.
+# This target is idempotent and safe to run in CI or locally.
+test-setup:
+	@echo "$(BLUE)🧪 Preparing test stubs...$(NC)"
+	@mkdir -p ./testdata/bin || true
+	@chmod +x ./testdata/bin/* 2>/dev/null || true
+	@# Ensure git index marks them executable if running in a git workspace (best-effort)
+	@git update-index --add --chmod=+x ./testdata/bin/* 2>/dev/null || true
+
 test:
 	@echo "$(BLUE)🧪 Running tests...$(NC)"
+	@$(MAKE) test-setup
 	@mkdir -p $(COVERAGE_DIR)
 	@go test -v -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic ./...
 	@go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
 	@go tool cover -func=$(COVERAGE_DIR)/coverage.out | tail -1
 	@echo "$(GREEN)✅ Tests completed$(NC)"
+
+## test-fast: Run fast unit tests only (short, no integration/perf)
+test-fast:
+	@echo "$(BLUE)⚡ Running fast tests (short mode, no integration/perf)...$(NC)"
+	@FAST_TUI_TESTS=true go test -short ./...
+	@echo "$(GREEN)✅ Fast tests completed$(NC)"
+
+## test-deterministic: Run full test suite in deterministic/fast mode
+test-deterministic:
+	@echo "$(BLUE)🧪 Running deterministic full test suite...$(NC)"
+	@ZEROUI_TEST_MODE=true FAST_TUI_TESTS=true go test ./...
+	@echo "$(GREEN)✅ Deterministic full tests completed$(NC)"
+
+## test-update-baselines: Update visual test baselines
+test-update-baselines:
+	@echo "$(BLUE)🖼️ Updating visual baselines...$(NC)"
+	@UPDATE_TUI_BASELINES=true go test ./internal/tui -run TestTUIVisualRegression
+	@echo "$(GREEN)✅ Visual baselines updated$(NC)"
 
 ## test-verbose: Run tests with verbose output
 test-verbose:

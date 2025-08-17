@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/knadh/koanf/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestParseGhosttyConfig tests parsing Ghostty configuration files
@@ -467,6 +469,46 @@ debug = false
 			t.Error("Expected error for invalid output path")
 		}
 	})
+}
+
+func TestWriteGhosttyConfig_Sanitization(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "ghostty-sanitize-test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	originalPath := filepath.Join(tmpDir, "ghostty.conf")
+	outputPath := filepath.Join(tmpDir, "ghostty_out.conf")
+
+	// Original contains a palette and keybind line plus a malformed keybind number line
+	original := `# Ghostty Configuration
+palette-117 = #87d7d7
+keybind-31 = super+ctrl+left=resize_split:left
+keybind-33 = super+ctrl+up=resize_split:up
+`
+	err = os.WriteFile(originalPath, []byte(original), 0644)
+	require.NoError(t, err)
+
+	k := koanf.New(".")
+	// Update palette-117 with value like "116=#87d7d7" which should be normalized to just color
+	k.Set("palette-117", "116=#87d7d7")
+	// Update keybind-31 with valid mapping
+	k.Set("keybind-31", "super+ctrl+left=resize_split:left")
+	// Provide a malformed keybind (number only) which should be skipped
+	k.Set("keybind-33", "10")
+
+	err = WriteGhosttyConfig(outputPath, k, originalPath)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+	text := string(data)
+
+	// palette normalized to hex color only
+	assert.Contains(t, text, "palette-117 = #87d7d7")
+	// valid keybind remains
+	assert.Contains(t, text, "keybind-31 = super+ctrl+left=resize_split:left")
+	// malformed keybind skipped (line should not appear as just number)
+	assert.NotContains(t, text, "keybind-33 = 10")
 }
 
 // TestGhosttyConfigRoundTrip tests parsing and writing back preserves data

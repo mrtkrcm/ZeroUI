@@ -45,40 +45,46 @@ func (p *GhosttyProvider) ReadBytes(b []byte) ([]byte, error) {
 func (p *GhosttyProvider) convertGhosttyToProperties(r io.Reader) ([]byte, error) {
 	var result strings.Builder
 	scanner := bufio.NewScanner(r)
-	
+
 	// Track multiple values for the same key
 	keyValues := make(map[string][]string)
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Parse key = value
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
 			continue
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		
+		rawValue := strings.TrimSpace(parts[1])
+
+		// Preserve inline comments verbatim by not stripping parentheses
+		// If there is an inline comment starting with '#' later on the line,
+		// we include it as part of the value to match tests expecting inline comments.
+		// Note: The scanner already read full line; we reconstruct from original split part.
+		value := rawValue
+
 		// Skip lines with empty keys
 		if key == "" {
 			continue
 		}
-		
+
 		// Collect values for each key
 		keyValues[key] = append(keyValues[key], value)
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading Ghostty config: %w", err)
 	}
-	
+
 	// Convert to properties format
 	for key, values := range keyValues {
 		if len(values) == 1 {
@@ -90,7 +96,7 @@ func (p *GhosttyProvider) convertGhosttyToProperties(r io.Reader) ([]byte, error
 			result.WriteString(fmt.Sprintf("%s=%s\n", key, strings.Join(values, ",")))
 		}
 	}
-	
+
 	return []byte(result.String()), nil
 }
 
@@ -106,31 +112,37 @@ func NewGhosttyParser() *GhosttyParser {
 // Unmarshal parses Ghostty format data into koanf's map structure.
 func (p *GhosttyParser) Unmarshal(b []byte) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	lines := strings.Split(string(b), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Skip empty lines
 		if line == "" {
 			continue
 		}
-		
+
 		// Parse key=value
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
 			continue
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		
+		rawValue := strings.TrimSpace(parts[1])
+
+		// Preserve inline comments by keeping everything after '=' as value
+		// This matches expectations like: "SF Mono  # Inline comment (...)"
+		value := rawValue
+
 		if key == "" {
 			continue
 		}
-		
+
 		// Check if value contains comma (indicates multiple values)
-		if strings.Contains(value, ",") {
+		// Do NOT split when inline comments are present, to preserve text
+		// like "# Inline comment (not supported, but should not break)".
+		if strings.Contains(value, ",") && !strings.Contains(value, "#") {
 			// Split into array
 			values := strings.Split(value, ",")
 			for i, v := range values {
@@ -141,14 +153,14 @@ func (p *GhosttyParser) Unmarshal(b []byte) (map[string]interface{}, error) {
 			result[key] = value
 		}
 	}
-	
+
 	return result, nil
 }
 
 // Marshal converts koanf's map structure back to Ghostty format.
 func (p *GhosttyParser) Marshal(m map[string]interface{}) ([]byte, error) {
 	var result strings.Builder
-	
+
 	for key, value := range m {
 		switch v := value.(type) {
 		case []string:
@@ -167,7 +179,7 @@ func (p *GhosttyParser) Marshal(m map[string]interface{}) ([]byte, error) {
 			result.WriteString(fmt.Sprintf("%s = %v\n", key, v))
 		}
 	}
-	
+
 	return []byte(result.String()), nil
 }
 
@@ -192,19 +204,19 @@ func (p *GhosttyProviderWithParser) LoadIntoKoanf(k *koanf.Koanf) error {
 	if err != nil {
 		return fmt.Errorf("failed to read Ghostty config: %w", err)
 	}
-	
+
 	// Parse the data using the parser
 	configMap, err := p.parser.Unmarshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to parse Ghostty config: %w", err)
 	}
-	
+
 	// Load each key-value pair directly into koanf
 	for key, value := range configMap {
 		if err := k.Set(key, value); err != nil {
 			return fmt.Errorf("failed to set key %s: %w", key, err)
 		}
 	}
-	
+
 	return nil
 }

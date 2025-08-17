@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -150,6 +151,8 @@ func (bm *BackupManager) ListBackups(appName string) ([]BackupInfo, error) {
 		}
 	}
 
+	// Sort newest first
+	sort.Slice(backups, func(i, j int) bool { return backups[i].Created.After(backups[j].Created) })
 	return backups, nil
 }
 

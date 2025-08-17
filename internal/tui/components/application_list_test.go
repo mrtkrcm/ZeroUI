@@ -10,7 +10,7 @@ import (
 
 func TestApplicationList_NewApplicationList(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	require.NotNil(t, model)
 	assert.NotNil(t, model.list)
 	assert.Equal(t, "ZeroUI Applications", model.list.Title)
@@ -19,19 +19,19 @@ func TestApplicationList_NewApplicationList(t *testing.T) {
 
 func TestApplicationList_SetApplications(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	apps := []ApplicationInfo{
 		{Name: "ghostty", Description: "Fast terminal emulator", Status: "configured", ConfigPath: "/path/to/ghostty"},
 		{Name: "vscode", Description: "Code editor", Status: "needs_config", ConfigPath: "/path/to/vscode"},
 		{Name: "alacritty", Description: "Terminal emulator", Status: "error", ConfigPath: "/path/to/alacritty"},
 	}
-	
+
 	model.SetApplications(apps)
-	
+
 	// Verify items were set
 	items := model.list.Items()
 	assert.Len(t, items, 3)
-	
+
 	// Verify first item
 	if len(items) > 0 {
 		appItem, ok := items[0].(ApplicationItem)
@@ -44,17 +44,17 @@ func TestApplicationList_SetApplications(t *testing.T) {
 
 func TestApplicationList_GetSelectedApp(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	// Initially no selection
 	assert.Equal(t, "", model.GetSelectedApp())
-	
+
 	// Set applications
 	apps := []ApplicationInfo{
 		{Name: "ghostty", Description: "Fast terminal", Status: "configured"},
 		{Name: "vscode", Description: "Code editor", Status: "needs_config"},
 	}
 	model.SetApplications(apps)
-	
+
 	// After setting items, the list should have a default selection (first item)
 	if len(model.list.Items()) > 0 {
 		selectedApp := model.GetSelectedApp()
@@ -65,11 +65,11 @@ func TestApplicationList_GetSelectedApp(t *testing.T) {
 
 func TestApplicationList_Update(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	// Test window size message
 	sizeMsg := tea.WindowSizeMsg{Width: 100, Height: 50}
 	updatedModel, cmd := model.Update(sizeMsg)
-	
+
 	require.NotNil(t, updatedModel)
 	assert.Equal(t, 100, updatedModel.width)
 	assert.Equal(t, 50, updatedModel.height)
@@ -80,21 +80,21 @@ func TestApplicationList_Update(t *testing.T) {
 
 func TestApplicationList_KeyNavigation(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	// Set test applications
 	apps := []ApplicationInfo{
 		{Name: "app1", Description: "First app", Status: "configured"},
 		{Name: "app2", Description: "Second app", Status: "needs_config"},
 	}
 	model.SetApplications(apps)
-	
+
 	// Test refresh key
 	refreshMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}}
 	updatedModel, cmd := model.Update(refreshMsg)
-	
+
 	require.NotNil(t, updatedModel)
 	require.NotNil(t, cmd)
-	
+
 	// Execute the command to get the message
 	if cmd != nil {
 		msg := cmd()
@@ -106,19 +106,19 @@ func TestApplicationList_KeyNavigation(t *testing.T) {
 
 func TestApplicationList_SelectAction(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	// Set test applications
 	apps := []ApplicationInfo{
 		{Name: "test-app", Description: "Test application", Status: "configured"},
 	}
 	model.SetApplications(apps)
-	
+
 	// Test enter key (select)
 	enterMsg := tea.KeyMsg{Type: tea.KeyEnter}
 	updatedModel, cmd := model.Update(enterMsg)
-	
+
 	require.NotNil(t, updatedModel)
-	
+
 	if cmd != nil {
 		msg := cmd()
 		if appSelectedMsg, ok := msg.(AppSelectedMsg); ok {
@@ -129,9 +129,9 @@ func TestApplicationList_SelectAction(t *testing.T) {
 
 func TestApplicationList_SetSize(t *testing.T) {
 	model := NewApplicationList()
-	
+
 	cmd := model.SetSize(120, 60)
-	
+
 	assert.Equal(t, 120, model.width)
 	assert.Equal(t, 60, model.height)
 	assert.Equal(t, 120, model.list.Width())
@@ -146,10 +146,10 @@ func TestApplicationItem_Interface(t *testing.T) {
 		status:      "configured",
 		configPath:  "/test/path",
 	}
-	
+
 	// Test list.Item interface
 	assert.Equal(t, "test-app Test application for unit testing", item.FilterValue())
-	
+
 	// Test list.DefaultItem interface methods
 	assert.Equal(t, "test-app", item.Title())
 	assert.Equal(t, "Test application for unit testing • configured", item.Description())
@@ -162,17 +162,17 @@ func TestApplicationItem_DescriptionWithoutStatus(t *testing.T) {
 		status:      "", // No status
 		configPath:  "/test/path",
 	}
-	
+
 	assert.Equal(t, "Test application", item.Description())
 }
 
 func TestApplicationDelegate_Properties(t *testing.T) {
 	delegate := NewApplicationDelegate()
-	
+
 	// Test delegate properties
 	assert.Equal(t, 2, delegate.Height())
 	assert.Equal(t, 1, delegate.Spacing())
-	
+
 	// Test Update returns nil (no special handling needed)
 	cmd := delegate.Update(tea.KeyMsg{}, nil)
 	assert.Nil(t, cmd)
@@ -180,10 +180,10 @@ func TestApplicationDelegate_Properties(t *testing.T) {
 
 func TestApplicationKeyMap_ShortHelp(t *testing.T) {
 	keyMap := DefaultApplicationKeyMap()
-	
+
 	shortHelp := keyMap.ShortHelp()
 	assert.Len(t, shortHelp, 4) // select, refresh, filter, help
-	
+
 	// Verify key bindings exist
 	assert.NotNil(t, keyMap.Select)
 	assert.NotNil(t, keyMap.Refresh)
@@ -193,10 +193,10 @@ func TestApplicationKeyMap_ShortHelp(t *testing.T) {
 
 func TestApplicationKeyMap_FullHelp(t *testing.T) {
 	keyMap := DefaultApplicationKeyMap()
-	
+
 	fullHelp := keyMap.FullHelp()
 	assert.Len(t, fullHelp, 2) // Two rows of help
-	
+
 	// Each row should have key bindings
 	for _, row := range fullHelp {
 		assert.NotEmpty(t, row)

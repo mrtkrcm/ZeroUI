@@ -38,7 +38,7 @@ func (s *GRPCServer) GetInfo(ctx context.Context, req *GetInfoRequest) (*GetInfo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &GetInfoResponse{
 		Info: &PluginInfo{
 			Name:         info.Name,
@@ -58,7 +58,7 @@ func (s *GRPCServer) DetectConfig(ctx context.Context, req *DetectConfigRequest)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &DetectConfigResponse{
 		Config: config,
 	}, nil
@@ -70,12 +70,12 @@ func (s *GRPCServer) ParseConfig(ctx context.Context, req *ParseConfigRequest) (
 	if err != nil {
 		return nil, err
 	}
-	
+
 	configData, err := convertConfigDataToProto(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert config data: %w", err)
 	}
-	
+
 	return &ParseConfigResponse{
 		Data: configData,
 	}, nil
@@ -87,12 +87,12 @@ func (s *GRPCServer) WriteConfig(ctx context.Context, req *WriteConfigRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert proto data: %w", err)
 	}
-	
+
 	err = s.Impl.WriteConfig(ctx, req.Path, data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &WriteConfigResponse{}, nil
 }
 
@@ -105,7 +105,7 @@ func (s *GRPCServer) ValidateField(ctx context.Context, req *ValidateFieldReques
 			Error: fmt.Sprintf("invalid value format: %v", err),
 		}, nil
 	}
-	
+
 	err = s.Impl.ValidateField(ctx, req.Field, value)
 	if err != nil {
 		return &ValidateFieldResponse{
@@ -113,7 +113,7 @@ func (s *GRPCServer) ValidateField(ctx context.Context, req *ValidateFieldReques
 			Error: err.Error(),
 		}, nil
 	}
-	
+
 	return &ValidateFieldResponse{
 		Valid: true,
 	}, nil
@@ -125,7 +125,7 @@ func (s *GRPCServer) ValidateConfig(ctx context.Context, req *ValidateConfigRequ
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert proto data: %w", err)
 	}
-	
+
 	err = s.Impl.ValidateConfig(ctx, data)
 	if err != nil {
 		// Parse validation errors if multiple
@@ -140,7 +140,7 @@ func (s *GRPCServer) ValidateConfig(ctx context.Context, req *ValidateConfigRequ
 			},
 		}, nil
 	}
-	
+
 	return &ValidateConfigResponse{
 		Valid: true,
 	}, nil
@@ -152,12 +152,12 @@ func (s *GRPCServer) GetSchema(ctx context.Context, req *GetSchemaRequest) (*Get
 	if err != nil {
 		return nil, err
 	}
-	
+
 	protoMetadata, err := convertConfigMetadataToProto(metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert metadata: %w", err)
 	}
-	
+
 	return &GetSchemaResponse{
 		Metadata: protoMetadata,
 	}, nil
@@ -169,7 +169,7 @@ func (s *GRPCServer) SupportsFeature(ctx context.Context, req *SupportsFeatureRe
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &SupportsFeatureResponse{
 		Supported: supported,
 	}, nil
@@ -186,7 +186,7 @@ func (c *GRPCClient) GetInfo(ctx context.Context) (*PluginInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &PluginInfo{
 		Name:         resp.Info.Name,
 		Version:      resp.Info.Version,
@@ -204,7 +204,7 @@ func (c *GRPCClient) DetectConfig(ctx context.Context) (*ConfigInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return resp.Config, nil
 }
 
@@ -214,7 +214,7 @@ func (c *GRPCClient) ParseConfig(ctx context.Context, path string) (*ConfigData,
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return convertProtoToConfigData(resp.Data)
 }
 
@@ -224,7 +224,7 @@ func (c *GRPCClient) WriteConfig(ctx context.Context, path string, data *ConfigD
 	if err != nil {
 		return fmt.Errorf("failed to convert config data: %w", err)
 	}
-	
+
 	_, err = c.client.WriteConfig(ctx, &WriteConfigRequest{
 		Path: path,
 		Data: protoData,
@@ -238,7 +238,7 @@ func (c *GRPCClient) ValidateField(ctx context.Context, field string, value inte
 	if err != nil {
 		return fmt.Errorf("failed to convert value: %w", err)
 	}
-	
+
 	resp, err := c.client.ValidateField(ctx, &ValidateFieldRequest{
 		Field: field,
 		Value: anyValue,
@@ -246,11 +246,11 @@ func (c *GRPCClient) ValidateField(ctx context.Context, field string, value inte
 	if err != nil {
 		return err
 	}
-	
+
 	if !resp.Valid {
 		return fmt.Errorf("validation failed: %s", resp.Error)
 	}
-	
+
 	return nil
 }
 
@@ -260,16 +260,16 @@ func (c *GRPCClient) ValidateConfig(ctx context.Context, data *ConfigData) error
 	if err != nil {
 		return fmt.Errorf("failed to convert config data: %w", err)
 	}
-	
+
 	resp, err := c.client.ValidateConfig(ctx, &ValidateConfigRequest{Data: protoData})
 	if err != nil {
 		return err
 	}
-	
+
 	if !resp.Valid && len(resp.Errors) > 0 {
 		return fmt.Errorf("validation failed: %s", resp.Errors[0].Message)
 	}
-	
+
 	return nil
 }
 
@@ -279,7 +279,7 @@ func (c *GRPCClient) GetSchema(ctx context.Context) (*ConfigMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return convertProtoToConfigMetadata(resp.Metadata)
 }
 
@@ -289,7 +289,7 @@ func (c *GRPCClient) SupportsFeature(ctx context.Context, feature string) (bool,
 	if err != nil {
 		return false, err
 	}
-	
+
 	return resp.Supported, nil
 }
 

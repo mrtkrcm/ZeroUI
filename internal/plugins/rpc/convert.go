@@ -30,18 +30,18 @@ func convertInterfaceToAny(value interface{}) (*anypb.Any, error) {
 	if value == nil {
 		return nil, nil
 	}
-	
+
 	// Convert to JSON first for consistent serialization
 	jsonData, err := json.Marshal(value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal value to JSON: %w", err)
 	}
-	
+
 	any := &anypb.Any{
 		TypeUrl: "type.googleapis.com/google.protobuf.Value",
 		Value:   jsonData,
 	}
-	
+
 	return any, nil
 }
 
@@ -50,13 +50,13 @@ func convertAnyToInterface(any *anypb.Any) (interface{}, error) {
 	if any == nil {
 		return nil, nil
 	}
-	
+
 	var value interface{}
 	err := json.Unmarshal(any.Value, &value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal Any value: %w", err)
 	}
-	
+
 	return value, nil
 }
 
@@ -65,7 +65,7 @@ func convertFieldsToProto(fields map[string]interface{}) (map[string]*anypb.Any,
 	if fields == nil {
 		return nil, nil
 	}
-	
+
 	protoFields := make(map[string]*anypb.Any)
 	for key, value := range fields {
 		anyValue, err := convertInterfaceToAny(value)
@@ -74,7 +74,7 @@ func convertFieldsToProto(fields map[string]interface{}) (map[string]*anypb.Any,
 		}
 		protoFields[key] = anyValue
 	}
-	
+
 	return protoFields, nil
 }
 
@@ -83,7 +83,7 @@ func convertProtoToFields(protoFields map[string]*anypb.Any) (map[string]interfa
 	if protoFields == nil {
 		return nil, nil
 	}
-	
+
 	fields := make(map[string]interface{})
 	for key, anyValue := range protoFields {
 		value, err := convertAnyToInterface(anyValue)
@@ -92,7 +92,7 @@ func convertProtoToFields(protoFields map[string]*anypb.Any) (map[string]interfa
 		}
 		fields[key] = value
 	}
-	
+
 	return fields, nil
 }
 
@@ -101,7 +101,7 @@ func convertConfigDataToProto(data *ConfigData) (*ConfigData, error) {
 	return data, nil
 }
 
-// Convert protobuf to ConfigData (no-op since we use protobuf types directly) 
+// Convert protobuf to ConfigData (no-op since we use protobuf types directly)
 func convertProtoToConfigData(proto *ConfigData) (*ConfigData, error) {
 	return proto, nil
 }

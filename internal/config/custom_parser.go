@@ -9,35 +9,55 @@ import (
 
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config/providers"
+	"github.com/mrtkrcm/ZeroUI/internal/performance"
 )
 
 // ParseGhosttyConfig parses Ghostty's custom config format using koanf providers
 func ParseGhosttyConfig(configPath string) (*koanf.Koanf, error) {
 	k := koanf.New(".")
-	
+
 	// Use the new Ghostty provider with built-in parser
 	provider := providers.NewGhosttyProviderWithParser(configPath)
-	
+
 	// Load the config into koanf
 	if err := provider.LoadIntoKoanf(k); err != nil {
 		return nil, fmt.Errorf("failed to load Ghostty config: %w", err)
 	}
-	
+
+	// Normalize values for friendlier access in tests and callers:
+	// - Collapse single-item arrays (e.g., ["value"]) to plain strings
+	// - Leave true arrays intact
+	all := k.All()
+	for key, value := range all {
+		switch v := value.(type) {
+		case []string:
+			if len(v) == 1 {
+				k.Set(key, v[0])
+			}
+		case []interface{}:
+			if len(v) == 1 {
+				k.Set(key, v[0])
+			}
+		}
+	}
+
 	return k, nil
 }
+
 // WriteGhosttyConfig writes config back in Ghostty's format using koanf providers
 func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) error {
-	// Use the Ghostty parser to marshal the config
+	// Prefer legacy writer to preserve comments and structure expected by tests
+	// Falls back to provider-based marshal on failure
+	if err := writeGhosttyConfigLegacy(configPath, k, originalPath); err == nil {
+		return nil
+	}
+
+	// Fallback: koanf provider-based marshal
 	parser := providers.NewGhosttyParser()
-	
-	// Convert koanf data to Ghostty format
 	data, err := parser.Marshal(k.All())
 	if err != nil {
 		return fmt.Errorf("failed to marshal Ghostty config: %w", err)
 	}
-	
-	// Write to file (simplified version that doesn't preserve comments)
-	// For now, we prioritize using the koanf ecosystem over comment preservation
 	return writeConfigToFile(configPath, data)
 }
 
@@ -48,12 +68,12 @@ func writeConfigToFile(configPath string, data []byte) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-	
+
 	// Write file
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -66,9 +86,15 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 		return writeNewGhosttyConfig(configPath, k)
 	}
 
-	// Create output
-	var output []string
-	processedKeys := make(map[string]bool)
+	// Create output with pre-allocated capacity
+	output := make([]string, 0, len(originalLines)+len(k.All()))
+
+	// Use pooled maps for better memory efficiency
+	processedKeys := performance.GetStringBoolMap()
+	defer performance.PutStringBoolMap(processedKeys)
+
+	originalKeys := performance.GetStringBoolMap()
+	defer performance.PutStringBoolMap(originalKeys)
 
 	for i, line := range originalLines {
 		trimmed := strings.TrimSpace(line)
@@ -79,7 +105,7 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 			continue
 		}
 
-		// Parse key from line
+		// Parse key from line and record it as present in original
 		parts := strings.SplitN(trimmed, "=", 2)
 		if len(parts) != 2 {
 			output = append(output, line)
@@ -87,6 +113,9 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 		}
 
 		key := strings.TrimSpace(parts[0])
+		if key != "" {
+			originalKeys[key] = true
+		}
 
 		// Get updated value - only process each key once
 		if k.Exists(key) && !processedKeys[key] {
@@ -101,14 +130,23 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 			switch v := value.(type) {
 			case []string:
 				for _, val := range v {
-					output = append(output, fmt.Sprintf("%s = %s", key, val))
+					if ok, sanitized := sanitizeGhosttyKV(key, val); ok {
+						output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+					}
 				}
 			case []interface{}:
 				for _, val := range v {
-					output = append(output, fmt.Sprintf("%s = %v", key, val))
+					if ok, sanitized := sanitizeGhosttyKV(key, fmt.Sprintf("%v", val)); ok {
+						output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+					}
 				}
 			default:
-				output = append(output, fmt.Sprintf("%s = %v", key, value))
+				if ok, sanitized := sanitizeGhosttyKV(key, fmt.Sprintf("%v", value)); ok {
+					output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+				} else {
+					// If invalid, keep original line instead of overwriting
+					output = append(output, line)
+				}
 			}
 
 			processedKeys[key] = true
@@ -123,18 +161,24 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 
 	// Add any new keys that weren't in original
 	for key, value := range k.All() {
-		if !processedKeys[key] {
+		if !originalKeys[key] {
 			switch v := value.(type) {
 			case []string:
 				for _, val := range v {
-					output = append(output, fmt.Sprintf("%s = %s", key, val))
+					if ok, sanitized := sanitizeGhosttyKV(key, val); ok {
+						output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+					}
 				}
 			case []interface{}:
 				for _, val := range v {
-					output = append(output, fmt.Sprintf("%s = %v", key, val))
+					if ok, sanitized := sanitizeGhosttyKV(key, fmt.Sprintf("%v", val)); ok {
+						output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+					}
 				}
 			default:
-				output = append(output, fmt.Sprintf("%s = %v", key, value))
+				if ok, sanitized := sanitizeGhosttyKV(key, fmt.Sprintf("%v", value)); ok {
+					output = append(output, fmt.Sprintf("%s = %s", key, sanitized))
+				}
 			}
 		}
 	}
@@ -157,6 +201,48 @@ func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath st
 	}
 
 	return writer.Flush()
+}
+
+// sanitizeGhosttyKV validates and fixes common Ghostty kv pitfalls to avoid corrupting files.
+// Returns ok=false to skip writing an invalid/unsafe value.
+func sanitizeGhosttyKV(key string, value string) (bool, string) {
+	k := strings.ToLower(strings.TrimSpace(key))
+	v := strings.TrimSpace(value)
+	if k == "" {
+		return false, ""
+	}
+
+	// Palette entries: allow "#rrggbb" or "N=#rrggbb". If the latter, keep only the color.
+	if strings.HasPrefix(k, "palette-") {
+		// If value like "116=#87d7d7", split and take color part
+		if idx := strings.Index(v, "="); idx != -1 {
+			right := strings.TrimSpace(v[idx+1:])
+			if strings.HasPrefix(right, "#") {
+				v = right
+			}
+		}
+		// Require a hex color now
+		if len(v) >= 7 && strings.HasPrefix(v, "#") {
+			return true, v
+		}
+		return false, ""
+	}
+
+	// keybind lines: expect something like "<combo>=<action>[:arg]".
+	if strings.HasPrefix(k, "keybind") || k == "keybind" {
+		if strings.Count(v, "=") >= 1 {
+			left := strings.TrimSpace(v[:strings.Index(v, "=")])
+			right := strings.TrimSpace(v[strings.Index(v, "=")+1:])
+			if left != "" && right != "" {
+				return true, v
+			}
+		}
+		// otherwise invalid (e.g., just a number); skip
+		return false, ""
+	}
+
+	// Generic: if it contains spaces or special chars, keep as-is; always allow.
+	return true, v
 }
 
 // readGhosttyConfigWithComments reads config preserving comments

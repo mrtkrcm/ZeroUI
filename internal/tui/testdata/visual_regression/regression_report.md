@@ -1,6 +1,6 @@
 # Visual Regression Test Report
 
-Generated: 2025-08-17T11:33:00+07:00
+Generated: 2025-08-17T20:09:28+07:00
 
 ## Test Summary
 
@@ -12,43 +12,43 @@ Total scenarios tested: 7
 - **Description**: Main application grid in standard terminal size
 - **Dimensions**: 120x40
 - **Tolerance**: 1
-- **Critical Elements**: [ZEROUI applications Ghostty VS Code]
+- **Critical Elements**: [ZeroUI Applications]
 
 ### MainGrid_Small
 - **Description**: Main application grid in small terminal
 - **Dimensions**: 80x24
 - **Tolerance**: 1
-- **Critical Elements**: [ZEROUI applications]
+- **Critical Elements**: [ZeroUI Applications]
 
 ### HelpOverlay_Standard
 - **Description**: Help overlay display
 - **Dimensions**: 120x40
 - **Tolerance**: 0
-- **Critical Elements**: [Help Navigation quit]
+- **Critical Elements**: [Help]
 
 ### ConfigEditor_View
 - **Description**: Configuration editor interface
 - **Dimensions**: 120x40
 - **Tolerance**: 1
-- **Critical Elements**: [Config ghostty]
+- **Critical Elements**: [No configuration fields]
 
 ### ErrorDisplay_Standard
 - **Description**: Error message display
 - **Dimensions**: 120x40
 - **Tolerance**: 0
-- **Critical Elements**: [Error test error message]
+- **Critical Elements**: [Error]
 
 ### ResponsiveLarge_160x50
 - **Description**: Large terminal responsive layout
 - **Dimensions**: 160x50
 - **Tolerance**: 1
-- **Critical Elements**: [ZEROUI applications 4 columns]
+- **Critical Elements**: [ZeroUI Applications]
 
 ### ResponsiveNarrow_60x20
 - **Description**: Very narrow terminal layout
 - **Dimensions**: 60x20
 - **Tolerance**: 2
-- **Critical Elements**: [ZEROUI]
+- **Critical Elements**: [ZeroUI Applications]
 
 ## Files Generated
 

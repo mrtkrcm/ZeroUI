@@ -313,11 +313,11 @@ func (m *DelightfulUIModel) renderFooter() string {
 		Margin(1, 0)
 
 	progressBar := m.progress.ViewAs(float64(m.selectedIndex+1) / float64(len(m.apps)))
-	
+
 	// Add current theme info
 	currentTheme := styles.GetCurrentThemeName()
 	themeInfo := fmt.Sprintf("Theme: %s", currentTheme)
-	
+
 	return footerStyle.Render(progressBar + "\n" + strings.Join(help, " • ") + "\n" + themeInfo)
 }
 
@@ -453,7 +453,7 @@ func (m *DelightfulUIModel) activateApp() tea.Cmd {
 	if len(m.apps) == 0 || m.selectedIndex < 0 || m.selectedIndex >= len(m.apps) {
 		return nil
 	}
-	
+
 	selectedApp := m.apps[m.selectedIndex]
 	return SelectAppCmd(selectedApp.Definition.Name)
 }
@@ -461,7 +461,7 @@ func (m *DelightfulUIModel) activateApp() tea.Cmd {
 func (m *DelightfulUIModel) cycleTheme() {
 	newTheme := styles.CycleTheme()
 	m.styles = styles.GetStyles()
-	
+
 	// Create theme change particles for visual feedback
 	m.createThemeChangeParticles(newTheme.Name)
 }
@@ -469,14 +469,14 @@ func (m *DelightfulUIModel) cycleTheme() {
 func (m *DelightfulUIModel) createThemeChangeParticles(themeName string) {
 	centerX := float64(m.width / 2)
 	centerY := float64(m.height / 4)
-	
+
 	// Create particles with theme-appropriate colors
 	themeColors := []string{"205", "212", "99", "105", "203", "213", "214"}
-	
+
 	for i := 0; i < 20; i++ {
 		angle := float64(i) * (math.Pi * 2 / 20)
 		speed := rand.Float64()*2 + 1
-		
+
 		m.particles = append(m.particles, Particle{
 			x:     centerX,
 			y:     centerY,

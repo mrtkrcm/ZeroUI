@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package integration
 
 import (
@@ -40,20 +43,20 @@ func testPluginDiscovery(t *testing.T, binaryPath, pluginPath, testDir string) {
 		// Create plugin directory and symlink
 		pluginDir := filepath.Join(testDir, "plugins")
 		require.NoError(t, os.MkdirAll(pluginDir, 0755))
-		
+
 		pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 		require.NoError(t, os.Symlink(pluginPath, pluginLink))
-		
+
 		// Run with plugin directory in PATH
 		cmd := exec.Command(binaryPath, "list", "apps")
-		cmd.Env = append(os.Environ(), 
+		cmd.Env = append(os.Environ(),
 			"PATH="+pluginDir+":"+os.Getenv("PATH"),
 			"HOME="+testDir,
 		)
-		
+
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Should list apps successfully")
-		
+
 		assert.Contains(t, output, "ghostty", "Should discover ghostty via plugin")
 	})
 
@@ -61,15 +64,15 @@ func testPluginDiscovery(t *testing.T, binaryPath, pluginPath, testDir string) {
 	t.Run("handles missing plugins gracefully", func(t *testing.T) {
 		// Run without plugin in PATH
 		cmd := exec.Command(binaryPath, "list", "apps")
-		cmd.Env = append(os.Environ(), 
+		cmd.Env = append(os.Environ(),
 			"PATH=/nonexistent",
 			"HOME="+testDir,
 		)
-		
+
 		output, err := runCommandWithEnv(cmd)
 		// Should still work with built-in app detection
 		require.NoError(t, err, "Should handle missing plugins gracefully")
-		
+
 		// Should either show built-in apps or empty list
 		assert.Contains(t, output, "Applications", "Should show applications header")
 	})
@@ -79,21 +82,21 @@ func testPluginCommunication(t *testing.T, binaryPath, pluginPath, testDir strin
 	// Setup plugin in PATH
 	pluginDir := filepath.Join(testDir, "plugins")
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
-	
+
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
 	// Test 1: Basic RPC communication
 	t.Run("communicates with plugin via RPC", func(t *testing.T) {
 		cmd := exec.Command(binaryPath, "list", "keys", "ghostty")
-		cmd.Env = append(os.Environ(), 
+		cmd.Env = append(os.Environ(),
 			"PATH="+pluginDir+":"+os.Getenv("PATH"),
 			"HOME="+testDir,
 		)
-		
+
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Should communicate with plugin successfully")
-		
+
 		assert.Contains(t, output, "keys", "Should show configuration keys")
 		assert.Contains(t, output, "ghostty", "Should reference ghostty app")
 	})
@@ -102,19 +105,19 @@ func testPluginCommunication(t *testing.T, binaryPath, pluginPath, testDir strin
 	t.Run("handles plugin timeout gracefully", func(t *testing.T) {
 		// This test verifies that plugin communication has reasonable timeouts
 		// and doesn't hang indefinitely
-		
+
 		cmd := exec.Command(binaryPath, "extract", "ghostty", "--dry-run")
-		cmd.Env = append(os.Environ(), 
+		cmd.Env = append(os.Environ(),
 			"PATH="+pluginDir+":"+os.Getenv("PATH"),
 			"HOME="+testDir,
 		)
-		
+
 		done := make(chan error, 1)
 		go func() {
 			_, err := runCommandWithEnv(cmd)
 			done <- err
 		}()
-		
+
 		select {
 		case err := <-done:
 			// Should complete within reasonable time
@@ -131,7 +134,7 @@ func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 	// Setup plugin in PATH
 	pluginDir := filepath.Join(testDir, "plugins")
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
-	
+
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
@@ -143,14 +146,14 @@ func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 			{"list", "keys", "ghostty"},
 			{"extract", "ghostty", "--dry-run"},
 		}
-		
+
 		for _, cmdArgs := range commands {
 			cmd := exec.Command(binaryPath, cmdArgs...)
-			cmd.Env = append(os.Environ(), 
+			cmd.Env = append(os.Environ(),
 				"PATH="+pluginDir+":"+os.Getenv("PATH"),
 				"HOME="+testDir,
 			)
-			
+
 			output, err := runCommandWithEnv(cmd)
 			if err != nil {
 				t.Logf("Command %v failed (may be acceptable): %v", cmdArgs, err)
@@ -169,14 +172,14 @@ func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 exit 1
 `
 		require.NoError(t, os.WriteFile(crashingPlugin, []byte(crashScript), 0755))
-		
+
 		// Try to use the crashing plugin
 		cmd := exec.Command(binaryPath, "list", "apps")
-		cmd.Env = append(os.Environ(), 
+		cmd.Env = append(os.Environ(),
 			"PATH="+pluginDir+":"+os.Getenv("PATH"),
 			"HOME="+testDir,
 		)
-		
+
 		output, err := runCommandWithEnv(cmd)
 		// Should handle plugin crash gracefully and continue
 		require.NoError(t, err, "Should handle plugin crashes gracefully")
@@ -187,13 +190,13 @@ exit 1
 func buildGhosttyPlugin(t *testing.T, testDir string) string {
 	// Build the Ghostty RPC plugin
 	pluginPath := filepath.Join(testDir, "zeroui-plugin-ghostty-rpc")
-	
+
 	cmd := exec.Command("go", "build", "-o", pluginPath, "./plugins/ghostty-rpc")
 	cmd.Dir = "../../" // Go back to project root
-	
+
 	err := cmd.Run()
 	require.NoError(t, err, "Should build Ghostty plugin")
-	
+
 	return pluginPath
 }
 
@@ -207,7 +210,7 @@ func TestPluginAPIIntegration(t *testing.T) {
 	t.Run("Plugin responds to info request", func(t *testing.T) {
 		// Test plugin directly (if it supports standalone mode)
 		// This verifies the plugin implementation itself
-		
+
 		// For now, just verify the plugin binary exists and is executable
 		info, err := os.Stat(pluginPath)
 		require.NoError(t, err, "Plugin binary should exist")
@@ -231,7 +234,7 @@ func TestRPCProtocolIntegration(t *testing.T) {
 	// Setup plugin environment
 	pluginDir := filepath.Join(testDir, "plugins")
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
-	
+
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
@@ -250,11 +253,11 @@ func TestRPCProtocolIntegration(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				cmd := exec.Command(binaryPath, tc.args...)
-				cmd.Env = append(os.Environ(), 
+				cmd.Env = append(os.Environ(),
 					"PATH="+pluginDir+":"+os.Getenv("PATH"),
 					"HOME="+testDir,
 				)
-				
+
 				output, err := runCommandWithEnv(cmd)
 				if tc.expectOK {
 					if err != nil {
@@ -262,7 +265,7 @@ func TestRPCProtocolIntegration(t *testing.T) {
 						t.Logf("Output: %s", output)
 					}
 				}
-				
+
 				// At minimum, should not hang or crash
 				assert.NotContains(t, strings.ToLower(output), "panic", "Should not panic")
 			})

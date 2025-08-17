@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -13,6 +15,9 @@ import (
 // CLI strategy extracts configuration from command-line tools
 type CLI struct {
 	commands map[string]CLICommand
+	// Runner allows injecting a command runner (for tests or alternate execution).
+	// If nil, NewCLI initializes it to the OS runner.
+	Runner Runner
 }
 
 // CLICommand defines how to extract config from a CLI tool
@@ -64,6 +69,8 @@ func NewCLI() *CLI {
 				Confidence: 0.90,
 			},
 		},
+		// Default runner uses the OS; tests may inject a fake runner by setting CLI.Runner.
+		Runner: NewOSRunner(),
 	}
 }
 
@@ -89,9 +96,66 @@ func (c *CLI) Extract(ctx context.Context, app string) (*Config, error) {
 	execCtx, cancel := context.WithTimeout(ctx, cmd.Timeout)
 	defer cancel()
 
-	// Execute command
-	execCmd := exec.CommandContext(execCtx, cmd.Command, cmd.Args...)
-	output, err := execCmd.CombinedOutput()
+	// Execute command (resolve binary path; allow fallback by searching upward for repo-local test binaries)
+	resolved := cmd.Command
+	if _, err := exec.LookPath(cmd.Command); err != nil {
+		// Walk up from the current working directory toward filesystem root.
+		// At each directory check for common test locations such as:
+		//   - <dir>/testdata/bin/{cmd}
+		//   - <dir>/tools/plugins/{cmd}[.sh]
+		//   - <dir>/tools/plugins/{cmd}-rpc/{cmd}[.sh]
+		// Stop when we reach filesystem root or find a go.mod (repo root heuristic).
+		dir, _ := os.Getwd()
+		for {
+			tryPaths := []string{
+				filepath.Join(dir, "testdata", "bin", cmd.Command),
+				filepath.Join(dir, "testdata", "bin", cmd.Command+".sh"),
+				filepath.Join(dir, "tools", "plugins", cmd.Command),
+				filepath.Join(dir, "tools", "plugins", cmd.Command+".sh"),
+				filepath.Join(dir, "tools", "plugins", cmd.Command+"-rpc", cmd.Command),
+				filepath.Join(dir, "tools", "plugins", cmd.Command+"-rpc", cmd.Command+".sh"),
+			}
+
+			found := false
+			for _, p := range tryPaths {
+				if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+					resolved = p
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+
+			// If current directory contains go.mod, treat it as repo root and stop searching upward.
+			if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+				break
+			}
+
+			parent := filepath.Dir(dir)
+			if parent == dir || parent == "" {
+				// reached filesystem root
+				break
+			}
+			dir = parent
+		}
+	}
+
+	// Use injected Runner if available; otherwise use default OS runner.
+	runner := c.Runner
+	if runner == nil {
+		runner = NewOSRunner()
+	}
+	stdout, stderr, err := runner.Run(execCtx, resolved, cmd.Args...)
+	// Combine stdout/stderr for parsers that expect combined output
+	output := append([]byte{}, stdout...)
+	if len(stderr) > 0 {
+		if len(output) > 0 {
+			output = append(output, '\n')
+		}
+		output = append(output, stderr...)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("CLI command failed for %s: %w", app, err)
 	}

@@ -2,13 +2,14 @@ package components
 
 import (
 	"fmt"
-	"testing"
-	"time"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
+	"time"
 )
 
 func TestConfigFieldSeparation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		fields         []ConfigField
@@ -116,6 +117,7 @@ func TestConfigFieldSeparation(t *testing.T) {
 }
 
 func TestFormatTitle(t *testing.T) {
+	t.Parallel()
 	form := NewHuhConfigForm("test-app")
 
 	tests := []struct {
@@ -183,6 +185,7 @@ func TestFormatTitle(t *testing.T) {
 }
 
 func TestFormatDescription(t *testing.T) {
+	t.Parallel()
 	form := NewHuhConfigForm("test-app")
 
 	tests := []struct {
@@ -239,6 +242,7 @@ func TestFormatDescription(t *testing.T) {
 }
 
 func TestFieldTypeHandling(t *testing.T) {
+	t.Parallel()
 	form := NewHuhConfigForm("test-app")
 
 	tests := []struct {
@@ -313,10 +317,10 @@ func TestFieldTypeHandling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			form.SetFields([]ConfigField{tt.field})
-			
+
 			// Test field creation
 			huhField := form.createHuhField(tt.field)
-			
+
 			if tt.shouldWork {
 				assert.NotNil(t, huhField, "Expected field to be created successfully")
 			} else {
@@ -327,10 +331,11 @@ func TestFieldTypeHandling(t *testing.T) {
 }
 
 func TestConfigFormIntegration(t *testing.T) {
+	t.Parallel()
 	// Test realistic configuration scenarios
 	t.Run("ghostty_terminal_config", func(t *testing.T) {
 		form := NewHuhConfigForm("ghostty")
-		
+
 		// Simulate realistic Ghostty configuration
 		fields := []ConfigField{
 			{
@@ -397,34 +402,34 @@ func TestConfigFormIntegration(t *testing.T) {
 				Source:      "available option",
 			},
 		}
-		
+
 		form.SetFields(fields)
 		groups := form.groupFields()
-		
+
 		// Verify existing configurations are properly grouped
 		assert.Contains(t, groups, "[*] Current Configuration - Appearance")
-		assert.Contains(t, groups, "[*] Current Configuration - Typography") 
+		assert.Contains(t, groups, "[*] Current Configuration - Typography")
 		assert.Contains(t, groups, "[*] Current Configuration - Window")
-		
+
 		// Verify available options are properly grouped
 		assert.Contains(t, groups, "[+] Available Options - Behavior")
 		assert.Contains(t, groups, "[+] Available Options - Appearance")
-		
+
 		// Test field formatting
 		themeField := fields[0] // theme field
 		title := form.formatTitle(themeField)
 		assert.Contains(t, title, "[*]")
 		assert.Contains(t, title, "tokyo-night")
-		
+
 		availableField := fields[5] // auto-hide-mouse
 		availableTitle := form.formatTitle(availableField)
 		assert.Contains(t, availableTitle, "[ ]")
 		assert.Contains(t, availableTitle, "available")
 	})
-	
+
 	t.Run("zed_editor_config", func(t *testing.T) {
 		form := NewHuhConfigForm("zed")
-		
+
 		// Simulate realistic Zed editor configuration
 		fields := []ConfigField{
 			{
@@ -476,22 +481,23 @@ func TestConfigFormIntegration(t *testing.T) {
 				Source:      "available option",
 			},
 		}
-		
+
 		form.SetFields(fields)
-		
+
 		// Test that form can be built without errors
 		require.NotPanics(t, func() {
 			form.buildForm()
 		})
-		
+
 		// Verify form is created
 		assert.NotNil(t, form.form, "Form should be created successfully")
 	})
 }
 
 func TestValidationScenarios(t *testing.T) {
+	t.Parallel()
 	form := NewHuhConfigForm("test-app")
-	
+
 	t.Run("required_field_validation", func(t *testing.T) {
 		field := ConfigField{
 			Key:      "api_key",
@@ -500,16 +506,16 @@ func TestValidationScenarios(t *testing.T) {
 			IsSet:    false,
 			Source:   "available option",
 		}
-		
+
 		form.SetFields([]ConfigField{field})
 		huhField := form.createHuhField(field)
 		assert.NotNil(t, huhField, "Required field should be created")
 	})
-	
+
 	t.Run("numeric_validation", func(t *testing.T) {
 		minVal := float64(1)
 		maxVal := float64(100)
-		
+
 		field := ConfigField{
 			Key:    "percentage",
 			Type:   FieldTypeInt,
@@ -518,7 +524,7 @@ func TestValidationScenarios(t *testing.T) {
 			IsSet:  false,
 			Source: "available option",
 		}
-		
+
 		form.SetFields([]ConfigField{field})
 		huhField := form.createHuhField(field)
 		assert.NotNil(t, huhField, "Field with numeric validation should be created")
@@ -527,6 +533,7 @@ func TestValidationScenarios(t *testing.T) {
 
 // TestConfigFormPerformance tests that form creation and updates are fast
 func TestConfigFormPerformance(t *testing.T) {
+	t.Parallel()
 	// Create a large number of fields to test performance
 	var fields []ConfigField
 	for i := 0; i < 100; i++ {
@@ -539,17 +546,33 @@ func TestConfigFormPerformance(t *testing.T) {
 			Source:      "config file",
 		})
 	}
-	
+
 	form := NewHuhConfigForm("performance-test")
-	
+
 	// Test that setting many fields doesn't cause performance issues
 	start := time.Now()
 	form.SetFields(fields)
 	duration := time.Since(start)
-	
+
 	// Should complete within reasonable time (less than 100ms for 100 fields)
 	assert.Less(t, duration.Milliseconds(), int64(100), "Form creation should be fast")
-	
+
 	groups := form.groupFields()
 	assert.Greater(t, len(groups), 0, "Should create at least one group")
+}
+
+func TestCalculateLayout(t *testing.T) {
+	t.Parallel()
+	form := NewHuhConfigForm("test")
+	form.SetSize(50, 20)
+	w, h, cols := form.calculateLayout()
+	assert.GreaterOrEqual(t, w, 40)
+	assert.GreaterOrEqual(t, h, 10)
+	assert.Equal(t, 1, cols)
+
+	form.SetSize(200, 60)
+	w, h, cols = form.calculateLayout()
+	assert.Equal(t, 2, cols)
+	assert.Greater(t, w, 100)
+	assert.Greater(t, h, 10)
 }

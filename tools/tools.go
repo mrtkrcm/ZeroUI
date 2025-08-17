@@ -24,8 +24,8 @@ import (
 	_ "golang.org/x/perf/cmd/benchstat"
 
 	// Documentation tools
-	_ "golang.org/x/tools/cmd/godoc"
 	_ "github.com/swaggo/swag/cmd/swag"
+	_ "golang.org/x/tools/cmd/godoc"
 
 	// Development utilities
 	_ "github.com/air-verse/air"
