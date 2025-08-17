@@ -1,0 +1,98 @@
+{
+  "languages": {
+    "Go": {
+      "language_servers": ["gopls"],
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "goimports",
+          "arguments": []
+        }
+      }
+    },
+    "YAML": {
+      "format_on_save": "on"
+    },
+    "JSON": {
+      "format_on_save": "on"
+    },
+    "TOML": {
+      "format_on_save": "on"
+    }
+  },
+  "lsp": {
+    "gopls": {
+      "initialization_options": {
+        "usePlaceholders": true,
+        "completeUnimported": true,
+        "deepCompletion": true,
+        "analyses": {
+          "unusedparams": true,
+          "shadow": true,
+          "fillstruct": true,
+          "nonewvars": true,
+          "undeclaredname": true,
+          "unusedwrite": true
+        },
+        "staticcheck": true,
+        "vulncheck": "Imports",
+        "codelenses": {
+          "gc_details": false,
+          "generate": true,
+          "regenerate_cgo": true,
+          "test": true,
+          "tidy": true,
+          "upgrade_dependency": true,
+          "vendor": true
+        }
+      }
+    }
+  },
+  "file_types": {
+    "Dockerfile": ["Dockerfile", "*.dockerfile"],
+    "Go": ["*.go"],
+    "Go Mod": ["go.mod", "go.sum"],
+    "YAML": ["*.yml", "*.yaml", ".golangci.yml"],
+    "Shell Script": ["*.sh", "scripts/**/*"]
+  },
+  "git": {
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  "terminal": {
+    "shell": {
+      "program": "zsh"
+    },
+    "working_directory": "current_project_directory"
+  },
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "tabs": {
+    "file_icons": true,
+    "git_status": true
+  },
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+  "ui_font_size": 14,
+  "buffer_font_size": 14,
+  "buffer_font_family": "JetBrains Mono",
+  "wrap_guides": [80, 120],
+  "soft_wrap": "editor_width",
+  "show_whitespaces": "selection",
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+  "inlay_hints": {
+    "enabled": true,
+    "show_type_hints": true,
+    "show_parameter_hints": true,
+    "show_other_hints": true
+  }
+}

@@ -5,6 +5,8 @@
 *.so
 *.dylib
 configtoggle
+zeroui
+zeroui-test
 
 # Test binary, built with `go test -c`
 *.test
@@ -52,4 +54,52 @@ bin/
 # Coverage reports
 coverage.txt
 coverage.html
-coverage.outzeroui
+coverage.out
+
+# Plugin binaries
+plugins/*/zeroui-plugin-*
+plugins/*/*.so
+plugins/*/*.dylib
+
+# Test reports and temporary files
+internal/tui/testdata/reports/*/
+internal/tui/testdata/diff_images/
+tmp-configs/
+
+# Development environment
+.envrc.local
+.cache/
+.vscode/settings.json
+.idea/workspace.xml
+
+# Security and linting reports
+gosec-report.sarif
+.gitleaks/
+nancy.json
+
+# Performance profiling
+*.prof
+*.trace
+
+# Hot reloading
+tmp/
+air_tmp/
+build-errors.log
+
+# Dependency management
+vendor/
+go.work.sum
+
+# Coverage and testing
+coverage/
+*.test
+test_output/
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local configuration overrides
+config.local.*
+.env.local

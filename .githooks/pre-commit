@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+#
+# Git pre-commit hook for the repository.
+#
+# Places:
+#  - Save this file as `.githooks/pre-commit` and set:
+#      git config core.hooksPath .githooks
+#    (or use your project's `scripts/install-git-hooks.sh` if present)
+#
+# Behavior:
+#  - Runs the repository's `make pre-commit` target (format, lint, test, security).
+#  - Attempts to locate the Makefile in a few sensible locations so the hook works
+#    whether the hook path is set at repo root or a nested folder.
+#
+# Notes:
+#  - This hook runs blocking checks. If your team finds this too slow, consider
+#    creating a faster local-only hook or running a subset of checks here.
+#  - The hook exits non-zero on any failure which prevents the commit.
+#
+
+set -euo pipefail
+
+# Helper: print to stderr (so Git shows the output more obviously)
+err() { printf "%s\n" "$*" >&2; }
+
+err "[pre-commit] Starting pre-commit checks..."
+
+# Determine repository top-level (if available)
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+# Candidate Makefile locations (relative to REPO_ROOT)
+CANDIDATES=(
+  "$REPO_ROOT/Makefile"
+  "$REPO_ROOT/configtoggle/Makefile"
+  "./Makefile"
+  "./configtoggle/Makefile"
+)
+
+MAKE_DIR=""
+for candidate in "${CANDIDATES[@]}"; do
+  if [ -n "$candidate" ] && [ -f "$candidate" ]; then
+    MAKE_DIR="$(dirname "$candidate")"
+    break
+  fi
+done
+
+if [ -z "$MAKE_DIR" ]; then
+  err "[pre-commit] Could not find Makefile. Skipping make-based pre-commit checks."
+  err "[pre-commit] To enable checks, ensure a Makefile exists at repo root or in 'configtoggle/'."
+  # Allow commit if Makefile missing to avoid blocking; change this behavior if you prefer strictness.
+  exit 0
+fi
+
+err "[pre-commit] Running 'make pre-commit' in: $MAKE_DIR"
+
+# Run the Make target. Use -s to reduce Make's output noise but keep command output visible.
+# If the Makefile target is slow or heavy in CI, teams can substitute a lighter target here.
+if ! (cd "$MAKE_DIR" && make pre-commit); then
+  err "[pre-commit] Pre-commit checks failed. Commit aborted."
+  err "[pre-commit] To retry locally: cd $MAKE_DIR && make pre-commit"
+  exit 1
+fi
+
+err "[pre-commit] Pre-commit checks passed. Proceeding with commit."
+exit 0

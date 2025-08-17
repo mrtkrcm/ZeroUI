@@ -1,0 +1,32 @@
+# Codecov configuration
+coverage:
+  precision: 2
+  round: down
+  range: 70..95
+
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        base: auto
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+ignore:
+  - "**/*_test.go"
+  - "**/testdata/**"
+  - "**/docs/**"
+  - "**/examples/**"
+  - "**/*.pb.go"
+  - "**/tools.go"
+  - "**/main.go"

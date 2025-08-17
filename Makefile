@@ -63,6 +63,18 @@ dev-deps:
 	@echo "$(BLUE)🔧 Installing development tools...$(NC)"
 	@mkdir -p $(TOOLS_DIR)
 	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -I {} go install {}
+	@echo "$(GREEN)✅ Development tools installed$(NC)"
+
+## air: Start development server with hot reloading
+air:
+	@echo "$(BLUE)🔥 Starting development server with hot reloading...$(NC)"
+	@if command -v air >/dev/null 2>&1; then \
+		air; \
+	else \
+		echo "$(RED)❌ air not found. Installing...$(NC)"; \
+		go install github.com/air-verse/air@latest; \
+		air; \
+	fi
 
 ## build: Build the binary
 build:
@@ -99,7 +111,24 @@ test:
 	@mkdir -p $(COVERAGE_DIR)
 	@go test -v -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic ./...
 	@go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
+	@go tool cover -func=$(COVERAGE_DIR)/coverage.out | tail -1
 	@echo "$(GREEN)✅ Tests completed$(NC)"
+
+## test-verbose: Run tests with verbose output
+test-verbose:
+	@echo "$(BLUE)🧪 Running tests with verbose output...$(NC)"
+	@mkdir -p $(COVERAGE_DIR)
+	@gotestsum --format=standard-verbose -- -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic ./...
+	@echo "$(GREEN)✅ Verbose tests completed$(NC)"
+
+## test-watch: Run tests in watch mode
+test-watch:
+	@echo "$(BLUE)👀 Running tests in watch mode...$(NC)"
+	@if command -v entr >/dev/null 2>&1; then \
+		find . -name "*.go" | entr -r go test ./...; \
+	else \
+		echo "$(RED)❌ entr not found. Install it for test watching.$(NC)"; \
+	fi
 
 ## test-integration: Run integration tests
 test-integration:
