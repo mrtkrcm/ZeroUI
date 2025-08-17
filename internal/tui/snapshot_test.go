@@ -17,12 +17,12 @@ import (
 
 const snapshotDir = "testdata/snapshots"
 
-// TestSnapshotAppGridView captures the app grid view
-func TestSnapshotAppGridView(t *testing.T) {
+// TestSnapshotListView captures the app grid view
+func TestSnapshotListView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Set standard dimensions
@@ -46,15 +46,15 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Switch to app selection view
-	model.state = HuhAppSelectionView
+	model.state = ListView
 	model.width = 120
 	model.height = 40
 	model.updateComponentSizes()
-	model.focusCurrentComponent()
+	// Focus is handled by modern components
 
 	// Capture snapshot
 	snapshot := model.View()
@@ -64,25 +64,24 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 	assert.Contains(t, snapshot, "Select Application", "Should show selection title")
 }
 
-// TestSnapshotConfigEditView captures the config editor view
-func TestSnapshotConfigEditView(t *testing.T) {
+// TestSnapshotFormView captures the config editor view
+func TestSnapshotFormView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Set up config editor with test data
-	model.state = ConfigEditView
+	model.state = FormView
 	model.currentApp = "ghostty"
 	model.width = 120
 	model.height = 40
 
-	// Skip loading actual config for testing, just set up mock editor
-	model.configEditor = components.NewConfigEditor("ghostty")
+	// Skip loading actual config for testing - handled by modern form components
 
 	model.updateComponentSizes()
-	model.focusCurrentComponent()
+	// Focus is handled by modern components
 
 	// Capture snapshot
 	snapshot := model.View()
@@ -97,7 +96,7 @@ func TestSnapshotHelpView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Enable help
@@ -119,7 +118,7 @@ func TestSnapshotErrorView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Set an error
@@ -154,7 +153,7 @@ func TestSnapshotResponsiveSizes(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(size.name, func(t *testing.T) {
-			model, err := NewModel(engine, "")
+			model, err := NewTestModel(engine, "")
 			require.NoError(t, err)
 
 			// Set size
@@ -188,7 +187,7 @@ func TestSnapshotComponentStates(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Standard size
@@ -215,7 +214,7 @@ func TestSnapshotComponentStates(t *testing.T) {
 		{
 			name: "app_selected",
 			setup: func(m *Model) {
-				m.state = ConfigEditView
+				m.state = FormView
 				m.currentApp = "ghostty"
 			},
 		},
@@ -225,7 +224,7 @@ func TestSnapshotComponentStates(t *testing.T) {
 		t.Run(state.name, func(t *testing.T) {
 			// Reset model
 			model.showingHelp = false
-			model.state = AppGridView
+			model.state = ListView
 			model.currentApp = ""
 
 			// Apply state
@@ -269,7 +268,7 @@ func TestCoreUIFunctionality(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test 1: Initialization
@@ -315,16 +314,16 @@ func TestCoreUIFunctionality(t *testing.T) {
 	// Test 4: State Transitions
 	t.Run("StateTransitions", func(t *testing.T) {
 		// AppGrid -> AppSelection
-		model.state = HuhAppSelectionView
-		model.focusCurrentComponent()
+		model.state = ListView
+		// Focus is handled by modern components
 
 		snapshot := model.View()
 		saveSnapshot(t, "test_state_app_selection.txt", snapshot)
 
 		// AppSelection -> ConfigEdit
-		model.state = ConfigEditView
+		model.state = FormView
 		model.currentApp = "ghostty"
-		model.focusCurrentComponent()
+		// Focus is handled by modern components
 
 		snapshot = model.View()
 		saveSnapshot(t, "test_state_config_edit.txt", snapshot)
@@ -333,8 +332,8 @@ func TestCoreUIFunctionality(t *testing.T) {
 	// Test 5: Component Updates
 	t.Run("ComponentUpdates", func(t *testing.T) {
 		// Update status bar
-		model.statusBar.SetAppCount(5)
-		model.statusBar.SetTheme("Dark")
+		// Status bar functionality handled by modern components //SetAppCount(5)
+		// Status bar functionality handled by modern components //SetTheme("Dark")
 
 		snapshot := model.View()
 		saveSnapshot(t, "test_component_updates.txt", snapshot)
@@ -354,8 +353,8 @@ func TestUILayoutCoverage(t *testing.T) {
 		validate func(*testing.T, string)
 	}{
 		{
-			name:  "AppGridView",
-			state: AppGridView,
+			name:  "ListView",
+			state: ListView,
 			setup: func(m *Model) {
 				// Default setup
 			},
@@ -365,8 +364,8 @@ func TestUILayoutCoverage(t *testing.T) {
 			},
 		},
 		{
-			name:  "HuhAppSelectionView",
-			state: HuhAppSelectionView,
+			name:  "ListView",
+			state: ListView,
 			setup: func(m *Model) {
 				m.appSelector.Focus()
 			},
@@ -375,8 +374,8 @@ func TestUILayoutCoverage(t *testing.T) {
 			},
 		},
 		{
-			name:  "ConfigEditView",
-			state: ConfigEditView,
+			name:  "FormView",
+			state: FormView,
 			setup: func(m *Model) {
 				m.currentApp = "test-app"
 				m.configEditor.Focus()
@@ -399,7 +398,7 @@ func TestUILayoutCoverage(t *testing.T) {
 
 	for _, vs := range viewStates {
 		t.Run(vs.name, func(t *testing.T) {
-			model, err := NewModel(engine, "")
+			model, err := NewTestModel(engine, "")
 			require.NoError(t, err)
 
 			// Set standard size

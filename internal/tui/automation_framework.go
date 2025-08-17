@@ -12,6 +12,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -405,7 +406,8 @@ func (af *AutomationFramework) executeTest(ctx context.Context, test *Automation
 	defer cancel()
 
 	// Create model
-	model, err := NewModel(af.engine, "")
+	logger, _ := logging.NewCharmLogger(logging.DefaultConfig())
+	model, err := NewModel(af.engine, "", logger)
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("Failed to create model: %v", err)
 		result.ExecutionTime = time.Since(startTime)

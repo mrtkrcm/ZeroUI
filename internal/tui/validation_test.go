@@ -18,7 +18,7 @@ func TestUIInitialization(t *testing.T) {
 	require.NoError(t, err, "Failed to create engine")
 
 	// Create model without initial app (should show grid view)
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err, "Failed to create model")
 
 	// Validate initial state
@@ -37,7 +37,7 @@ func TestUIRendering(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test initial render
@@ -65,7 +65,7 @@ func TestFullscreenLayout(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Set fullscreen dimensions
@@ -94,7 +94,7 @@ func TestKeyboardNavigation(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test navigation keys
@@ -149,7 +149,7 @@ func TestComponentInteraction(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test window size message propagation
@@ -166,7 +166,7 @@ func TestStateTransitions(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Start in AppGridView
@@ -213,7 +213,7 @@ func TestInitCommand(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test Init command
@@ -226,7 +226,7 @@ func TestErrorHandling(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Set an error
@@ -242,7 +242,7 @@ func TestHelpView(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Enable help

@@ -594,7 +594,7 @@ func TestContinuousIntegration(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test standard CI terminal size
@@ -620,7 +620,7 @@ func TestContinuousIntegration(t *testing.T) {
 // BenchmarkTUIRendering benchmarks TUI rendering performance
 func BenchmarkTUIRendering(b *testing.B) {
 	engine, _ := toggle.NewEngine()
-	model, _ := NewModel(engine, "")
+	model, _ := NewTestModel(engine, "")
 
 	model.width = 120
 	model.height = 40
@@ -637,7 +637,7 @@ func BenchmarkTUIRendering(b *testing.B) {
 // BenchmarkTUIInteraction benchmarks TUI interaction handling
 func BenchmarkTUIInteraction(b *testing.B) {
 	engine, _ := toggle.NewEngine()
-	model, _ := NewModel(engine, "")
+	model, _ := NewTestModel(engine, "")
 
 	b.ResetTimer()
 	b.ReportAllocs()

@@ -136,7 +136,7 @@ func TestVisualRendering(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			model, err := NewModel(engine, "")
+			model, err := NewTestModel(engine, "")
 			require.NoError(t, err)
 
 			// Set up the test case
@@ -191,7 +191,7 @@ func TestResponsiveLayout(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(size.name, func(t *testing.T) {
-			model, err := NewModel(engine, "")
+			model, err := NewTestModel(engine, "")
 			require.NoError(t, err)
 
 			// Test both modern and legacy grids
@@ -237,7 +237,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -309,7 +309,7 @@ func TestPerformance(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -349,7 +349,7 @@ func TestUIKeyboardNavigation(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -406,7 +406,7 @@ func TestErrorRecovery(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	errorCases := []struct {
@@ -502,7 +502,7 @@ func TestVisualRegression(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Generate reference snapshots for all major states

@@ -114,6 +114,26 @@ type Styles struct {
 	Border      lipgloss.Style
 	BorderFocus lipgloss.Style
 	Help        lipgloss.Style
+
+	// Application List styles
+	ApplicationList ApplicationListStyles
+}
+
+// ApplicationListStyles holds styles for the application list component
+type ApplicationListStyles struct {
+	Title            lipgloss.Style
+	NormalTitle      lipgloss.Style
+	SelectedTitle    lipgloss.Style
+	NormalDesc       lipgloss.Style
+	SelectedDesc     lipgloss.Style
+	StatusConfigured lipgloss.Style
+	StatusNeedsConfig lipgloss.Style
+	StatusError      lipgloss.Style
+	StatusUnknown    lipgloss.Style
+	Pagination       lipgloss.Style
+	Help             lipgloss.Style
+	FilterPrompt     lipgloss.Style
+	FilterCursor     lipgloss.Style
 }
 
 // BuildStyles creates lipgloss styles from theme
@@ -168,6 +188,51 @@ func (t *Theme) BuildStyles() *Styles {
 
 		Help: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(ColorToHex(t.FgMuted))),
+
+		ApplicationList: ApplicationListStyles{
+			Title: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Primary))).
+				Bold(true).
+				Padding(0, 1),
+
+			NormalTitle: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgBase))).
+				Bold(true),
+
+			SelectedTitle: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgSelected))).
+				Bold(true),
+
+			NormalDesc: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgMuted))),
+
+			SelectedDesc: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgSelected))),
+
+			StatusConfigured: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Success))),
+
+			StatusNeedsConfig: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Warning))),
+
+			StatusError: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Error))),
+
+			StatusUnknown: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgMuted))),
+
+			Pagination: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgMuted))),
+
+			Help: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.FgMuted))),
+
+			FilterPrompt: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Primary))),
+
+			FilterCursor: lipgloss.NewStyle().
+				Foreground(lipgloss.Color(ColorToHex(t.Primary))),
+		},
 	}
 }
 

@@ -228,7 +228,7 @@ func TestAutomatedTUIRendering(t *testing.T) {
 // runScenario executes a complete test scenario
 func (art *AutomatedRenderingTest) runScenario(t *testing.T, scenario TestScenario) {
 	// Create model
-	model, err := NewModel(art.engine, "")
+	model, err := NewTestModel(art.engine, "")
 	require.NoError(t, err)
 
 	// Set dimensions
@@ -512,7 +512,7 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 	engine, err := toggle.NewEngine()
 	require.NoError(t, err)
 
-	model, err := NewModel(engine, "")
+	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
 	// Test specific rendering correctness scenarios
