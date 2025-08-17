@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package rpc;
+
+option go_package = "github.com/mrtkrcm/ZeroUI/internal/plugins/rpc";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// ConfigPlugin service definition
+service ConfigPlugin {
+  // GetInfo returns plugin metadata and capabilities
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+  
+  // DetectConfig attempts to discover configuration files
+  rpc DetectConfig(DetectConfigRequest) returns (DetectConfigResponse);
+  
+  // ParseConfig reads and parses a configuration file
+  rpc ParseConfig(ParseConfigRequest) returns (ParseConfigResponse);
+  
+  // WriteConfig writes configuration data to a file
+  rpc WriteConfig(WriteConfigRequest) returns (WriteConfigResponse);
+  
+  // ValidateField validates a single field value
+  rpc ValidateField(ValidateFieldRequest) returns (ValidateFieldResponse);
+  
+  // ValidateConfig validates entire configuration
+  rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
+  
+  // GetSchema returns the current configuration schema
+  rpc GetSchema(GetSchemaRequest) returns (GetSchemaResponse);
+  
+  // SupportsFeature checks if plugin supports a specific feature
+  rpc SupportsFeature(SupportsFeatureRequest) returns (SupportsFeatureResponse);
+}
+
+// Request/Response message definitions
+
+message GetInfoRequest {}
+
+message GetInfoResponse {
+  PluginInfo info = 1;
+}
+
+message DetectConfigRequest {}
+
+message DetectConfigResponse {
+  ConfigInfo config = 1;
+}
+
+message ParseConfigRequest {
+  string path = 1;
+}
+
+message ParseConfigResponse {
+  ConfigData data = 1;
+}
+
+message WriteConfigRequest {
+  string path = 1;
+  ConfigData data = 2;
+}
+
+message WriteConfigResponse {}
+
+message ValidateFieldRequest {
+  string field = 1;
+  google.protobuf.Any value = 2;
+}
+
+message ValidateFieldResponse {
+  bool valid = 1;
+  string error = 2;
+}
+
+message ValidateConfigRequest {
+  ConfigData data = 1;
+}
+
+message ValidateConfigResponse {
+  bool valid = 1;
+  repeated ValidationError errors = 2;
+}
+
+message GetSchemaRequest {}
+
+message GetSchemaResponse {
+  ConfigMetadata metadata = 1;
+}
+
+message SupportsFeatureRequest {
+  string feature = 1;
+}
+
+message SupportsFeatureResponse {
+  bool supported = 1;
+}
+
+// Data structures
+
+message PluginInfo {
+  string name = 1;
+  string version = 2;
+  string description = 3;
+  string author = 4;
+  repeated string capabilities = 5;
+  string api_version = 6;
+  map<string, string> metadata = 7;
+}
+
+message ConfigInfo {
+  string path = 1;
+  string format = 2;
+  bool discovered = 3;
+  repeated string suggestions = 4;
+  google.protobuf.Timestamp last_modified = 5;
+}
+
+message ConfigData {
+  map<string, google.protobuf.Any> fields = 1;
+  ConfigMetadata metadata = 2;
+}
+
+message ConfigMetadata {
+  map<string, FieldMetadata> fields = 1;
+  map<string, PresetData> presets = 2;
+  SchemaInfo schema = 3;
+}
+
+message FieldMetadata {
+  string type = 1;
+  string description = 2;
+  google.protobuf.Any default_value = 3;
+  bool required = 4;
+  Validation validation = 5;
+  repeated string options = 6;
+  repeated string tags = 7;
+}
+
+message Validation {
+  string pattern = 1;
+  google.protobuf.Any min = 2;
+  google.protobuf.Any max = 3;
+  repeated string enum = 4;
+  string custom = 5;
+}
+
+message PresetData {
+  string name = 1;
+  string description = 2;
+  map<string, google.protobuf.Any> values = 3;
+  repeated string tags = 4;
+}
+
+message SchemaInfo {
+  string version = 1;
+  string checksum = 2;
+  bool compatible = 3;
+}
+
+message ValidationError {
+  string field = 1;
+  string code = 2;
+  string message = 3;
+  google.protobuf.Any value = 4;
+}
