@@ -8,77 +8,57 @@ import (
 	"strings"
 
 	"github.com/knadh/koanf/v2"
+	"github.com/mrtkrcm/ZeroUI/internal/config/providers"
 )
 
-// ParseGhosttyConfig parses Ghostty's custom config format
+// ParseGhosttyConfig parses Ghostty's custom config format using koanf providers
 func ParseGhosttyConfig(configPath string) (*koanf.Koanf, error) {
 	k := koanf.New(".")
-
-	file, err := os.Open(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
+	
+	// Use the new Ghostty provider with built-in parser
+	provider := providers.NewGhosttyProviderWithParser(configPath)
+	
+	// Load the config into koanf
+	if err := provider.LoadIntoKoanf(k); err != nil {
+		return nil, fmt.Errorf("failed to load Ghostty config: %w", err)
 	}
-	defer func() { _ = file.Close() }()
-
-	// Optimize buffer size based on file size for better I/O performance
-	fileInfo, _ := file.Stat()
-	scanner := bufio.NewScanner(file)
-
-	if fileInfo != nil {
-		// Use adaptive buffer sizing: quarter of file size, max 64KB, min 4KB
-		bufSize := int(fileInfo.Size() / 4)
-		if bufSize > 64*1024 {
-			bufSize = 64 * 1024
-		} else if bufSize < 4*1024 {
-			bufSize = 4 * 1024
-		}
-		scanner.Buffer(make([]byte, 0, bufSize), bufSize)
-	}
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		// Skip comments and empty lines
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		// Parse key = value
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		// Handle multiple values with same key (like keybind)
-		if existing := k.Get(key); existing != nil {
-			// Convert to slice if not already
-			switch v := existing.(type) {
-			case []string:
-				_ = k.Set(key, append(v, value))
-			case string:
-				_ = k.Set(key, []string{v, value})
-			default:
-				_ = k.Set(key, []string{fmt.Sprint(v), value})
-			}
-		} else {
-			_ = k.Set(key, value)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading config: %w", err)
-	}
-
+	
 	return k, nil
 }
-
-// TODO: Replace custom format parsers with koanf providers ecosystem (Week 2)
-// TODO: Use github.com/knadh/koanf/providers for standardized parsing
-// TODO: This will reduce complexity and improve reliability
-// WriteGhosttyConfig writes config back in Ghostty's format
+// WriteGhosttyConfig writes config back in Ghostty's format using koanf providers
 func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) error {
+	// Use the Ghostty parser to marshal the config
+	parser := providers.NewGhosttyParser()
+	
+	// Convert koanf data to Ghostty format
+	data, err := parser.Marshal(k.All())
+	if err != nil {
+		return fmt.Errorf("failed to marshal Ghostty config: %w", err)
+	}
+	
+	// Write to file (simplified version that doesn't preserve comments)
+	// For now, we prioritize using the koanf ecosystem over comment preservation
+	return writeConfigToFile(configPath, data)
+}
+
+// writeConfigToFile writes data to a config file, creating directories if needed
+func writeConfigToFile(configPath string, data []byte) error {
+	// Ensure directory exists
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+	
+	// Write file
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+	
+	return nil
+}
+
+// Deprecated: Use WriteGhosttyConfig with koanf providers instead
+func writeGhosttyConfigLegacy(configPath string, k *koanf.Koanf, originalPath string) error {
 	// Read original file to preserve structure and comments
 	originalLines, comments, err := readGhosttyConfigWithComments(originalPath)
 	if err != nil {
@@ -108,8 +88,8 @@ func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) 
 
 		key := strings.TrimSpace(parts[0])
 
-		// Get updated value
-		if k.Exists(key) {
+		// Get updated value - only process each key once
+		if k.Exists(key) && !processedKeys[key] {
 			value := k.Get(key)
 
 			// Add any comments that were before this line
@@ -132,6 +112,9 @@ func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) 
 			}
 
 			processedKeys[key] = true
+		} else if k.Exists(key) && processedKeys[key] {
+			// Skip this line as we already processed this key
+			continue
 		} else {
 			// Keep original line if key not in new config
 			output = append(output, line)

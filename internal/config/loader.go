@@ -215,18 +215,10 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 
 	// Load the file based on format
 	var parser koanf.Parser
-	switch strings.ToLower(appConfig.Format) {
-	case "json":
-		parser = json.Parser()
-	case "yaml", "yml":
-		parser = yaml.Parser()
-	case "toml":
-		parser = toml.Parser()
-	case "custom":
-		// For custom formats, we'll need special handling
-		return l.loadCustomFormat(configPath)
-	default:
-		// Try to detect format from file extension
+	format := strings.ToLower(appConfig.Format)
+	switch format {
+	case "":
+		// Auto-detect from file extension only when format is not provided
 		ext := strings.ToLower(filepath.Ext(configPath))
 		switch ext {
 		case ".json":
@@ -238,6 +230,17 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 		default:
 			return nil, fmt.Errorf("unsupported config format: %s", appConfig.Format)
 		}
+	case "json":
+		parser = json.Parser()
+	case "yaml", "yml":
+		parser = yaml.Parser()
+	case "toml":
+		parser = toml.Parser()
+	case "custom":
+		// For custom formats, special handling
+		return l.loadCustomFormat(configPath)
+	default:
+		return nil, fmt.Errorf("unsupported config format: %s", appConfig.Format)
 	}
 
 	if err := k.Load(file.Provider(configPath), parser); err != nil {

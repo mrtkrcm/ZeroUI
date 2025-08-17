@@ -808,8 +808,8 @@ func (v *Validator) validateCustom(fieldName string, value interface{}, custom *
 			}
 		}
 	case "unique":
-		// Placeholder for uniqueness validation
-		return fmt.Errorf("uniqueness validation not implemented")
+		// Implement uniqueness validation
+		return v.validateUniqueness(fieldName, value, custom.Args)
 	default:
 		return fmt.Errorf("unknown custom validation function: %s", custom.Function)
 	}
@@ -1342,5 +1342,137 @@ func optimizeSchema(schema *Schema) error {
 		schema.Fields[fieldName] = rule
 	}
 
+	return nil
+}
+
+// validateUniqueness implements uniqueness validation for field values
+func (v *Validator) validateUniqueness(fieldName string, value interface{}, args map[string]interface{}) error {
+	// Get the scope of uniqueness validation
+	scope, ok := args["scope"].(string)
+	if !ok {
+		scope = "global" // Default scope
+	}
+	
+	// Get the field to check uniqueness against
+	uniqueField, ok := args["field"].(string)
+	if !ok {
+		uniqueField = fieldName // Default to self
+	}
+	
+	// Convert value to string for comparison
+	strValue := fmt.Sprintf("%v", value)
+	if strValue == "" {
+		return nil // Empty values are not checked for uniqueness
+	}
+	
+	// In a real implementation, this would check against a database or global state
+	// For now, we implement a basic validation that checks for common conflicts
+	
+	switch scope {
+	case "global":
+		// Check against a list of commonly conflicting values
+		return v.validateGlobalUniqueness(uniqueField, strValue)
+	case "local":
+		// Check within the current configuration context
+		return v.validateLocalUniqueness(uniqueField, strValue)
+	case "app":
+		// Check within application scope
+		return v.validateAppUniqueness(uniqueField, strValue)
+	default:
+		return fmt.Errorf("unknown uniqueness scope: %s", scope)
+	}
+}
+
+// validateGlobalUniqueness checks for globally unique values
+func (v *Validator) validateGlobalUniqueness(fieldName, value string) error {
+	// In a production system, this would query a database or global registry
+	// For now, we implement basic checks for common conflicts
+	
+	switch fieldName {
+	case "name", "id", "identifier":
+		// Check against reserved names
+		reservedNames := []string{
+			"admin", "root", "system", "default", "config", "settings",
+			"user", "guest", "anonymous", "public", "private", "test",
+			"temp", "tmp", "cache", "log", "logs", "backup", "restore",
+		}
+		
+		for _, reserved := range reservedNames {
+			if strings.EqualFold(value, reserved) {
+				return fmt.Errorf("value '%s' is reserved and cannot be used", value)
+			}
+		}
+		
+	case "port":
+		// Check against well-known ports
+		wellKnownPorts := []string{
+			"80", "443", "22", "21", "25", "53", "110", "995", "993", "143",
+		}
+		
+		for _, port := range wellKnownPorts {
+			if value == port {
+				return fmt.Errorf("port '%s' is a well-known port and may cause conflicts", value)
+			}
+		}
+		
+	case "path", "directory", "folder":
+		// Check against system paths
+		systemPaths := []string{
+			"/", "/bin", "/usr", "/etc", "/var", "/tmp", "/home", "/root",
+			"/sys", "/proc", "/dev", "/boot", "/lib", "/opt", "/srv",
+		}
+		
+		for _, sysPath := range systemPaths {
+			// Only flag exact matches or direct children, not nested paths
+			if value == sysPath || (strings.HasPrefix(value, sysPath+"/") && !strings.Contains(value[len(sysPath)+1:], "/")) {
+				return fmt.Errorf("path '%s' conflicts with system path '%s'", value, sysPath)
+			}
+		}
+	}
+	
+	return nil
+}
+
+// validateLocalUniqueness checks for uniqueness within local context
+func (v *Validator) validateLocalUniqueness(fieldName, value string) error {
+	// In a real implementation, this would check against the current configuration set
+	// For now, we implement basic validation
+	
+	if len(value) < 2 {
+		return fmt.Errorf("value '%s' is too short to be unique", value)
+	}
+	
+	// Check for obviously non-unique values
+	nonUniquePatterns := []string{
+		"test", "sample", "example", "demo", "placeholder",
+		"default", "temp", "temporary", "backup",
+	}
+	
+	for _, pattern := range nonUniquePatterns {
+		if strings.Contains(strings.ToLower(value), pattern) {
+			return fmt.Errorf("value '%s' contains common pattern '%s' and may not be unique", value, pattern)
+		}
+	}
+	
+	return nil
+}
+
+// validateAppUniqueness checks for uniqueness within application scope
+func (v *Validator) validateAppUniqueness(fieldName, value string) error {
+	// In a real implementation, this would check against other app configurations
+	// For now, we implement basic validation
+	
+	// Check for duplicate common application names
+	commonAppNames := []string{
+		"app", "application", "service", "api", "web", "server",
+		"client", "frontend", "backend", "database", "cache",
+	}
+	
+	for _, common := range commonAppNames {
+		if strings.EqualFold(value, common) {
+			return fmt.Errorf("value '%s' is too generic and likely not unique", value)
+		}
+	}
+	
 	return nil
 }

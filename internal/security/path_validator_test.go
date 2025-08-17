@@ -271,13 +271,13 @@ func TestPathValidator_WithMultipleAllowedPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir 1: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tmpDir1)
+	defer os.RemoveAll(tmpDir1)
 
 	tmpDir2, err := os.MkdirTemp("", "validator-test-2")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir 2: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tmpDir2)
+	defer os.RemoveAll(tmpDir2)
 
 	validator := NewPathValidator(tmpDir1, tmpDir2)
 

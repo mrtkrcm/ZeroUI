@@ -240,13 +240,21 @@ func (e *Extractor) getStrategiesForApp(app string) []Strategy {
 
 // registerDefaultStrategies adds built-in extraction strategies
 func (e *Extractor) registerDefaultStrategies() {
-	// Order matters - higher priority strategies first
-	e.strategies = []Strategy{
+	// Add default strategies (preserving any custom ones)
+	defaultStrategies := []Strategy{
 		NewCLI(), // Fastest, most reliable
 		// NewLocal(),    // Fast, cached locally
 		// NewBuiltin(),  // Always available fallback
 		NewGitHub(), // Network dependent, slower
 	}
+	
+	// Append default strategies to existing ones
+	e.strategies = append(e.strategies, defaultStrategies...)
+	
+	// Re-sort by priority (higher first)
+	sort.Slice(e.strategies, func(i, j int) bool {
+		return e.strategies[i].Priority() > e.strategies[j].Priority()
+	})
 }
 
 // registerDefaultParsers adds built-in format parsers

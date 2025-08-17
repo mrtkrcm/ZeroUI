@@ -1,14 +1,16 @@
 package cmd
 
-// TODO: Add backup path validation to prevent directory traversal (Security)
-// TODO: Ensure backup paths stay within ~/.config/zeroui/backups/
+// Security: Backup path validation implemented via PathValidator and additional input validation
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/tabwriter"
+
+	"golang.org/x/term"
 
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
@@ -30,7 +32,7 @@ from any issues. Use these commands to manually manage your backups.`,
 var backupListCmd = &cobra.Command{
 	Use:   "list [app]",
 	Short: "List available backups",
-	Long: `List available configuration backups. If an app name is provided, only backups 
+	Long: `List available configuration backups. If an app name is provided, only backups
 for that app will be shown.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +97,7 @@ for that app will be shown.`,
 var backupCreateCmd = &cobra.Command{
 	Use:   "create <app>",
 	Short: "Create a manual backup of an app's configuration",
-	Long: `Create a manual backup of an application's configuration file. 
+	Long: `Create a manual backup of an application's configuration file.
 This is useful before making major changes or for creating restore points.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -156,7 +158,7 @@ This is useful before making major changes or for creating restore points.`,
 var backupRestoreCmd = &cobra.Command{
 	Use:   "restore <app> <backup-name>",
 	Short: "Restore configuration from a backup",
-	Long: `Restore an application's configuration from a previously created backup. 
+	Long: `Restore an application's configuration from a previously created backup.
 This will overwrite the current configuration file.
 
 Use 'zeroui backup list <app>' to see available backups.`,
@@ -187,7 +189,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 			configPath = strings.Replace(configPath, "~", home, 1)
 		}
 
-		// Find backup
+		// Find backup with security validation
 		backupManager, err := recovery.NewBackupManager()
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
@@ -195,6 +197,13 @@ Use 'zeroui backup list <app>' to see available backups.`,
 				return nil
 			}
 			return err
+		}
+
+		// Validate backup name for security before processing
+		if strings.Contains(backupName, "..") || strings.ContainsAny(backupName, "/\\") || strings.Contains(backupName, "\x00") {
+			fmt.Fprintf(os.Stderr, "Error: invalid backup name '%s' - contains dangerous characters\n", backupName)
+			fmt.Fprintf(os.Stderr, "Use 'zeroui backup list %s' to see valid backup names\n", appName)
+			return nil
 		}
 
 		backups, err := backupManager.ListBackups(appName)
@@ -223,13 +232,21 @@ Use 'zeroui backup list <app>' to see available backups.`,
 		// Confirm restoration
 		confirmed, _ := cmd.Flags().GetBool("yes")
 		if !confirmed {
+			// If stdin is not a TTY, do not block waiting for input.
+			// This makes the command safe to run in CI / non-interactive environments.
+			if !term.IsTerminal(int(os.Stdin.Fd())) {
+				fmt.Fprintln(os.Stderr, "Non-interactive session detected. To perform restore non-interactively pass --yes; to preview, use --dry-run.")
+				return nil
+			}
+
 			fmt.Printf("This will overwrite the current configuration for %s.\n", appName)
 			fmt.Printf("Current config: %s\n", configPath)
 			fmt.Printf("Backup: %s\n", backupName)
 			fmt.Print("Are you sure? (y/N): ")
 
-			var response string
-			fmt.Scanln(&response)
+			reader := bufio.NewReader(os.Stdin)
+			response, _ := reader.ReadString('\n')
+			response = strings.TrimSpace(response)
 			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
 				fmt.Println("Restore cancelled")
 				return nil
@@ -262,7 +279,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 var backupCleanupCmd = &cobra.Command{
 	Use:   "cleanup [app] [--keep N]",
 	Short: "Clean up old backups",
-	Long: `Remove old backup files, keeping only the most recent ones. 
+	Long: `Remove old backup files, keeping only the most recent ones.
 By default, keeps the 5 most recent backups per application.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

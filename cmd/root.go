@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 )
 
 var (
@@ -33,13 +35,20 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If no subcommand is provided, launch the UI
 		if len(args) == 0 && cmd.Flags().NFlag() == 0 {
+			// Avoid launching interactive TUI in non-interactive environments (CI/tests)
+			if !term.IsTerminal(int(os.Stdin.Fd())) {
+				fmt.Fprintln(os.Stderr, "Non-interactive environment detected: TUI requires a terminal. Use subcommands (e.g. 'zeroui list apps') or run this command in a terminal to launch the UI. To run non-interactively, use explicit subcommands or flags.")
+				// Show help so callers (including CI) won't hang waiting on a UI
+				return cmd.Help()
+			}
+
 			// Launch the UI without a specific app (show grid)
 			// Import the functionality directly instead of calling uiCmd
 			tuiApp, err := tui.NewApp("")
 			if err != nil {
 				return fmt.Errorf("failed to create TUI app: %w", err)
 			}
-			return tuiApp.Run()
+			return tuiApp.RunWithContext(cmd.Context())
 		}
 		// Show help if arguments are provided but no valid subcommand
 		return cmd.Help()
@@ -49,6 +58,11 @@ Examples:
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	ExecuteWithContext(context.Background())
+}
+
+// ExecuteWithContext executes the root command with context support for graceful shutdown
+func ExecuteWithContext(ctx context.Context) {
 	// Initialize dependency container
 	containerConfig := &container.Config{
 		LogLevel:  "info",
@@ -67,8 +81,16 @@ func Execute() {
 		}
 	}()
 
-	err = rootCmd.Execute()
+	// Set the context on the root command for propagation to subcommands
+	rootCmd.SetContext(ctx)
+
+	err = rootCmd.ExecuteContext(ctx)
 	if err != nil {
+		// Check if error is due to context cancellation (graceful shutdown)
+		if ctx.Err() == context.Canceled {
+			logger.Info("Application shutdown requested")
+			os.Exit(0)
+		}
 		os.Exit(1)
 	}
 }

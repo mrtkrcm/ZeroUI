@@ -18,7 +18,7 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir)
 
 	// Small file (should pass)
 	smallFile := tempDir + "/small.yaml"
@@ -146,7 +146,7 @@ func TestYAMLValidator_SafeReadFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir)
 
 	// Valid file
 	validFile := tempDir + "/valid.yaml"

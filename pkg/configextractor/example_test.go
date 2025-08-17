@@ -22,7 +22,7 @@ func ExampleExtractor_Extract() {
 	fmt.Printf("App: %s\n", config.App)
 	fmt.Printf("Format: %s\n", config.Format)
 	fmt.Printf("Number of settings: %d\n", len(config.Settings))
-	
+
 	// Print first few settings
 	count := 0
 	for name, setting := range config.Settings {
@@ -61,7 +61,7 @@ func ExampleValidator() {
 
 	// Add validation rules
 	validator.AddRule("font-size", configextractor.NumberRule(
-		false, // not required
+		false,                   // not required
 		configextractor.Min(8),  // minimum size
 		configextractor.Max(72), // maximum size
 	))
@@ -183,14 +183,14 @@ func Example_customStrategy() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Extracted %s config using %s strategy\n", 
+	fmt.Printf("Extracted %s config using %s strategy\n",
 		config.App, config.Source.Method)
 }
 
 func Example_minimalUsage() {
 	// Simplest possible usage
 	extractor := configextractor.New()
-	
+
 	config, err := extractor.Extract(context.Background(), "git")
 	if err != nil {
 		log.Printf("Failed to extract git config: %v", err)
@@ -215,14 +215,14 @@ func Example_minimalUsage() {
 func Example_performanceOptimized() {
 	// Example showing performance optimizations
 	extractor := configextractor.New(
-		configextractor.WithTimeout(5*time.Second),   // Shorter timeout
-		configextractor.WithConcurrency(16),          // Higher concurrency
+		configextractor.WithTimeout(5*time.Second), // Shorter timeout
+		configextractor.WithConcurrency(16),        // Higher concurrency
 		// Could add custom cache here with WithCache()
 	)
 
 	// Extract multiple apps concurrently
 	apps := []string{"ghostty", "zed", "alacritty", "wezterm", "tmux", "git"}
-	
+
 	start := time.Now()
 	results, _ := extractor.ExtractBatch(context.Background(), apps)
 	elapsed := time.Since(start)
@@ -235,7 +235,7 @@ func Example_performanceOptimized() {
 	cachedResults, _ := extractor.ExtractBatch(context.Background(), apps)
 	cachedElapsed := time.Since(start)
 
-	fmt.Printf("Second extraction (cached): %d configs in %v\n", 
+	fmt.Printf("Second extraction (cached): %d configs in %v\n",
 		len(cachedResults), cachedElapsed)
 	fmt.Printf("Speedup: %.2fx\n", float64(elapsed)/float64(cachedElapsed))
 }

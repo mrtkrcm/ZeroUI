@@ -416,7 +416,7 @@ func TestTransaction(t *testing.T) {
 				t.Fatalf("Failed to read updated config %d: %v", i+1, err)
 			}
 
-			if !containsString(string(content), "\"value\": \"updated\"") {
+			if !containsString(string(content), "\"value\":\"updated\"") {
 				t.Errorf("Config %d was not updated properly", i+1)
 			}
 		}
@@ -467,7 +467,7 @@ func TestTransaction(t *testing.T) {
 			}
 
 			// Should still contain "updated" from previous test, not "rolled_back"
-			if !containsString(string(content), "\"value\": \"updated\"") {
+			if !containsString(string(content), "\"value\":\"updated\"") {
 				t.Errorf("Config %d was not properly rolled back", i+1)
 			}
 
@@ -523,7 +523,7 @@ func TestSafeOperation(t *testing.T) {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
 
-		if !containsString(string(content), "\"status\": \"success\"") {
+		if !containsString(string(content), "\"status\":\"success\"") {
 			t.Error("Expected config to contain success status")
 		}
 	})
@@ -561,7 +561,7 @@ func TestSafeOperation(t *testing.T) {
 			t.Fatalf("Failed to read rolled back config: %v", err)
 		}
 
-		if !containsString(string(content), "\"status\": \"success\"") {
+		if !containsString(string(content), "\"status\":\"success\"") {
 			t.Error("Expected config to be rolled back to success status")
 		}
 
@@ -642,7 +642,7 @@ func TestLockManager(t *testing.T) {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}
 
-		if !containsString(string(content), "\"counter\": 1") {
+		if !containsString(string(content), "\"counter\":1") {
 			t.Error("Expected counter to be updated to 1")
 		}
 	})

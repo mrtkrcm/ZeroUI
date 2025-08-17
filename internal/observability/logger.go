@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -342,7 +343,16 @@ func (l *Logger) LogHook(hookType string, command string, success bool, output s
 
 // log is the internal logging method
 func (l *Logger) log(level slog.Level, msg string, args ...interface{}) {
-	if !l.logger.Enabled(context.Background(), level) {
+	// Respect the Logger's internal level threshold independent of handler configuration
+	l.mu.RLock()
+	currentLevel := l.level
+	l.mu.RUnlock()
+	if level < currentLevel {
+		return
+	}
+
+	// Also honor handler capability to avoid unnecessary work
+	if l.logger != nil && !l.logger.Enabled(context.Background(), level) {
 		return
 	}
 
@@ -443,100 +453,6 @@ func (l *Logger) logZeroUIError(ctErr *errors.ZeroUIError) {
 	l.log(level, "ZeroUI error occurred", args...)
 }
 
-// TODO: Remove duplicate metrics systems - standardize on OpenTelemetry only (Week 2)
-// TODO: This BasicMetrics conflicts with metrics.go and adds complexity
-// BasicMetrics provides simple metrics collection (deprecated: use observability.Metrics)
-type BasicMetrics struct {
-	mu             sync.RWMutex
-	counters       map[string]int64
-	timers         map[string][]time.Duration
-	lastOperations map[string]time.Time
-}
-
-// NewBasicMetrics creates a new basic metrics collector
-func NewBasicMetrics() *BasicMetrics {
-	return &BasicMetrics{
-		counters:       make(map[string]int64),
-		timers:         make(map[string][]time.Duration),
-		lastOperations: make(map[string]time.Time),
-	}
-}
-
-// IncrementCounter increments a named counter
-func (m *BasicMetrics) IncrementCounter(name string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.counters[name]++
-}
-
-// RecordTimer records a duration for a named timer
-func (m *BasicMetrics) RecordTimer(name string, duration time.Duration) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.timers[name] = append(m.timers[name], duration)
-	m.lastOperations[name] = time.Now()
-}
-
-// GetStats returns current metrics
-func (m *BasicMetrics) GetStats() map[string]interface{} {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	stats := make(map[string]interface{})
-
-	// Add counters
-	counters := make(map[string]int64)
-	for k, v := range m.counters {
-		counters[k] = v
-	}
-	stats["counters"] = counters
-
-	// Add timer stats
-	timers := make(map[string]interface{})
-	for name, durations := range m.timers {
-		if len(durations) == 0 {
-			continue
-		}
-
-		var total time.Duration
-		min := durations[0]
-		max := durations[0]
-
-		for _, d := range durations {
-			total += d
-			if d < min {
-				min = d
-			}
-			if d > max {
-				max = d
-			}
-		}
-
-		avg := total / time.Duration(len(durations))
-
-		timers[name] = map[string]interface{}{
-			"count":    len(durations),
-			"total_ms": total.Milliseconds(),
-			"avg_ms":   avg.Milliseconds(),
-			"min_ms":   min.Milliseconds(),
-			"max_ms":   max.Milliseconds(),
-			"last_run": m.lastOperations[name],
-		}
-	}
-	stats["timers"] = timers
-
-	return stats
-}
-
-// Reset clears all metrics
-func (m *BasicMetrics) Reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.counters = make(map[string]int64)
-	m.timers = make(map[string][]time.Duration)
-	m.lastOperations = make(map[string]time.Time)
-}
 
 // Global logger and metrics instances
 var (
@@ -634,38 +550,64 @@ func MetricsHook(metrics *Metrics) Hook {
 // AuditHook creates a hook for audit logging
 func AuditHook(auditFile string) Hook {
 	return func(ctx context.Context, record slog.Record, extra map[string]interface{}) {
-		// Only audit certain types of operations
-		if operation, ok := extra["operation"].(string); ok {
-			if operation == "toggle" || operation == "preset" || operation == "backup" {
-				auditData := map[string]interface{}{
-					"timestamp": time.Now().UTC().Format(time.RFC3339),
-					"level":     record.Level.String(),
-					"message":   record.Message,
-					"operation": operation,
+		// Collect attributes from the record and merge into extra so hooks can discover operation details
+		attrMap := make(map[string]interface{})
+		record.Attrs(func(a slog.Attr) bool {
+			attrMap[a.Key] = a.Value.Any()
+			return true
+		})
+
+		// Merge record attributes into a new map so we don't mutate the original 'extra'
+		merged := make(map[string]interface{}, len(extra)+len(attrMap))
+		for k, v := range extra {
+			merged[k] = v
+		}
+		for k, v := range attrMap {
+			merged[k] = v
+		}
+
+		// Determine operation from merged attributes
+		operation, _ := merged["operation"].(string)
+		if operation == "" {
+			// Try to infer from message like "Operation toggle completed"
+			msg := strings.ToLower(record.Message)
+			switch {
+			case strings.Contains(msg, "toggle"):
+				operation = "toggle"
+			case strings.Contains(msg, "preset"):
+				operation = "preset"
+			case strings.Contains(msg, "backup"):
+				operation = "backup"
+			}
+		}
+
+		if operation == "toggle" || operation == "preset" || operation == "backup" {
+			auditData := map[string]interface{}{
+				"timestamp": time.Now().UTC().Format(time.RFC3339),
+				"level":     record.Level.String(),
+				"message":   record.Message,
+				"operation": operation,
+			}
+
+			// Add relevant fields from merged attributes (record attrs + context)
+			for key, value := range merged {
+				switch key {
+				case "app", "field", "old_value", "new_value", "user", "backup_id", "duration_ms", "success":
+					auditData[key] = value
 				}
+			}
 
-				// Add relevant fields
-				for key, value := range extra {
-					switch key {
-					case "app", "field", "old_value", "new_value", "user", "backup_id":
-						auditData[key] = value
-					}
-				}
+			// Write to audit file
+			data, _ := json.Marshal(auditData)
+			data = append(data, '\n')
 
-				// Write to audit file
-				if auditData != nil {
-					data, _ := json.Marshal(auditData)
-					data = append(data, '\n')
+			// Ensure audit directory exists
+			os.MkdirAll(filepath.Dir(auditFile), 0755)
 
-					// Ensure audit directory exists
-					os.MkdirAll(filepath.Dir(auditFile), 0755)
-
-					// Append to audit file
-					if file, err := os.OpenFile(auditFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
-						file.Write(data)
-						file.Close()
-					}
-				}
+			// Append to audit file
+			if file, err := os.OpenFile(auditFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+				file.Write(data)
+				file.Close()
 			}
 		}
 	}

@@ -389,6 +389,21 @@ func (e *Engine) ListPresets(appName string) error {
 	return nil
 }
 
+// GetPresets returns a list of available preset names for an application
+func (e *Engine) GetPresets(appName string) ([]string, error) {
+	appConfig, err := e.loader.LoadAppConfig(appName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load app config: %w", err)
+	}
+
+	var presets []string
+	for name := range appConfig.Presets {
+		presets = append(presets, name)
+	}
+
+	return presets, nil
+}
+
 // ListKeys lists all configurable keys for an application
 func (e *Engine) ListKeys(appName string) error {
 	appConfig, err := e.loader.LoadAppConfig(appName)

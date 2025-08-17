@@ -14,7 +14,7 @@ func TestSecurityIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir)
 
 	// Create a mock backup directory
 	backupDir := filepath.Join(tempDir, "backups")
@@ -96,7 +96,7 @@ func TestSecurityIntegration(t *testing.T) {
 		// Even if somehow the YAML bomb file existed, it should be blocked
 		yamlBomb := func() string {
 			bomb := "root:\n"
-			for i := 0; i < 1000; i++ {
+			for i := 0; i < 6000; i++ { // Exceed MaxKeys limit of 10000
 				bomb += fmt.Sprintf("  level%d:\n    data: %s\n", i, strings.Repeat("x", 100))
 			}
 			return bomb
@@ -143,7 +143,7 @@ func TestSecurityPerformanceImpact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer func() { _ = os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir)
 
 	// Create a reasonably sized YAML file
 	normalYAMLContent := `

@@ -182,8 +182,8 @@ settings:
 			t.Error("Expected validation errors for invalid enum value")
 		}
 
-		// Invalid setting name
-		result, err = manager.ValidateConfiguration("test_app", "nonexistent", "value")
+		// Invalid setting name (similar to existing "string_setting")
+		result, err = manager.ValidateConfiguration("test_app", "string", "value")
 		if err != nil {
 			t.Fatalf("Validation failed: %v", err)
 		}

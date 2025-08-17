@@ -704,6 +704,28 @@ presets:
 	})
 }
 
+func TestEngine_GetPresets(t *testing.T) {
+	engine, _, cleanup := setupTestEngine(t)
+	defer cleanup()
+
+	// Test with existing app
+	presets, err := engine.GetPresets("test-app")
+	if err != nil {
+		t.Fatalf("GetPresets failed: %v", err)
+	}
+
+	// Should return at least the "development" preset from test config
+	if len(presets) == 0 {
+		t.Error("Expected at least one preset, got none")
+	}
+
+	// Test with non-existent app
+	_, err = engine.GetPresets("non-existent-app")
+	if err == nil {
+		t.Error("Expected error for non-existent app, got nil")
+	}
+}
+
 // TestEngine_NewEngineError tests NewEngine error scenarios
 func TestEngine_NewEngineError(t *testing.T) {
 	// This would require mocking or creating invalid conditions

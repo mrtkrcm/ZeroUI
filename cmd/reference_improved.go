@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mrtkrcm/ZeroUI/pkg/reference"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -157,6 +158,11 @@ func runRefValidate(cmd *cobra.Command, args []string) error {
 
 	// Parse value based on context
 	value := parseValue(valueStr)
+
+	// Respect global dry-run flag: announce when running in dry-run mode.
+	if viper.GetBool("dry-run") {
+		fmt.Println("(DRY-RUN) Running validation in dry-run mode. No changes will be made.")
+	}
 
 	result, err := manager.ValidateConfiguration(appName, settingName, value)
 	if err != nil {

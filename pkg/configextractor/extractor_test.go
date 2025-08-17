@@ -274,9 +274,15 @@ func TestExtractor_StrategyPriority(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
+		return // Exit early if extraction failed
 	}
 
 	// Should get result from high-priority strategy
+	if config == nil {
+		t.Error("expected config to be non-nil")
+		return
+	}
+	
 	if config.Format != "high-priority" {
 		t.Errorf("expected high-priority result, got %s", config.Format)
 	}

@@ -29,38 +29,63 @@ func NewPathValidator(allowedPaths ...string) *PathValidator {
 	}
 }
 
-// ValidatePath validates that a path is safe and within allowed boundaries
+/*
+ValidatePath validates that a path is safe and within allowed boundaries.
+
+Behavioral changes:
+  - Simple filenames (no separators and not absolute) are accepted even when
+    allowedPaths are configured. This lets callers pass backup filenames like
+    "backup.txt" which are then resolved against the backup directory by callers.
+  - Directory traversal tokens (\"..\") and null bytes are still rejected.
+  - For non-filename inputs we resolve to absolute path and validate against
+    allowedPaths when configured.
+*/
 func (pv *PathValidator) ValidatePath(inputPath string) error {
 	// Clean the path to resolve . and .. components
 	cleanPath := filepath.Clean(inputPath)
 
-	// Convert to absolute path for proper validation
+	// Reject null bytes up-front
+	if strings.Contains(inputPath, "\x00") {
+		return fmt.Errorf("null byte detected in path: %s", inputPath)
+	}
+
+	// Reject explicit traversal markers anywhere in the cleaned path
+	if strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("directory traversal detected in path: %s", inputPath)
+	}
+
+	// If the input is a simple filename (no separators and not absolute),
+	// accept it as a valid name. Callers that need a full path should join
+	// this filename with their configured directory (e.g. backupDir).
+	if !strings.ContainsAny(inputPath, "/\\") && !filepath.IsAbs(inputPath) {
+		// Ensure it's not empty or hidden (leading dot)
+		trimmed := strings.TrimSpace(inputPath)
+		if trimmed == "" || strings.HasPrefix(trimmed, ".") {
+			return fmt.Errorf("invalid filename: %s", inputPath)
+		}
+		return nil
+	}
+
+	// Convert to absolute path for proper validation for non-filename inputs
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Check for directory traversal attempts
-	if strings.Contains(cleanPath, "..") {
-		return fmt.Errorf("directory traversal detected in path: %s", inputPath)
-	}
-
-	// Check for null bytes (path injection)
-	if strings.Contains(inputPath, "\x00") {
-		return fmt.Errorf("null byte detected in path: %s", inputPath)
-	}
-
-	// Validate against allowed paths
+	// Validate against allowed paths if configured
 	if len(pv.allowedPaths) > 0 {
 		var allowed bool
 		for _, allowedPath := range pv.allowedPaths {
-			// Check if the absolute path is within an allowed directory
-			if strings.HasPrefix(absPath, allowedPath) {
+			// normalize allowed path as absolute as well
+			absAllowed, aerr := filepath.Abs(allowedPath)
+			if aerr != nil {
+				absAllowed = filepath.Clean(allowedPath)
+			}
+			if strings.HasPrefix(absPath, absAllowed) {
 				allowed = true
 				break
 			}
 		}
-
 		if !allowed {
 			return fmt.Errorf("path outside allowed directories: %s", inputPath)
 		}
@@ -99,23 +124,65 @@ func (pv *PathValidator) ValidateBackupName(backupName string) error {
 	return pv.ValidatePath(backupName)
 }
 
-// SanitizeBackupName creates a safe backup name from user input
+// SanitizeBackupName creates a safe backup name from user input.
+//
+// Rules applied:
+//   - Replace backslashes and forward slashes with underscores
+//   - Reduce directory traversal markers (\"../\", \"..\\\") to underscores
+//   - Remove null bytes
+//   - Remove leading dots
+//   - Collapse repeated underscores to a single underscore
+//   - If the result is empty or contains only underscores fallback to \"backup\"
+//   - If the result matches a reserved Windows name, fallback to \"backup\"
 func (pv *PathValidator) SanitizeBackupName(input string) string {
-	// Remove directory separators
-	sanitized := strings.ReplaceAll(input, "/", "_")
-	sanitized = strings.ReplaceAll(sanitized, "\\", "_")
+	s := input
 
-	// Remove dangerous characters
-	sanitized = strings.ReplaceAll(sanitized, "..", "_")
-	sanitized = strings.ReplaceAll(sanitized, "\x00", "")
+	// Replace backslashes early
+	s = strings.ReplaceAll(s, "\\", "_")
 
-	// Remove leading dots
-	sanitized = strings.TrimLeft(sanitized, ".")
+	// Replace traversal markers with underscore (do this before replacing separators)
+	s = strings.ReplaceAll(s, "../", "_")
+	s = strings.ReplaceAll(s, "..\\", "_")
 
-	// Ensure it's not empty after sanitization
-	if sanitized == "" {
-		sanitized = "backup"
+	// Replace remaining separators
+	s = strings.ReplaceAll(s, "/", "_")
+
+	// Remove null bytes
+	s = strings.ReplaceAll(s, "\x00", "")
+
+	// Remove leading dots (hidden files)
+	s = strings.TrimLeft(s, ".")
+
+	// Collapse consecutive underscores into single underscore
+	for strings.Contains(s, "__") {
+		s = strings.ReplaceAll(s, "__", "_")
 	}
 
-	return sanitized
+	// Trim whitespace
+	s = strings.TrimSpace(s)
+
+	// If empty or only underscores, return default name
+	if s == "" || strings.Trim(s, "_") == "" {
+		return "backup"
+	}
+
+	// Prevent reserved Windows names; if matched, fallback to 'backup'
+	upper := strings.ToUpper(s)
+	reserved := []string{"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}
+	for _, r := range reserved {
+		if upper == r || strings.HasPrefix(upper, r+".") {
+			return "backup"
+		}
+	}
+
+	// Final safety: ensure no separators remain
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ReplaceAll(s, "\\", "_")
+
+	// Ensure we didn't accidentally return an empty string
+	if s == "" {
+		return "backup"
+	}
+
+	return s
 }

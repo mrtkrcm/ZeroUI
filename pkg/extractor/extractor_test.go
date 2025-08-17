@@ -28,7 +28,6 @@ func (m *mockStrategy) Extract(ctx context.Context, app string) (*Config, error)
 	return m.config, nil
 }
 
-
 func TestExtractor_Extract(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
@@ -66,9 +67,25 @@ func (bm *BackupManager) CreateBackup(configPath, appName string) (string, error
 // RestoreBackup restores a configuration file from backup
 func (bm *BackupManager) RestoreBackup(backupPath, targetPath string) error {
 	// Validate backup path is within allowed directories (prevents directory traversal)
-	if err := bm.pathValidator.ValidatePath(backupPath); err != nil {
-		return errors.Wrap(errors.SystemPermission, "backup path validation failed", err).
-			WithSuggestions("Use only backup names from 'list' command")
+	// If a PathValidator wasn't provided (some tests construct BackupManager manually),
+	// fall back to a safe check using the configured backupDir when available.
+	if bm.pathValidator != nil {
+		if err := bm.pathValidator.ValidatePath(backupPath); err != nil {
+			return errors.Wrap(errors.SystemPermission, "backup path validation failed", err).
+				WithSuggestions("Use only backup names from 'list' command")
+		}
+	} else {
+		// Fallback: when no pathValidator is present, ensure the backup path is under
+		// the backup directory configured on the manager (if set). This avoids nil
+		// deref panics in tests while still providing basic safety.
+		if bm.backupDir != "" {
+			absBackup, _ := filepath.Abs(backupPath)
+			absBackupDir, _ := filepath.Abs(bm.backupDir)
+			if !strings.HasPrefix(absBackup, absBackupDir) {
+				return errors.Wrap(errors.SystemPermission, "backup path validation failed", fmt.Errorf("path outside allowed directories: %s", backupPath)).
+					WithSuggestions("Use only backup names from 'list' command")
+			}
+		}
 	}
 
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {

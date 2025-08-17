@@ -1,0 +1,3 @@
+Error: failed to load configuration  
+                                     
+Press 'q' to quit or esc to continue.
