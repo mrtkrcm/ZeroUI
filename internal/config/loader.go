@@ -20,7 +20,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/security"
 )
 
-// Loader handles loading and parsing configuration files with caching
+// Loader handles loading and parsing configuration files with caching.
 type Loader struct {
 	configDir     string
 	yamlValidator *security.YAMLValidator
@@ -42,22 +42,53 @@ type Loader struct {
 	stringBuilderPool sync.Pool
 }
 
-// NewLoader creates a new config loader with caching
+// NewLoader creates a new config loader with caching.
+//
+// Behavior:
+//   - If the environment variable ZEROUI_CONFIG_DIR is set, it is used as the
+//     config directory (useful for tests/CI).
+//   - Otherwise the loader uses $HOME/.config/zeroui as the default path.
+//   - The directory is created if it does not exist.
 func NewLoader() (*Loader, error) {
+	// Honor explicit override (useful for tests/CI)
+	if cfg := os.Getenv("ZEROUI_CONFIG_DIR"); cfg != "" {
+		configDir := cfg
+		if err := os.MkdirAll(configDir, 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create config directory: %w", err)
+		}
+
+		yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
+		appCache, err := lru.New[string, *AppConfig](1000)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create app config cache: %w", err)
+		}
+		return &Loader{
+			configDir:      configDir,
+			yamlValidator:  yamlValidator,
+			appConfigCache: appCache,
+			bufferPool: sync.Pool{
+				New: func() interface{} { return make([]byte, 0, 4096) },
+			},
+			stringBuilderPool: sync.Pool{
+				New: func() interface{} { var sb strings.Builder; sb.Grow(1024); return &sb },
+			},
+		}, nil
+	}
+
 	home, err := performance.GetHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configDir := filepath.Join(home, ".config", "zeroui")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create config directory: %w", err)
 	}
 
 	// Initialize YAML validator with security limits
 	yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
 
-	// Initialize LRU cache with 1000 entry limit (same as toggle engine)
+	// Initialize LRU cache with 1000 entry limit
 	appCache, err := lru.New[string, *AppConfig](1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app config cache: %w", err)
@@ -67,23 +98,16 @@ func NewLoader() (*Loader, error) {
 		configDir:      configDir,
 		yamlValidator:  yamlValidator,
 		appConfigCache: appCache,
-		// Initialize memory pools for better allocation patterns
 		bufferPool: sync.Pool{
-			New: func() interface{} {
-				return make([]byte, 0, 4096) // 4KB buffer
-			},
+			New: func() interface{} { return make([]byte, 0, 4096) },
 		},
 		stringBuilderPool: sync.Pool{
-			New: func() interface{} {
-				var sb strings.Builder
-				sb.Grow(1024) // Pre-allocate 1KB
-				return &sb
-			},
+			New: func() interface{} { var sb strings.Builder; sb.Grow(1024); return &sb },
 		},
 	}, nil
 }
 
-// SetConfigDir sets the config directory (for testing)
+// SetConfigDir sets the config directory (for testing or overrides).
 func (l *Loader) SetConfigDir(dir string) {
 	l.configDir = dir
 	// Initialize YAML validator if not already set (for testing)
@@ -99,7 +123,7 @@ func (l *Loader) SetConfigDir(dir string) {
 	}
 }
 
-// AppConfig represents the configuration for a single application
+// AppConfig represents the configuration for a single application.
 type AppConfig struct {
 	Name        string                  `yaml:"name"`
 	Path        string                  `yaml:"path"`
@@ -111,7 +135,7 @@ type AppConfig struct {
 	Env         map[string]string       `yaml:"env,omitempty"`
 }
 
-// FieldConfig represents a configurable field
+// FieldConfig represents a configurable field.
 type FieldConfig struct {
 	Type        string      `yaml:"type"` // choice, string, number, boolean
 	Values      []string    `yaml:"values,omitempty"`
@@ -120,16 +144,16 @@ type FieldConfig struct {
 	Path        string      `yaml:"path,omitempty"` // JSON path for nested values
 }
 
-// PresetConfig represents a preset configuration
+// PresetConfig represents a preset configuration.
 type PresetConfig struct {
 	Name        string                 `yaml:"name"`
 	Description string                 `yaml:"description,omitempty"`
 	Values      map[string]interface{} `yaml:"values"`
 }
 
-// LoadAppConfig loads configuration for a specific application with caching
+// LoadAppConfig loads configuration for a specific application with caching.
 func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
-	// Check cache first (fast path)
+	// Check cache first
 	l.cacheMutex.RLock()
 	if cached, ok := l.appConfigCache.Get(appName); ok {
 		l.cacheHits++
@@ -149,13 +173,12 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	// Initialize file watcher on first use
 	l.initFileWatcher()
 
-	// Use secure YAML reading with complexity limits (Security hardening)
+	// Use secure YAML reading
 	data, err := l.yamlValidator.SafeReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to securely read config file: %w", err)
 	}
 
-	// Parse YAML with validated content
 	var config AppConfig
 	if err := yamlv3.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
@@ -176,7 +199,7 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	return &config, nil
 }
 
-// ListApps returns a list of available applications
+// ListApps returns a list of available applications.
 func (l *Loader) ListApps() ([]string, error) {
 	appsDir := filepath.Join(l.configDir, "apps")
 
@@ -199,7 +222,7 @@ func (l *Loader) ListApps() ([]string, error) {
 	return apps, nil
 }
 
-// LoadTargetConfig loads the actual configuration file that the app uses
+// LoadTargetConfig loads the actual configuration file that the app uses.
 func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 	// Expand home directory in path
 	configPath := appConfig.Path
@@ -208,17 +231,21 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
-		configPath = filepath.Join(home, configPath[1:])
+		// support both "~" and "~/..." usage
+		trimmed := strings.TrimPrefix(configPath, "~")
+		if strings.HasPrefix(trimmed, string(os.PathSeparator)) {
+			configPath = filepath.Join(home, trimmed[1:])
+		} else {
+			configPath = filepath.Join(home, trimmed)
+		}
 	}
 
 	k := koanf.New(".")
 
-	// Load the file based on format
 	var parser koanf.Parser
 	format := strings.ToLower(appConfig.Format)
 	switch format {
 	case "":
-		// Auto-detect from file extension only when format is not provided
 		ext := strings.ToLower(filepath.Ext(configPath))
 		switch ext {
 		case ".json":
@@ -237,7 +264,6 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 	case "toml":
 		parser = toml.Parser()
 	case "custom":
-		// For custom formats, special handling
 		return l.loadCustomFormat(configPath)
 	default:
 		return nil, fmt.Errorf("unsupported config format: %s", appConfig.Format)
@@ -250,7 +276,7 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 	return k, nil
 }
 
-// SaveTargetConfig saves the configuration back to the target file
+// SaveTargetConfig saves the configuration back to the target file.
 func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 	configPath := appConfig.Path
 	if strings.HasPrefix(configPath, "~") {
@@ -258,7 +284,12 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		configPath = filepath.Join(home, configPath[1:])
+		trimmed := strings.TrimPrefix(configPath, "~")
+		if strings.HasPrefix(trimmed, string(os.PathSeparator)) {
+			configPath = filepath.Join(home, trimmed[1:])
+		} else {
+			configPath = filepath.Join(home, trimmed)
+		}
 	}
 
 	// Create backup
@@ -299,74 +330,76 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
 	return nil
 }
 
-// loadCustomFormat handles custom configuration formats (like Ghostty's format)
+// loadCustomFormat handles custom formats (like Ghostty).
 func (l *Loader) loadCustomFormat(configPath string) (*koanf.Koanf, error) {
-	// Use the Ghostty custom parser
 	return ParseGhosttyConfig(configPath)
 }
 
-// saveCustomFormat handles saving custom configuration formats
+// saveCustomFormat handles saving custom formats.
 func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
-	// Use the Ghostty custom parser to write back
 	return WriteGhosttyConfig(configPath, k, configPath)
 }
 
-// initFileWatcher initializes the file watcher for cache invalidation
+// initFileWatcher initializes the file watcher for cache invalidation.
 func (l *Loader) initFileWatcher() {
 	l.watcherInitOnce.Do(func() {
 		var err error
 		l.fileWatcher, err = NewDebouncedWatcher(func(path string) {
-			// Invalidate cache when file changes
 			l.invalidateCacheForPath(path)
 		})
 		if err != nil {
-			// Log error but don't fail - caching will still work without file watching
+			// Log error but do not fail; caching still works without watcher.
 			return
 		}
 	})
 }
 
-// invalidateCacheForPath removes cached config for a specific file path
+// invalidateCacheForPath removes cached config for a specific file path.
 func (l *Loader) invalidateCacheForPath(filePath string) {
-	// Extract app name from file path
 	fileName := filepath.Base(filePath)
 	if strings.HasSuffix(fileName, ".yaml") {
 		appName := strings.TrimSuffix(fileName, ".yaml")
-
 		l.cacheMutex.Lock()
 		l.appConfigCache.Remove(appName)
 		l.cacheMutex.Unlock()
 	}
 }
 
-// ClearCache clears all cached configurations
+// ClearCache clears all cached configurations.
 func (l *Loader) ClearCache() {
 	l.cacheMutex.Lock()
 	defer l.cacheMutex.Unlock()
 	l.appConfigCache.Purge()
 }
 
-// GetCacheStats returns cache statistics for monitoring
+// GetCacheStats returns cache statistics for monitoring.
 func (l *Loader) GetCacheStats() map[string]interface{} {
 	l.cacheMutex.RLock()
 	defer l.cacheMutex.RUnlock()
 
+	hits := l.cacheHits
+	misses := l.cacheMisses
+	total := hits + misses
+	var hitRatio float64
+	if total > 0 {
+		hitRatio = float64(hits) / float64(total)
+	}
 	return map[string]interface{}{
-		"cache_hits":   l.cacheHits,
-		"cache_misses": l.cacheMisses,
+		"cache_hits":   hits,
+		"cache_misses": misses,
 		"cache_size":   l.appConfigCache.Len(),
-		"hit_ratio":    float64(l.cacheHits) / float64(l.cacheHits+l.cacheMisses),
+		"hit_ratio":    hitRatio,
 	}
 }
 
-// Close closes the file watcher and cleans up resources
+// Close closes the file watcher and cleans up resources.
 func (l *Loader) Close() error {
 	if l.fileWatcher != nil {
 		return l.fileWatcher.Close()
@@ -374,7 +407,7 @@ func (l *Loader) Close() error {
 	return nil
 }
 
-// copyFile creates a copy of a file using streaming I/O for efficiency
+// copyFile creates a copy of a file using streaming I/O for efficiency.
 func copyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -382,19 +415,17 @@ func copyFile(src, dst string) error {
 	}
 	defer func() { _ = srcFile.Close() }()
 
-	// Get source file info for future optimizations (permissions, size hints)
 	_, err = srcFile.Stat()
 	if err != nil {
 		return err
 	}
 
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = dstFile.Close() }()
 
-	// Use io.Copy for optimal streaming - handles buffer management automatically
 	_, err = io.Copy(dstFile, srcFile)
 	return err
 }
