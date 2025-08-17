@@ -103,3 +103,4 @@ test_output/
 # Local configuration overrides
 config.local.*
 .env.local
+coverage.out

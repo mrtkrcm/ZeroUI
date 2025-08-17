@@ -288,8 +288,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case util.InfoMsg:
 		m.logger.LogUIEvent("info_message", msg.Type.String(), "message", msg.Msg)
 
-	// case components.OperationCompleteMsg:
-	//	m.logger.LogPerformance("operation_"+msg.ID, msg.Duration, "message", msg.Message)
 	}
 
 	// Update components based on current state with error boundaries

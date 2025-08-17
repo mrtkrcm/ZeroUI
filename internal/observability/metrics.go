@@ -65,11 +65,8 @@ func NewMetrics(config *MetricsConfig) (*Metrics, error) {
 		return &Metrics{}, nil // Return empty metrics if disabled
 	}
 
-	// TODO: Re-enable Prometheus exporter when API compatibility is resolved
-	// exporter, err := prometheus.New()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	// Note: Prometheus exporter disabled due to API compatibility issues
+	// Can be re-enabled when OpenTelemetry Prometheus exporter API stabilizes
 
 	// Create meter provider (without prometheus exporter for now)
 	provider := sdkmetric.NewMeterProvider() // sdkmetric.WithReader(exporter)
