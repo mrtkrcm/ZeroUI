@@ -38,7 +38,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_large_screen",
 			width:  120,
 			height: 40,
-			state:  AppGridView,
+			state:  ListView,
 			setup: func(m *Model) {
 				// Default setup with 4 columns
 			},
@@ -52,7 +52,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_medium_screen",
 			width:  100,
 			height: 30,
-			state:  AppGridView,
+			state:  ListView,
 			setup: func(m *Model) {
 				// Should adapt to 3 columns
 			},
@@ -65,7 +65,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_grid_small_screen",
 			width:  80,
 			height: 24,
-			state:  AppGridView,
+			state:  ListView,
 			setup: func(m *Model) {
 				// Should adapt to 2 columns
 			},
@@ -78,7 +78,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_app_selector",
 			width:  100,
 			height: 30,
-			state:  HuhAppSelectionView,
+			state:  ListView,
 			setup:  func(m *Model) {},
 			validate: func(t *testing.T, view string) {
 				assert.Contains(t, view, "Select Application", "Should show selector title")
@@ -88,10 +88,10 @@ func TestVisualRendering(t *testing.T) {
 			name:   "huh_config_editor",
 			width:  100,
 			height: 30,
-			state:  HuhConfigEditView,
+			state:  FormView,
 			setup: func(m *Model) {
 				m.currentApp = "ghostty"
-				m.loadAppConfig("ghostty")
+				// Config loading is handled by the form component
 			},
 			validate: func(t *testing.T, view string) {
 				assert.NotEmpty(t, view, "Should render config editor")
@@ -101,7 +101,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "legacy_app_grid_4_columns",
 			width:  140,
 			height: 40,
-			state:  AppGridView,
+			state:  ListView,
 			setup:  func(m *Model) {},
 			validate: func(t *testing.T, view string) {
 				assert.NotEmpty(t, view, "Should render legacy grid")
@@ -111,7 +111,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "help_view",
 			width:  100,
 			height: 30,
-			state:  AppGridView,
+			state:  ListView,
 			setup: func(m *Model) {
 				m.showingHelp = true
 			},
@@ -123,7 +123,7 @@ func TestVisualRendering(t *testing.T) {
 			name:   "error_state",
 			width:  100,
 			height: 30,
-			state:  AppGridView,
+			state:  ListView,
 			setup: func(m *Model) {
 				m.err = fmt.Errorf("test error for visual testing")
 			},
@@ -151,7 +151,7 @@ func TestVisualRendering(t *testing.T) {
 
 			// Update component sizes
 			model.updateComponentSizes()
-			model.focusCurrentComponent()
+			// Focus is handled by modern components
 
 			// Render the view
 			view := model.View()
@@ -195,11 +195,11 @@ func TestResponsiveLayout(t *testing.T) {
 			require.NoError(t, err)
 
 			// Test both modern and legacy grids
-			states := []ViewState{AppGridView}
+			states := []ViewState{ListView}
 
 			for _, state := range states {
 				stateStr := "huh"
-				if state == AppGridView {
+				if state == ListView {
 					stateStr = "legacy"
 				}
 
@@ -242,7 +242,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = AppGridView
+	model.state = ListView
 
 	// Test state transitions
 	transitions := []struct {
@@ -253,30 +253,30 @@ func TestAnimationsAndTransitions(t *testing.T) {
 	}{
 		{
 			name:      "grid_to_selector",
-			fromState: AppGridView,
-			toState:   HuhAppSelectionView,
+			fromState: ListView,
+			toState:   ListView,
 			action: func(m *Model) {
-				m.state = HuhAppSelectionView
-				m.focusCurrentComponent()
+				m.state = ListView
+				// Focus is handled by modern components
 			},
 		},
 		{
 			name:      "selector_to_config",
-			fromState: HuhAppSelectionView,
-			toState:   HuhConfigEditView,
+			fromState: ListView,
+			toState:   FormView,
 			action: func(m *Model) {
-				m.state = HuhConfigEditView
+				m.state = FormView
 				m.currentApp = "ghostty"
-				m.focusCurrentComponent()
+				// Focus is handled by modern components
 			},
 		},
 		{
 			name:      "modern_to_legacy",
-			fromState: AppGridView,
-			toState:   AppGridView,
+			fromState: ListView,
+			toState:   ListView,
 			action: func(m *Model) {
-				m.state = AppGridView
-				m.focusCurrentComponent()
+				m.state = ListView
+				// Focus is handled by modern components
 			},
 		},
 	}
@@ -285,7 +285,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 		t.Run(transition.name, func(t *testing.T) {
 			// Start state
 			model.state = transition.fromState
-			model.focusCurrentComponent()
+			// Focus is handled by modern components
 			startView := model.View()
 
 			// Apply transition
@@ -314,7 +314,7 @@ func TestPerformance(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = AppGridView
+	model.state = ListView
 
 	// Warm up
 	for i := 0; i < 10; i++ {
@@ -354,8 +354,8 @@ func TestUIKeyboardNavigation(t *testing.T) {
 
 	model.width = 120
 	model.height = 40
-	model.state = AppGridView
-	model.focusCurrentComponent()
+	model.state = ListView
+	// Focus is handled by modern components
 
 	// Test navigation keys
 	navigationTests := []struct {
@@ -418,7 +418,7 @@ func TestErrorRecovery(t *testing.T) {
 			name: "config_load_error",
 			setup: func(m *Model) {
 				m.err = fmt.Errorf("failed to load configuration")
-				m.state = HuhConfigEditView
+				m.state = FormView
 			},
 			check: func(t *testing.T, view string) {
 				assert.Contains(t, view, "Error", "Should show error")
@@ -429,7 +429,7 @@ func TestErrorRecovery(t *testing.T) {
 			name: "app_not_found",
 			setup: func(m *Model) {
 				m.currentApp = "nonexistent-app"
-				m.state = HuhConfigEditView
+				m.state = FormView
 			},
 			check: func(t *testing.T, view string) {
 				assert.NotEmpty(t, view, "Should still render something")
@@ -450,7 +450,7 @@ func TestErrorRecovery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset model
 			model.err = nil
-			model.state = AppGridView
+			model.state = ListView
 
 			// Apply error condition
 			tc.setup(model)
@@ -507,17 +507,17 @@ func TestVisualRegression(t *testing.T) {
 
 	// Generate reference snapshots for all major states
 	states := []ViewState{
-		AppGridView,
-		HuhAppSelectionView,
-		HuhConfigEditView,
-		ConfigEditView,
+		ListView,
+		ListView,
+		FormView,
+		FormView,
 	}
 
 	for _, state := range states {
 		model.state = state
 		model.width = 120
 		model.height = 40
-		model.focusCurrentComponent()
+		// Focus is handled by modern components
 
 		view := model.View()
 		assert.NotEmpty(t, view, fmt.Sprintf("State %d should render", int(state)))

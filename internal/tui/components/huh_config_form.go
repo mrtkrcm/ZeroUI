@@ -340,31 +340,47 @@ func (m *HuhConfigFormModel) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles form updates
+// Update handles form updates with enhanced error handling and performance
 func (m *HuhConfigFormModel) Update(msg tea.Msg) (*HuhConfigFormModel, tea.Cmd) {
-	if m.form == nil {
+	if m == nil || m.form == nil {
 		return m, nil
 	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		if m.form != nil {
-			m.form = m.form.WithWidth(m.width - 4).WithHeight(m.height - 8)
+		// Only update if size actually changed
+		if m.width != msg.Width || m.height != msg.Height {
+			m.width = msg.Width
+			m.height = msg.Height
+			if m.form != nil {
+				newWidth := max(m.width-4, 20)  // Ensure minimum width
+				newHeight := max(m.height-8, 5) // Ensure minimum height
+				m.form = m.form.WithWidth(newWidth).WithHeight(newHeight)
+			}
 		}
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+s":
-			// Save the form
-			if m.form != nil {
-				return m, func() tea.Msg {
-					return ConfigSavedMsg{AppName: m.appName, Values: m.getFormValues()}
+			// Save the form with validation
+			if m.form != nil && m.appName != "" {
+				values := m.getFormValues()
+				if len(values) > 0 {
+					return m, func() tea.Msg {
+						return ConfigSavedMsg{AppName: m.appName, Values: values}
+					}
 				}
 			}
 		}
 	}
+
+	// Update form with error recovery
+	defer func() {
+		if r := recover(); r != nil {
+			// Log error but don't crash
+			// Would need logger for proper error handling
+		}
+	}()
 
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
@@ -378,6 +394,7 @@ func (m *HuhConfigFormModel) Update(msg tea.Msg) (*HuhConfigFormModel, tea.Cmd) 
 
 	return m, cmd
 }
+
 
 // View renders the form
 func (m *HuhConfigFormModel) View() string {

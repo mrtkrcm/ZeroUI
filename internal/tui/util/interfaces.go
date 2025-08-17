@@ -24,5 +24,21 @@ const (
 	InfoTypeError
 )
 
+// String returns the string representation of InfoType
+func (it InfoType) String() string {
+	switch it {
+	case InfoTypeInfo:
+		return "info"
+	case InfoTypeSuccess:
+		return "success"
+	case InfoTypeWarn:
+		return "warn"
+	case InfoTypeError:
+		return "error"
+	default:
+		return "unknown"
+	}
+}
+
 // ClearStatusMsg clears status messages
 type ClearStatusMsg struct{}

@@ -86,9 +86,12 @@ type Model struct {
 	currentApp  string
 	showingHelp bool
 	
-	// Performance tracking
+	// Performance tracking and optimization
 	lastRenderTime time.Time
 	frameCount     int
+	renderCache    map[ViewState]string
+	lastCacheTime  time.Time
+	cacheDuration  time.Duration
 }
 
 // NewModel creates a new model with modern components
@@ -116,6 +119,10 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		appList:    components.NewApplicationList(),
 		configForm: components.NewHuhConfigForm(initialApp),
 		helpSystem: components.NewGlamourHelp(),
+		
+		// Performance optimization
+		renderCache:   make(map[ViewState]string),
+		cacheDuration: 50 * time.Millisecond, // 20fps cache for smooth performance
 	}
 
 	// Load app configuration if initial app is specified
@@ -170,7 +177,7 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// Update handles model updates
+// Update handles model updates with comprehensive error handling and performance optimizations
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m == nil {
 		return m, tea.Quit
@@ -179,24 +186,43 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	renderStart := time.Now()
 
-	// Panic recovery
+	// Enhanced panic recovery and error boundaries
 	defer func() {
 		if r := recover(); r != nil {
-			m.logger.Error("UI panic recovered", "panic", r, "state", m.state)
+			m.logger.Error("UI panic recovered", "panic", r, "state", m.state, "msg_type", fmt.Sprintf("%T", msg))
 			m.err = fmt.Errorf("UI panic: %v", r)
+			// Attempt to reset to stable state
+			m.state = ListView
+			m.currentApp = ""
 		}
+		// Performance monitoring with throttling to avoid log spam
+		renderDuration := time.Since(renderStart)
 		m.lastRenderTime = renderStart
 		m.frameCount++
+		
+		// Only log performance issues if they're significant
+		if renderDuration > 16*time.Millisecond && m.frameCount%60 == 0 { // Log every 60 frames if slow
+			m.logger.LogPerformance("slow_update", renderDuration, "frame_count", m.frameCount)
+		}
 	}()
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		cmds = append(cmds, m.updateComponentSizes())
+		// Prevent unnecessary updates for tiny size changes
+		if abs(m.width-msg.Width) > 1 || abs(m.height-msg.Height) > 1 {
+			m.width = msg.Width
+			m.height = msg.Height
+			cmds = append(cmds, m.updateComponentSizes())
+		}
 
 	case tea.KeyMsg:
-		// Global key handling
+		// Rate limiting for key events to prevent UI lag
+		if m.frameCount > 0 && time.Since(m.lastRenderTime) < 16*time.Millisecond {
+			// Skip processing if we're updating too frequently
+			return m, nil
+		}
+
+		// Global key handling with error recovery
 		if cmd := m.handleGlobalKeys(msg); cmd != nil {
 			return m, cmd
 		}
@@ -207,19 +233,41 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case components.AppSelectedMsg:
+		// Validate app name before processing
+		if msg.App == "" {
+			m.logger.Error("Empty app name in AppSelectedMsg")
+			return m, nil
+		}
+		
 		m.logger.LogAppOperation(msg.App, "selected")
 		m.currentApp = msg.App
 		m.state = FormView
+		m.invalidateCache() // Clear cache on state change
 
-		// Load configuration asynchronously
+		// Load configuration asynchronously with timeout protection
 		cmds = append(cmds, func() tea.Msg {
-			if err := m.loadAppConfigForForm(msg.App); err != nil {
+			// Add timeout to prevent hanging
+			done := make(chan tea.Msg, 1)
+			go func() {
+				if err := m.loadAppConfigForForm(msg.App); err != nil {
+					done <- util.InfoMsg{
+						Msg:  fmt.Sprintf("Error loading config: %v", err),
+						Type: util.InfoTypeError,
+					}
+				} else {
+					done <- ConfigLoadedMsg{App: msg.App}
+				}
+			}()
+			
+			select {
+			case result := <-done:
+				return result
+			case <-time.After(5 * time.Second):
 				return util.InfoMsg{
-					Msg:  fmt.Sprintf("Error loading config: %v", err),
+					Msg:  fmt.Sprintf("Timeout loading config for %s", msg.App),
 					Type: util.InfoTypeError,
 				}
 			}
-			return ConfigLoadedMsg{App: msg.App}
 		})
 
 	case ConfigLoadedMsg:
@@ -238,34 +286,48 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle initialization complete
 
 	case util.InfoMsg:
-		m.logger.LogUIEvent("info_message", string(msg.Type), "message", msg.Msg)
+		m.logger.LogUIEvent("info_message", msg.Type.String(), "message", msg.Msg)
 
 	// case components.OperationCompleteMsg:
 	//	m.logger.LogPerformance("operation_"+msg.ID, msg.Duration, "message", msg.Message)
 	}
 
-	// Update components based on current state
+	// Update components based on current state with error boundaries
 	switch m.state {
 	case ListView:
-		if updatedList, listCmd := m.appList.Update(msg); updatedList != nil {
-			m.appList = updatedList
+		if updatedList, listCmd := m.safeUpdateComponent(func() (interface{}, tea.Cmd) {
+			return m.appList.Update(msg)
+		}, "appList"); updatedList != nil {
+			if appList, ok := updatedList.(*components.ApplicationListModel); ok {
+				m.appList = appList
+			}
 			if listCmd != nil {
 				cmds = append(cmds, listCmd)
 			}
 		}
 
 	case FormView:
-		var cmd tea.Cmd
-		m.configForm, cmd = m.configForm.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
+		if updatedForm, formCmd := m.safeUpdateComponent(func() (interface{}, tea.Cmd) {
+			return m.configForm.Update(msg)
+		}, "configForm"); updatedForm != nil {
+			if configForm, ok := updatedForm.(*components.HuhConfigFormModel); ok {
+				m.configForm = configForm
+			}
+			if formCmd != nil {
+				cmds = append(cmds, formCmd)
+			}
 		}
 
 	case HelpView:
-		var cmd tea.Cmd
-		m.helpSystem, cmd = m.helpSystem.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
+		if updatedHelp, helpCmd := m.safeUpdateComponent(func() (interface{}, tea.Cmd) {
+			return m.helpSystem.Update(msg)
+		}, "helpSystem"); updatedHelp != nil {
+			if helpSystem, ok := updatedHelp.(*components.GlamourHelpModel); ok {
+				m.helpSystem = helpSystem
+			}
+			if helpCmd != nil {
+				cmds = append(cmds, helpCmd)
+			}
 		}
 	}
 
@@ -290,6 +352,7 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 			m.state = HelpView
 			m.helpSystem.ShowPage("overview")
 		}
+		m.invalidateCache() // Clear cache on state change
 		m.logger.LogUIEvent("help_toggled", "help", "visible", m.state == HelpView)
 
 	case key.Matches(msg, m.keyMap.Back):
@@ -338,45 +401,133 @@ func (m *Model) handleBack() tea.Cmd {
 	case FormView:
 		m.state = ListView
 		m.currentApp = ""
+		m.invalidateCache() // Clear cache on state change
 	default:
 		m.state = ListView
+		m.invalidateCache() // Clear cache on state change
 	}
 
 	return nil
 }
 
-// View renders the model
+// View renders the model with performance optimizations and intelligent caching
 func (m *Model) View() string {
 	if m.err != nil {
 		return m.renderError()
 	}
 
-	// Get the main content based on current state
+	// Check cache for non-interactive views
+	if cachedContent, valid := m.getCachedView(); valid {
+		return cachedContent
+	}
+
+	// Get the main content based on current state with error protection
 	var content string
 
 	switch m.state {
 	case ListView:
-		content = m.appList.View()
+		content = m.safeViewRender(func() string { return m.appList.View() }, "appList")
 
 	case FormView:
-		content = m.configForm.View()
+		content = m.safeViewRender(func() string { return m.configForm.View() }, "configForm")
 
 	case HelpView:
-		content = m.helpSystem.View()
+		content = m.safeViewRender(func() string { return m.helpSystem.View() }, "helpSystem")
 
 	case ProgressView:
 		content = "Progress view"
+		
+	default:
+		content = m.renderFallbackView()
 	}
 
-	// Add progress overlay if active (placeholder)
-
-	// Add performance indicator in debug mode
-	if m.logger.IsLevelEnabled(logging.LevelDebug) {
+	// Add performance indicator in debug mode (throttled to reduce overhead)
+	if m.logger.IsLevelEnabled(logging.LevelDebug) && m.frameCount%30 == 0 {
 		debugInfo := m.renderDebugInfo()
 		content = lipgloss.JoinVertical(lipgloss.Left, content, debugInfo)
 	}
 
+	// Cache the result for static views
+	m.cacheView(content)
+
 	return content
+}
+
+// getCachedView returns cached content if valid
+func (m *Model) getCachedView() (string, bool) {
+	if m.renderCache == nil {
+		return "", false
+	}
+	
+	// Only cache non-form views to avoid stale form state
+	if m.state == FormView {
+		return "", false
+	}
+	
+	if cached, exists := m.renderCache[m.state]; exists {
+		if time.Since(m.lastCacheTime) < m.cacheDuration {
+			return cached, true
+		}
+	}
+	
+	return "", false
+}
+
+// cacheView stores the rendered content
+func (m *Model) cacheView(content string) {
+	if m.renderCache == nil {
+		m.renderCache = make(map[ViewState]string)
+	}
+	
+	// Don't cache form views to avoid stale form state
+	if m.state != FormView {
+		m.renderCache[m.state] = content
+		m.lastCacheTime = time.Now()
+	}
+}
+
+// invalidateCache clears the render cache
+func (m *Model) invalidateCache() {
+	if m.renderCache != nil {
+		for k := range m.renderCache {
+			delete(m.renderCache, k)
+		}
+	}
+}
+
+// safeViewRender wraps view rendering with error recovery
+func (m *Model) safeViewRender(renderFn func() string, componentName string) string {
+	var result string
+	var panicOccurred bool
+	
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				m.logger.Error("View render panic recovered", "component", componentName, "panic", r)
+				panicOccurred = true
+			}
+		}()
+		
+		result = renderFn()
+	}()
+	
+	// Return fallback if error occurred or result is empty
+	if panicOccurred || result == "" {
+		return m.renderFallbackView()
+	}
+	return result
+}
+
+// renderFallbackView provides a safe fallback when components fail
+func (m *Model) renderFallbackView() string {
+	fallbackStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("214")).
+		Bold(true).
+		Padding(1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("214"))
+
+	return fallbackStyle.Render("ZeroUI - Safe Mode\n\nPress 'q' to quit or Esc to return to main view.")
 }
 
 // renderError renders error messages
@@ -550,6 +701,25 @@ func (app *App) RunWithContext(ctx context.Context) error {
 type InitCompleteMsg struct{}
 type ConfigLoadedMsg struct {
 	App string
+}
+
+// safeUpdateComponent wraps component updates with error recovery
+func (m *Model) safeUpdateComponent(updateFn func() (interface{}, tea.Cmd), componentName string) (interface{}, tea.Cmd) {
+	defer func() {
+		if r := recover(); r != nil {
+			m.logger.Error("Component update panic recovered", "component", componentName, "panic", r)
+		}
+	}()
+	
+	return updateFn()
+}
+
+// abs returns the absolute value of an integer
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Ensure Model implements tea.Model

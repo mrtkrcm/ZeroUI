@@ -1,3 +1,7 @@
-Error: test error message for visual regression
-                                               
-Press 'q' to quit or esc to continue.          
+╭─────────────────────────────────────────────────╮
+│                                                 │
+│ Error: test error message for visual regression │
+│                                                 │
+│ Press 'q' to quit or Esc to continue.           │
+│                                                 │
+╰─────────────────────────────────────────────────╯

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
 )
 
 const snapshotDir = "testdata/snapshots"
@@ -367,7 +366,7 @@ func TestUILayoutCoverage(t *testing.T) {
 			name:  "ListView",
 			state: ListView,
 			setup: func(m *Model) {
-				m.appSelector.Focus()
+				// Focus is handled by modern components
 			},
 			validate: func(t *testing.T, snapshot string) {
 				assert.NotEmpty(t, snapshot, "Should have content")
@@ -378,7 +377,7 @@ func TestUILayoutCoverage(t *testing.T) {
 			state: FormView,
 			setup: func(m *Model) {
 				m.currentApp = "test-app"
-				m.configEditor.Focus()
+				// Focus is handled by modern components
 			},
 			validate: func(t *testing.T, snapshot string) {
 				assert.NotEmpty(t, snapshot, "Should have content")

@@ -3,50 +3,73 @@ package tui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
-// TestUIInitialization validates that the UI initializes correctly
-func TestUIInitialization(t *testing.T) {
+// createTestModel creates a properly initialized test model for both testing.T and testing.B
+func createTestModel(t testing.TB, initialApp string) *Model {
 	// Create a test engine
 	engine, err := toggle.NewEngine()
-	require.NoError(t, err, "Failed to create engine")
+	if err != nil {
+		t.Fatalf("Failed to create engine: %v", err)
+	}
 
-	// Create model without initial app (should show grid view)
-	model, err := NewTestModel(engine, "")
-	require.NoError(t, err, "Failed to create model")
+	// Create logger for testing
+	logConfig := logging.DefaultConfig()
+	logConfig.Level = logging.LevelError // Reduce noise in tests
+	logger, err := logging.NewCharmLogger(logConfig)
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 
-	// Validate initial state
-	assert.Equal(t, AppGridView, model.state, "Should start with AppGridView")
-	assert.NotNil(t, model.appGrid, "AppGrid should be initialized")
-	assert.NotNil(t, model.appSelector, "AppSelector should be initialized")
-	assert.NotNil(t, model.configEditor, "ConfigEditor should be initialized")
-	assert.NotNil(t, model.statusBar, "StatusBar should be initialized")
-	assert.NotNil(t, model.responsiveHelp, "ResponsiveHelp should be initialized")
-	assert.NotNil(t, model.styles, "Styles should be initialized")
-	assert.NotNil(t, model.theme, "Theme should be initialized")
+	// Create model
+	model, err := NewModel(engine, initialApp, logger)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Initialize with reasonable dimensions
+	model.width = 80
+	model.height = 24
+
+	return model
 }
 
-// TestUIRendering validates that the UI renders without panics
+// TestUIInitialization validates that the UI initializes correctly with enhanced isolation
+func TestUIInitialization(t *testing.T) {
+	model := createTestModel(t, "")
+
+	// Validate initial state
+	assert.Equal(t, ListView, model.state, "Should start with ListView")
+	assert.NotNil(t, model.appList, "AppList should be initialized")
+	assert.NotNil(t, model.configForm, "ConfigForm should be initialized")
+	assert.NotNil(t, model.helpSystem, "HelpSystem should be initialized")
+	assert.NotNil(t, model.styles, "Styles should be initialized")
+	assert.NotNil(t, model.theme, "Theme should be initialized")
+	assert.NotNil(t, model.renderCache, "Render cache should be initialized")
+	assert.Greater(t, model.cacheDuration, time.Duration(0), "Cache duration should be positive")
+}
+
+// TestUIRendering validates that the UI renders without panics with performance monitoring
 func TestUIRendering(t *testing.T) {
-	engine, err := toggle.NewEngine()
-	require.NoError(t, err)
+	model := createTestModel(t, "")
 
-	model, err := NewTestModel(engine, "")
-	require.NoError(t, err)
-
-	// Test initial render
+	// Test initial render with timing
+	start := time.Now()
 	view := model.View()
+	renderTime := time.Since(start)
+	
 	assert.NotEmpty(t, view, "Initial view should not be empty")
+	assert.Less(t, renderTime, 100*time.Millisecond, "Initial render should be fast")
 
-	// Simulate window resize
-	model.width = 120
-	model.height = 40
+	// Simulate window resize with optimized handling
 	resizeMsg := tea.WindowSizeMsg{Width: 120, Height: 40}
 	updatedModel, _ := model.Update(resizeMsg)
 	model = updatedModel.(*Model)
@@ -169,25 +192,25 @@ func TestStateTransitions(t *testing.T) {
 	model, err := NewTestModel(engine, "")
 	require.NoError(t, err)
 
-	// Start in AppGridView
-	assert.Equal(t, AppGridView, model.state)
+	// Start in ListView
+	assert.Equal(t, ListView, model.state)
 
-	// Transition to HuhAppSelectionView
-	model.state = HuhAppSelectionView
-	model.focusCurrentComponent()
+	// Transition to FormView
+	model.state = FormView
+	model.currentApp = "test-app"
 
-	// Validate focus changed
-	assert.Equal(t, HuhAppSelectionView, model.state)
+	// Validate state changed
+	assert.Equal(t, FormView, model.state)
 
 	// Test back navigation
 	cmd := model.handleBack()
-	assert.Equal(t, AppGridView, model.state, "Should go back to grid view")
-	assert.Nil(t, cmd, "Should not quit from grid view navigation")
+	assert.Equal(t, ListView, model.state, "Should go back to list view")
+	assert.Nil(t, cmd, "Should not quit from list view navigation")
 
-	// Test quit from grid view
-	model.state = AppGridView
+	// Test quit from list view
+	model.state = ListView
 	cmd = model.handleBack()
-	assert.NotNil(t, cmd, "Should quit from grid view")
+	assert.NotNil(t, cmd, "Should quit from list view")
 }
 
 // Helper function to strip ANSI codes
@@ -255,4 +278,143 @@ func TestHelpView(t *testing.T) {
 	// Help view should be wrapped with layout
 	lines := strings.Split(view, "\n")
 	assert.Greater(t, len(lines), 3, "Help view should have multiple lines")
+}
+
+// TestPerformanceOptimizations validates that our performance optimizations work
+func TestPerformanceOptimizations(t *testing.T) {
+	model := createTestModel(t, "")
+
+	// Test cache performance
+	t.Run("RenderCaching", func(t *testing.T) {
+		// First render - should be slow (cache miss)
+		start := time.Now()
+		view1 := model.View()
+		firstRender := time.Since(start)
+		
+		// Second render - should be fast (cache hit for non-form views)
+		if model.state != FormView {
+			start = time.Now()
+			view2 := model.View()
+			secondRender := time.Since(start)
+			
+			assert.Equal(t, view1, view2, "Cached views should be identical")
+			assert.Less(t, secondRender, firstRender/2, "Cached render should be significantly faster")
+		}
+	})
+
+	t.Run("StateChangeInvalidation", func(t *testing.T) {
+		// Change state and verify cache is invalidated
+		originalState := model.state
+		model.state = HelpView
+		model.invalidateCache()
+		
+		// Render should work and create new cache
+		view := model.View()
+		assert.NotEmpty(t, view, "View after state change should render correctly")
+		
+		// Restore state
+		model.state = originalState
+		model.invalidateCache()
+	})
+
+	t.Run("ComponentUpdateOptimization", func(t *testing.T) {
+		// Test that identical size updates are skipped
+		initialWidth := model.width
+		initialHeight := model.height
+		
+		// Same size update should be fast
+		start := time.Now()
+		sameSize := tea.WindowSizeMsg{Width: initialWidth, Height: initialHeight}
+		model.Update(sameSize)
+		sameUpdateTime := time.Since(start)
+		
+		// Different size update
+		start = time.Now()
+		differentSize := tea.WindowSizeMsg{Width: initialWidth + 10, Height: initialHeight + 5}
+		model.Update(differentSize)
+		differentUpdateTime := time.Since(start)
+		
+		assert.Less(t, sameUpdateTime, 5*time.Millisecond, "Same size updates should be very fast")
+		// Different size updates may be slower due to component resizing
+		_ = differentUpdateTime
+	})
+
+	t.Run("ErrorRecovery", func(t *testing.T) {
+		// Test that error recovery doesn't crash the application
+		// This tests the safeUpdateComponent and safeViewRender functions
+		
+		// Force an error condition by setting a component to nil temporarily
+		originalAppList := model.appList
+		model.appList = nil
+		
+		// Should not panic
+		view := model.View()
+		assert.NotEmpty(t, view, "Should render fallback view on component error")
+		
+		// Restore component
+		model.appList = originalAppList
+	})
+}
+
+// TestComponentIntegrationStability validates component interaction stability
+func TestComponentIntegrationStability(t *testing.T) {
+	model := createTestModel(t, "")
+
+	t.Run("StateTransitions", func(t *testing.T) {
+		originalState := model.state
+		
+		// Test all state transitions
+		states := []ViewState{ListView, FormView, HelpView, ProgressView}
+		
+		for _, state := range states {
+			model.state = state
+			model.invalidateCache()
+			
+			// Should render without panic
+			view := model.View()
+			assert.NotEmpty(t, view, "State %d should render successfully", state)
+		}
+		
+		// Restore original state
+		model.state = originalState
+		model.invalidateCache()
+	})
+
+	t.Run("MessageHandling", func(t *testing.T) {
+		// Test various message types don't cause instability
+		messages := []tea.Msg{
+			tea.WindowSizeMsg{Width: 100, Height: 30},
+			tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
+			tea.KeyMsg{Type: tea.KeyEsc},
+		}
+		
+		for _, msg := range messages {
+			// Should not panic
+			updatedModel, cmd := model.Update(msg)
+			assert.NotNil(t, updatedModel, "Model should remain valid after message")
+			// cmd can be nil, that's fine
+			_ = cmd
+		}
+	})
+}
+
+// BenchmarkViewRendering benchmarks view rendering performance
+func BenchmarkViewRendering(b *testing.B) {
+	model := createTestModel(b, "")
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		model.View()
+	}
+}
+
+// BenchmarkUpdateCycle benchmarks the update cycle performance
+func BenchmarkUpdateCycle(b *testing.B) {
+	model := createTestModel(b, "")
+	msg := tea.WindowSizeMsg{Width: 100, Height: 30}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		model.Update(msg)
+	}
 }

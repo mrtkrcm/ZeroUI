@@ -1,33 +1,18 @@
-                                                            
-            ______                _    _ _____              
-            |___  /               | |  | |_   _|            
-               / / ___ _ __ ___   | |  | | | |              
-              / / / _ \ '__/ _ \  | |  | | | |              
-             / /_|  __/ | | (_) | | |__| |_| |_             
-            /_____\___|_|  \___/   \____/|_____|            
-                                                            
-       4 applications • 4 available • installed only        
-                                                            
-    ╭───────────────                                        
-│                                                           
-│    Ghostty                                                
-│       ●                                                   
-│                 ╭───────────────                          
-│                                                           
-│    VS Code                                                
-│       ●                                                   
-│                 ╭───────────────                          
-│                                                           
-│      Zed                                                  
-│       ●                                                   
-│                                                           
-                                                            
-    ╭───────────────                                        
-│                                                           
-│      Git                                                  
-│       ●                                                   
-│                                                           
-                                                            
-                                                            
-    ↑↓←→ Navigate  •  ⏎ Select  •  a Show All  •  q Quit    
-                                                            
+   ZeroUI Applications   
+                         
+  No items               
+                         
+No items.                
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+q quit • ? more          

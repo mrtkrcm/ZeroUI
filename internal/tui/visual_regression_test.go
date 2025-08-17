@@ -134,7 +134,7 @@ func TestTUIVisualRegression(t *testing.T) {
 			Width:       120,
 			Height:      40,
 			Setup: func(m *Model) error {
-				m.state = ConfigEditView
+				m.state = FormView
 				m.currentApp = "ghostty"
 				return nil
 			},
@@ -201,8 +201,8 @@ type VisualTestScenario struct {
 
 // runVisualRegressionTest executes a single visual regression test
 func (vrt *VisualRegressionTester) runVisualRegressionTest(t *testing.T, scenario VisualTestScenario) {
-	// Create model
-	model, err := NewModel(vrt.engine, "")
+	// Create model using test helper
+	model, err := NewTestModel(vrt.engine, "")
 	require.NoError(t, err)
 
 	// Configure model

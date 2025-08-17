@@ -1,28 +1,28 @@
- 🔧 ZeroUI - Application Grid (Enhanced)                                                            
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-Status: Ready • Theme: Default                                                                      
-q quit • q quit • ? toggle help • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up
+   ZeroUI Applications   
+                         
+  No items               
+                         
+No items.                
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+q quit • ? more          

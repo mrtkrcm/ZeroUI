@@ -211,26 +211,37 @@ func (m *ApplicationListModel) Init() tea.Cmd {
 	return nil
 }
 
-// Update implements tea.Model
+// Update implements tea.Model with performance optimizations and error handling
 func (m *ApplicationListModel) Update(msg tea.Msg) (*ApplicationListModel, tea.Cmd) {
+	if m == nil {
+		return m, nil
+	}
+
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		m.list.SetWidth(msg.Width)
-		m.list.SetHeight(msg.Height - 2) // Reserve space for status
+		// Only update if size actually changed to avoid unnecessary work
+		if m.width != msg.Width || m.height != msg.Height {
+			m.width = msg.Width
+			m.height = msg.Height
+			m.list.SetWidth(msg.Width)
+			newHeight := max(msg.Height-2, 1) // Reserve space for status, ensure positive
+			m.list.SetHeight(newHeight)
+		}
 		return m, nil
 
 	case tea.KeyMsg:
-		// Handle custom key bindings
+		// Handle custom key bindings with validation
 		switch {
 		case key.Matches(msg, m.keyMap.Select):
 			if item := m.list.SelectedItem(); item != nil {
 				if appItem, ok := item.(ApplicationItem); ok {
-					return m, func() tea.Msg {
-						return AppSelectedMsg{App: appItem.name}
+					// Validate app name before sending message
+					if appItem.name != "" {
+						return m, func() tea.Msg {
+							return AppSelectedMsg{App: appItem.name}
+						}
 					}
 				}
 			}
@@ -241,17 +252,33 @@ func (m *ApplicationListModel) Update(msg tea.Msg) (*ApplicationListModel, tea.C
 		}
 	}
 
-	// Update the list
+	// Update the list with error boundary
+	defer func() {
+		if r := recover(); r != nil {
+			// Log error but don't crash the application
+			// Note: Would need logger passed in for proper logging
+		}
+	}()
+	
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 	}
 
+	// Batch commands only if we have any to avoid unnecessary allocations
 	if len(cmds) > 0 {
 		return m, tea.Batch(cmds...)
 	}
 	return m, nil
+}
+
+// max returns the maximum of two integers
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // View implements tea.Model

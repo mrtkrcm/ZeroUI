@@ -1,38 +1,38 @@
- ZeroUI - Select Application (Legacy)                                                                                   
-                                                                                                                        
-  > ghostty                                                                                                             
-    mise                                                                                                                
-    zed                                                                                                                 
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-                                                                                                                        
-Status: Ready • Theme: Default                                                                                          
-q quit • ? toggle help • enter select/confirm • ↓/j move down • ↑/k move up • esc go back • ctrl+h switch to Huh UI     
+   ZeroUI Applications   
+                         
+  No items               
+                         
+No items.                
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+q quit • ? more          

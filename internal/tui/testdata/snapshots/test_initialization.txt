@@ -1,34 +1,6 @@
-                                                    
-                                                    
-                    ZEROUI                          
-                                                    
-                                                    
-4 applications • 4 available • installed only       
-                                                    
- ╭───────────────                                   
-│                                                   
-│    Ghostty                                        
-│       ●                                           
-│                                                   
-                                                    
- ╭───────────────                                   
-│                                                   
-│    VS Code                                        
-│       ●                                           
-│                                                   
-                                                    
- ╭───────────────                                   
-│                                                   
-│      Zed                                          
-│       ●                                           
-│                                                   
-                                                    
- ╭───────────────                                   
-│                                                   
-│      Git                                          
-│       ●                                           
-│                                                   
-                                                    
-                                                    
-↑↓←→ Navigate  •  ⏎ Select  •  a Show All  •  q Quit
-                                                    
+               
+  No items     
+               
+No items.      
+               
+q quit • ? more
