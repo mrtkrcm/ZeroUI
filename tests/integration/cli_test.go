@@ -313,7 +313,8 @@ func TestCLI_CycleCommands(t *testing.T) {
 	configDir, cleanup := setupTestConfig(t)
 	defer cleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Test cycle theme
 	{
@@ -354,7 +355,8 @@ func TestCLI_PresetCommands(t *testing.T) {
 	configDir, cleanup := setupTestConfig(t)
 	defer cleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Test apply preset
 	{
@@ -395,7 +397,8 @@ func TestCLI_EndToEndWorkflow(t *testing.T) {
 	configDir, cleanup := setupTestConfig(t)
 	defer cleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Step 1: List available apps
 	{
@@ -484,7 +487,8 @@ func TestCLI_MultipleFormats(t *testing.T) {
 	configDir, yamlCleanup := setupYAMLTestConfig(t)
 	defer yamlCleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Test YAML format
 	{
@@ -518,7 +522,8 @@ func TestCLI_CustomFormat(t *testing.T) {
 	configDir, customCleanup := setupCustomTestConfig(t)
 	defer customCleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Test custom format
 	{
@@ -591,7 +596,8 @@ func TestCLI_ConcurrentOperations(t *testing.T) {
 	configDir, cleanup := setupTestConfig(t)
 	defer cleanup()
 
-	os.Setenv("HOME", filepath.Dir(configDir))
+	home := filepath.Dir(filepath.Dir(configDir))
+	os.Setenv("HOME", home)
 
 	// Run multiple operations concurrently
 	done := make(chan error, 3)
