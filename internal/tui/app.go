@@ -118,6 +118,13 @@ type Model struct {
 	err    error
 	ctx    context.Context
 
+	// Enhanced UX components
+	search              SearchModel
+	statusBar           StatusBar
+	contextualHelp      ContextualHelp
+	loadingIndicator    LoadingIndicator
+	enhancedKeyMap      EnhancedKeyMap
+
 	// New Huh-based components (primary)
 	huhAppSelector  *components.HuhAppSelectorModel
 	huhConfigEditor *components.HuhConfigEditorModel
@@ -131,7 +138,7 @@ type Model struct {
 	appGrid        *components.AppGridModel
 	appSelector    *components.AppSelectorModel
 	configEditor   *components.ConfigEditorModel
-	statusBar      *components.StatusBarModel
+	statusBarLegacy *components.StatusBarModel
 	responsiveHelp *components.ResponsiveHelpModel
 	help           help.Model
 
@@ -171,6 +178,14 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 		keyMap:     keys.DefaultKeyMap(),
 		styles:     styles.GetStyles(),
 		theme:      theme,
+		
+		// Initialize enhanced UX components
+		search:              NewSearchModel("Search apps..."),
+		statusBar:           NewStatusBar(),
+		contextualHelp:      NewContextualHelp(),
+		loadingIndicator:    NewLoadingIndicator(),
+		enhancedKeyMap:      NewEnhancedKeyMap(),
+		
 		// Initialize new Huh-based components
 		huhGrid:         components.NewHuhGrid(),
 		huhAppSelector:  components.NewHuhAppSelector(),
@@ -182,10 +197,15 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 		appGrid:        components.NewAppGrid(),
 		appSelector:    components.NewAppSelector(apps),
 		configEditor:   components.NewConfigEditor(""),
-		statusBar:      components.NewStatusBar(),
+		statusBarLegacy: components.NewStatusBar(),
 		responsiveHelp: components.NewResponsiveHelp(),
 		help:           help.New(),
 	}
+	
+	// Initialize contextual help maps
+	model.contextualHelp.AddHelpMap("app_grid", model.enhancedKeyMap.GetContextualHelp("app_grid"))
+	model.contextualHelp.AddHelpMap("config_edit", model.enhancedKeyMap.GetContextualHelp("config_edit"))
+	model.contextualHelp.AddHelpMap("search", model.enhancedKeyMap.GetContextualHelp("search"))
 
 	// Set up help
 	model.help.ShortSeparator = " • "
@@ -208,6 +228,9 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 
 	// Focus the appropriate component
 	model.focusCurrentComponent()
+	
+	// Initialize status bar with current context
+	model.updateStatusBar(model.getCurrentContext())
 
 	return model, nil
 }
@@ -252,7 +275,7 @@ func (m *Model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	if cmd := m.statusBar.Init(); cmd != nil {
+	if cmd := m.statusBarLegacy.Init(); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
 
@@ -260,10 +283,10 @@ func (m *Model) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	// Initialize status bar with proper app count
+	// Initialize legacy status bar with proper app count
 	appCount := len(m.appSelector.GetApps())
-	m.statusBar.SetAppCount(appCount)
-	m.statusBar.SetTheme("Default")
+	m.statusBarLegacy.SetAppCount(appCount)
+	m.statusBarLegacy.SetTheme("Default")
 
 	// Initialize with welcome message
 	cmds = append(cmds, func() tea.Msg {
@@ -317,14 +340,26 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
-		// Handle keys in priority order for predictability
-		if cmd := m.handleGlobalKeys(msg); cmd != nil {
-			return m, cmd
+		// Handle enhanced UX features first
+		if cmd := m.handleEnhancedUXKeys(msg); cmd != nil {
+			cmds = append(cmds, cmd)
 		}
 		
-		if !m.showingHelp {
-			if cmd := m.handleStateKeys(msg); cmd != nil {
+		// Handle search if active
+		if m.search.active {
+			if cmd := m.search.Update(msg); cmd != nil {
 				cmds = append(cmds, cmd)
+			}
+		} else {
+			// Handle keys in priority order for predictability
+			if cmd := m.handleGlobalKeys(msg); cmd != nil {
+				return m, cmd
+			}
+			
+			if !m.showingHelp {
+				if cmd := m.handleStateKeys(msg); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 		}
 
@@ -359,6 +394,25 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case util.InfoMsg:
 		m.lastMessage = msg
+		// Show toast notification for user feedback
+		var toastLevel ToastLevel
+		switch msg.Type {
+		case util.InfoTypeError:
+			toastLevel = ToastError
+		case util.InfoTypeSuccess:
+			toastLevel = ToastSuccess
+		case util.InfoTypeWarn:
+			toastLevel = ToastWarning
+		default:
+			toastLevel = ToastInfo
+		}
+		cmds = append(cmds, m.statusBar.ShowToast(msg.Msg, toastLevel, 3*time.Second))
+
+	case ToastTimeoutMsg:
+		cmds = append(cmds, m.statusBar.Update(msg))
+
+	case LoadingTickMsg:
+		cmds = append(cmds, m.loadingIndicator.Update(msg))
 
 	case components.AnimationTickMsg:
 		// Handle animation updates for smooth UI - batch updates to reduce overhead
@@ -431,6 +485,50 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 	return m, nil
+}
+
+// handleEnhancedUXKeys handles enhanced UX features like search, help, etc.
+func (m *Model) handleEnhancedUXKeys(msg tea.KeyMsg) tea.Cmd {
+	switch {
+	case key.Matches(msg, m.enhancedKeyMap.Search):
+		// Activate search mode
+		if !m.search.active {
+			m.updateStatusBar("search")
+			return m.search.ActivateSearch()
+		}
+		return nil
+		
+	case key.Matches(msg, m.enhancedKeyMap.Escape):
+		// Deactivate search if active
+		if m.search.active {
+			m.search.DeactivateSearch()
+			m.updateStatusBar(m.getCurrentContext())
+			return nil
+		}
+		return nil
+		
+	case key.Matches(msg, m.enhancedKeyMap.Help):
+		// Toggle contextual help
+		m.contextualHelp.Toggle()
+		return nil
+		
+	case key.Matches(msg, m.enhancedKeyMap.Reload):
+		// Refresh current view with loading indicator
+		return m.loadingIndicator.Start("Refreshing...")
+		
+	case key.Matches(msg, m.enhancedKeyMap.Save):
+		// Save configuration with feedback
+		if m.currentApp != "" {
+			return func() tea.Msg {
+				return util.InfoMsg{
+					Msg:  fmt.Sprintf("Configuration saved for %s", m.currentApp),
+					Type: util.InfoTypeSuccess,
+				}
+			}
+		}
+		return nil
+	}
+	return nil
 }
 
 // handleGlobalKeys handles global key presses with predictable priority
@@ -559,7 +657,7 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	// Update legacy components
 	cmds = append(cmds, m.appSelector.SetSize(contentWidth, contentHeight))
 	cmds = append(cmds, m.configEditor.SetSize(contentWidth, contentHeight))
-	cmds = append(cmds, m.statusBar.SetSize(m.width, statusHeight))
+	cmds = append(cmds, m.statusBarLegacy.SetSize(m.width, statusHeight))
 	cmds = append(cmds, m.responsiveHelp.SetSize(m.width, helpHeight))
 
 	// Update help bindings based on current state
@@ -627,31 +725,106 @@ func (m *Model) View() string {
 	return m.wrapWithLayout(content)
 }
 
-// renderMainContent renders the main application content
+// updateStatusBar updates the status bar with current context
+func (m *Model) updateStatusBar(context string) {
+	m.statusBar.SetCurrentView(context)
+	m.statusBar.SetCurrentApp(m.currentApp)
+	
+	// Set contextual key hints
+	hints := []string{}
+	switch context {
+	case "app_grid":
+		hints = []string{"↑↓←→: Navigate", "Enter: Select", "/: Search", "?: Help"}
+	case "config_edit":
+		hints = []string{"↑↓: Navigate", "Enter: Edit", "Ctrl+S: Save", "Esc: Back"}
+	case "search":
+		hints = []string{"Type: Search", "Enter: Select", "Esc: Cancel"}
+	}
+	m.statusBar.SetKeyHints(hints)
+	
+	// Update contextual help context
+	m.contextualHelp.SetContext(context)
+}
+
+// getCurrentContext returns the current UI context
+func (m *Model) getCurrentContext() string {
+	switch m.state {
+	case AppGridView:
+		return "app_grid"
+	case ConfigEditView, HuhConfigEditView:
+		return "config_edit"
+	case HuhAppSelectionView:
+		return "app_selection"
+	default:
+		return "general"
+	}
+}
+
+// renderMainContent renders the main application content with enhanced UX overlays
 func (m *Model) renderMainContent() string {
+	var content string
+	
+	// Render main content based on state
 	switch m.state {
 	case AppGridView:
 		if m.appGrid != nil {
-			return m.appGrid.View()
+			content = m.appGrid.View()
 		}
 	case ConfigEditView:
 		if m.configEditor != nil {
-			return m.configEditor.View()
+			content = m.configEditor.View()
 		}
 	case HuhAppSelectionView:
 		if m.huhAppSelector != nil {
-			return m.huhAppSelector.View()
+			content = m.huhAppSelector.View()
 		}
 	case HuhConfigEditView:
 		if m.huhConfigEditor != nil {
-			return m.huhConfigEditor.View()
+			content = m.huhConfigEditor.View()
 		}
 	case PresetSelectionView:
-		return m.renderPresetSelection()
+		content = m.renderPresetSelection()
 	case HelpView:
-		return m.renderHelp()
+		content = m.renderHelp()
+	default:
+		content = m.loadingIndicator.View()
+		if content == "" {
+			content = "Loading..."
+		}
 	}
-	return "Loading..."
+	
+	// Add enhanced UX overlays
+	overlays := []string{}
+	
+	// Add search overlay
+	if m.search.active {
+		overlays = append(overlays, m.search.View())
+	}
+	
+	// Add contextual help overlay
+	if m.contextualHelp.visible {
+		overlays = append(overlays, m.contextualHelp.View(m.width, m.height))
+	}
+	
+	// Add loading indicator overlay
+	if m.loadingIndicator.active {
+		overlays = append(overlays, m.loadingIndicator.View())
+	}
+	
+	// Combine content with overlays
+	if len(overlays) > 0 {
+		allContent := []string{content}
+		allContent = append(allContent, overlays...)
+		content = lipgloss.JoinVertical(lipgloss.Left, allContent...)
+	}
+	
+	// Add status bar at bottom
+	statusBar := m.statusBar.View(m.width)
+	if statusBar != "" {
+		content = lipgloss.JoinVertical(lipgloss.Left, content, statusBar)
+	}
+	
+	return content
 }
 
 // renderHelp renders the help content
@@ -688,7 +861,7 @@ func (m *Model) renderHelp() string {
 // wrapWithLayout wraps content with title, status, and help
 func (m *Model) wrapWithLayout(content string) string {
 	title := m.renderTitle()
-	statusBar := m.statusBar.View()
+	statusBar := m.statusBar.View(m.width)
 	helpText := m.responsiveHelp.View()
 
 	// Calculate available height for content
