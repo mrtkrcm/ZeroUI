@@ -187,9 +187,105 @@ func ColorToHex(c color.Color) string {
 	return fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8)
 }
 
+// CyberpunkTheme returns a vibrant cyberpunk theme
+func CyberpunkTheme() *Theme {
+	return &Theme{
+		Name:   "Cyberpunk",
+		IsDark: true,
+
+		Primary:   parseColor("#FF0080"),
+		Secondary: parseColor("#00FFFF"),
+		Accent:    parseColor("#FFFF00"),
+		Success:   parseColor("#00FF41"),
+		Error:     parseColor("#FF073A"),
+		Warning:   parseColor("#FFA500"),
+		Info:      parseColor("#00D4FF"),
+
+		BgBase:    parseColor("#0D1117"),
+		BgSubtle:  parseColor("#161B22"),
+		BgOverlay: parseColor("#21262D"),
+
+		FgBase:     parseColor("#00FFFF"),
+		FgMuted:    parseColor("#7C3AED"),
+		FgSubtle:   parseColor("#58A6FF"),
+		FgSelected: parseColor("#FF0080"),
+
+		Border:      parseColor("#30363D"),
+		BorderFocus: parseColor("#FF0080"),
+	}
+}
+
+// OceanTheme returns a calming ocean theme
+func OceanTheme() *Theme {
+	return &Theme{
+		Name:   "Ocean",
+		IsDark: false,
+
+		Primary:   parseColor("#006A96"),
+		Secondary: parseColor("#52B2CF"),
+		Accent:    parseColor("#B8E0D2"),
+		Success:   parseColor("#70A288"),
+		Error:     parseColor("#D64570"),
+		Warning:   parseColor("#EAC435"),
+		Info:      parseColor("#345995"),
+
+		BgBase:    parseColor("#F7FBFC"),
+		BgSubtle:  parseColor("#E8F4F8"),
+		BgOverlay: parseColor("#D6EDF6"),
+
+		FgBase:     parseColor("#003459"),
+		FgMuted:    parseColor("#007EA7"),
+		FgSubtle:   parseColor("#52B2CF"),
+		FgSelected: parseColor("#006A96"),
+
+		Border:      parseColor("#B8E0D2"),
+		BorderFocus: parseColor("#006A96"),
+	}
+}
+
+// SunsetTheme returns a warm sunset theme
+func SunsetTheme() *Theme {
+	return &Theme{
+		Name:   "Sunset",
+		IsDark: false,
+
+		Primary:   parseColor("#FF6B35"),
+		Secondary: parseColor("#F7931E"),
+		Accent:    parseColor("#FFD23F"),
+		Success:   parseColor("#6A994E"),
+		Error:     parseColor("#BC4749"),
+		Warning:   parseColor("#F2CC8F"),
+		Info:      parseColor("#81B29A"),
+
+		BgBase:    parseColor("#FFF8F0"),
+		BgSubtle:  parseColor("#FFE8D6"),
+		BgOverlay: parseColor("#FFD9C4"),
+
+		FgBase:     parseColor("#2F1B14"),
+		FgMuted:    parseColor("#A0522D"),
+		FgSubtle:   parseColor("#CD853F"),
+		FgSelected: parseColor("#FF6B35"),
+
+		Border:      parseColor("#F4A261"),
+		BorderFocus: parseColor("#FF6B35"),
+	}
+}
+
+// AllThemes returns all available themes
+func AllThemes() []*Theme {
+	return []*Theme{
+		DefaultTheme(),
+		DarkTheme(),
+		CyberpunkTheme(),
+		OceanTheme(),
+		SunsetTheme(),
+	}
+}
+
 // Global theme instance
 var currentTheme = DefaultTheme()
 var currentStyles = currentTheme.BuildStyles()
+var currentThemeIndex = 0
 
 // GetTheme returns the current theme
 func GetTheme() *Theme {
@@ -205,4 +301,40 @@ func GetStyles() *Styles {
 func SetTheme(theme *Theme) {
 	currentTheme = theme
 	currentStyles = theme.BuildStyles()
+	
+	// Update the current theme index
+	themes := AllThemes()
+	for i, t := range themes {
+		if t.Name == theme.Name {
+			currentThemeIndex = i
+			break
+		}
+	}
+}
+
+// CycleTheme cycles to the next theme
+func CycleTheme() *Theme {
+	themes := AllThemes()
+	currentThemeIndex = (currentThemeIndex + 1) % len(themes)
+	nextTheme := themes[currentThemeIndex]
+	
+	currentTheme = nextTheme
+	currentStyles = nextTheme.BuildStyles()
+	
+	return nextTheme
+}
+
+// GetCurrentThemeName returns the name of the current theme
+func GetCurrentThemeName() string {
+	return currentTheme.Name
+}
+
+// GetThemeNames returns the names of all available themes
+func GetThemeNames() []string {
+	themes := AllThemes()
+	names := make([]string, len(themes))
+	for i, theme := range themes {
+		names[i] = theme.Name
+	}
+	return names
 }

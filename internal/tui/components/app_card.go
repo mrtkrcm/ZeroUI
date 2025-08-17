@@ -1,7 +1,6 @@
 package components
 
 import (
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -43,8 +42,8 @@ func NewAppCard(status registry.AppStatus) *AppCardModel {
 
 	return &AppCardModel{
 		Status:        status,
-		Width:         30, // Rectangular: 30 wide (default)
-		Height:        10, // Rectangular: 10 tall (default)
+		Width:         15, // Compact: 15 wide (half the original size)
+		Height:        5,  // Compact: 5 tall (half the original size)
 		styles:        styles.GetStyles(),
 		cacheDuration: 100 * time.Millisecond, // Cache for 100ms for 60fps
 		spinner:       s,
@@ -107,100 +106,62 @@ func (m *AppCardModel) View() string {
 
 // renderCard performs the actual rendering with advanced effects
 func (m *AppCardModel) renderCard() string {
-	// Get advanced card styling for rectangular cards
+	// Get advanced card styling for compact cards
 	cardStyle := m.getAdvancedCardStyle()
 
-	// Build card content with perfect spacing optimized for rectangular shape
+	// Build compact card content with focus on app name only
 	var lines []string
 
-	// Top spacing - less for rectangular cards
-	lines = append(lines, "")
-
-	// Loading spinner or logo
+	// Loading spinner or app name
 	if m.loadingState {
 		spinnerLine := lipgloss.NewStyle().
-			Width(m.Width - 4).
+			Width(m.Width - 2).
 			Align(lipgloss.Center).
 			Render(m.spinner.View())
 		lines = append(lines, spinnerLine)
 	} else {
-		// Enhanced logo with size scaling for rectangular cards
-		logoStyle := m.getLogoStyle().
-			Bold(true).
-			Width(m.Width - 4).
-			Align(lipgloss.Center)
-
-		// Scale logo size based on card width (rectangular optimization)
-		logoText := m.Status.Definition.Logo
-		if m.Width > 32 {
-			logoText = logoText + " " + logoText // Double for larger cards
-		}
-
-		lines = append(lines, logoStyle.Render(logoText))
+		// App name as the primary and only visual element
+		nameStyle := m.getCompactNameStyle()
+		appName := m.getAdaptiveAppName()
+		lines = append(lines, nameStyle.Render(appName))
 	}
 
-	// App name with gradient effect - more prominent for rectangular cards
-	nameStyle := m.getNameStyle().
-		Bold(true).
-		Width(m.Width - 4).
-		Align(lipgloss.Center)
-
-	// Add gradient for selected cards
-	if m.Selected {
-		nameStyle = nameStyle.Foreground(m.getGradientColor())
+	// Minimal status indicator (single line)
+	if !m.loadingState {
+		statusLine := m.buildCompactStatusLine()
+		lines = append(lines, statusLine)
 	}
 
-	lines = append(lines, nameStyle.Render(m.Status.Definition.Name))
-
-	// Category with improved styling - compact for rectangular cards
-	categoryStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("242")).
-		Italic(true).
-		Width(m.Width - 4).
-		Align(lipgloss.Center)
-
-	if m.hoverEffect {
-		categoryStyle = categoryStyle.Foreground(lipgloss.Color("250"))
-	}
-
-	lines = append(lines, categoryStyle.Render(m.Status.Definition.Category))
-
-	// Status indicators with icons
-	statusLine := m.buildEnhancedStatusLine()
-	lines = append(lines, statusLine)
-
-	// Bottom spacing - minimal for rectangular cards
-	lines = append(lines, "")
-
-	// Join all lines with optimized spacing for rectangular shape
+	// Join all lines with minimal spacing for compact design
 	content := lipgloss.JoinVertical(lipgloss.Center, lines...)
 
-	// Apply advanced card styling with exact rectangular dimensions
+	// Apply compact card styling with exact dimensions and force size
 	card := cardStyle.
 		Width(m.Width).
 		Height(m.Height).
-		Align(lipgloss.Center, lipgloss.Center).
+		MaxWidth(m.Width).
+		MaxHeight(m.Height).
 		Render(content)
 
 	return card
 }
 
-// getAdvancedCardStyle returns enhanced styling with effects and perfect rectangular dimensions
+// getAdvancedCardStyle returns enhanced styling optimized for compact cards
 func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
-	// Base style with rectangular card optimization
+	// Base style with compact card optimization - consistent sizing
 	baseStyle := lipgloss.NewStyle().
-		Padding(1, 2).
+		Padding(1, 1). // Consistent padding for stable layout
+		Margin(0).     // No margin to prevent shifts
 		Border(lipgloss.RoundedBorder()).
 		BorderTop(true).
 		BorderBottom(true).
 		BorderLeft(true).
-		BorderRight(true)
-
-	// Remove inconsistent shadow effects that cause layout shifts
-	// Instead, use consistent border highlighting for all states
+		BorderRight(true).
+		AlignHorizontal(lipgloss.Center).
+		AlignVertical(lipgloss.Center)
 
 	if !m.Status.IsInstalled {
-		// Dimmed style with subtle gradient for uninstalled apps
+		// Dimmed style for uninstalled apps
 		return baseStyle.
 			BorderForeground(lipgloss.Color("238")).
 			Foreground(lipgloss.Color("240")).
@@ -208,17 +169,15 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 	}
 
 	if m.Selected {
-		// Selected style with gradient background - use consistent border style
-		gradientBg := m.getGradientBackground()
+		// Selected style with bright border and background
 		return baseStyle.
 			BorderForeground(lipgloss.Color("212")).
-			BorderStyle(lipgloss.RoundedBorder()).
-			Background(gradientBg).
+			Background(lipgloss.Color("235")).
 			Bold(true)
 	}
 
 	if m.Focused || m.hoverEffect {
-		// Focused/hover style with subtle animation
+		// Focused/hover style
 		return baseStyle.
 			BorderForeground(lipgloss.Color("205")).
 			Background(lipgloss.Color("234"))
@@ -230,72 +189,6 @@ func (m *AppCardModel) getAdvancedCardStyle() lipgloss.Style {
 		Background(lipgloss.Color("233"))
 }
 
-// getLogoStyle returns the style for the logo
-func (m *AppCardModel) getLogoStyle() lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Bold(true).
-		Width(m.Width - 4).
-		Align(lipgloss.Center)
-
-	if !m.Status.IsInstalled {
-		return style.Foreground(lipgloss.Color("240"))
-	}
-
-	return style
-}
-
-// getNameStyle returns the style for the app name
-func (m *AppCardModel) getNameStyle() lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Bold(true).
-		Width(m.Width - 4).
-		Align(lipgloss.Center)
-
-	if !m.Status.IsInstalled {
-		return style.Foreground(lipgloss.Color("242"))
-	}
-
-	if m.Selected {
-		return style.Foreground(lipgloss.Color("212"))
-	}
-
-	return style.Foreground(lipgloss.Color("255"))
-}
-
-// buildEnhancedStatusLine creates advanced status indicators with icons
-func (m *AppCardModel) buildEnhancedStatusLine() string {
-	var indicators []string
-
-	// Enhanced status indicators with better icons and colors
-	if m.Status.IsInstalled {
-		indicators = append(indicators, "●")
-	} else {
-		indicators = append(indicators, "○")
-	}
-
-	if m.Status.HasConfig {
-		indicators = append(indicators, "⚙")
-	} else if m.Status.ConfigExists {
-		indicators = append(indicators, "📝")
-	}
-
-	// Responsive status styling
-	statusStyle := lipgloss.NewStyle().
-		Width(m.Width - 4).
-		Align(lipgloss.Center)
-
-	// Color coding for status
-	if m.Status.IsInstalled {
-		statusStyle = statusStyle.Foreground(lipgloss.Color("76")) // Bright green
-		if m.Selected {
-			statusStyle = statusStyle.Foreground(lipgloss.Color("82")) // Even brighter when selected
-		}
-	} else {
-		statusStyle = statusStyle.Foreground(lipgloss.Color("240"))
-	}
-
-	return statusStyle.Render(strings.Join(indicators, "  "))
-}
 
 // SetSelected sets the selected state
 func (m *AppCardModel) SetSelected(selected bool) {
@@ -307,22 +200,219 @@ func (m *AppCardModel) SetFocused(focused bool) {
 	m.Focused = focused
 }
 
-// SetSize sets the card dimensions as rectangular (width x height)
+// SetSize sets the card dimensions as compact (width x height)
 func (m *AppCardModel) SetSize(width, height int) {
-	// Use provided dimensions directly for rectangular cards
+	// Use provided dimensions directly for compact cards
 	m.Width = width
 	m.Height = height
 
-	// Ensure minimum viable size
-	if m.Width < 24 {
-		m.Width = 24
+	// Ensure minimum viable size for compact design
+	if m.Width < 12 {
+		m.Width = 12
 	}
-	if m.Height < 8 {
-		m.Height = 8
+	if m.Height < 4 {
+		m.Height = 4
 	}
 
 	// Invalidate cache when size changes
 	m.invalidateCache()
+}
+
+// Compact design methods
+
+// getCompactNameStyle returns optimized styling for app names in compact cards
+func (m *AppCardModel) getCompactNameStyle() lipgloss.Style {
+	style := lipgloss.NewStyle().
+		Bold(true).
+		Width(m.Width - 2).
+		Align(lipgloss.Center)
+
+	if !m.Status.IsInstalled {
+		return style.Foreground(lipgloss.Color("240"))
+	}
+
+	if m.Selected {
+		return style.Foreground(lipgloss.Color("212"))
+	}
+
+	return style.Foreground(lipgloss.Color("255"))
+}
+
+// getAdaptiveAppName returns app name adapted programmatically for different lengths
+func (m *AppCardModel) getAdaptiveAppName() string {
+	name := m.Status.Definition.Name
+	maxWidth := m.Width - 2 // Account for padding
+
+	// If name fits, return as-is
+	if len(name) <= maxWidth {
+		return name
+	}
+
+	// Programmatic adaptation strategies
+	adaptedName := m.adaptNameProgrammatically(name, maxWidth)
+	
+	// If still too long, truncate with ellipsis
+	if len(adaptedName) > maxWidth && maxWidth > 1 {
+		if maxWidth <= 3 {
+			return adaptedName[:maxWidth] // No ellipsis for very small spaces
+		}
+		return adaptedName[:maxWidth-1] + "…"
+	}
+
+	return adaptedName
+}
+
+// adaptNameProgrammatically applies intelligent shortening strategies
+func (m *AppCardModel) adaptNameProgrammatically(name string, maxWidth int) string {
+	// Strategy 1: Remove common suffixes
+	if words := m.splitIntoWords(name); len(words) > 1 {
+		shortened := m.tryRemoveSuffixes(words, maxWidth)
+		if len(shortened) <= maxWidth {
+			return shortened
+		}
+	}
+
+	// Strategy 2: Create acronym for multi-word names
+	if words := m.splitIntoWords(name); len(words) > 1 {
+		acronym := m.createAcronym(words)
+		if len(acronym) <= maxWidth {
+			return acronym
+		}
+	}
+
+	// Strategy 3: Remove vowels (except first character)
+	shortened := m.removeVowels(name)
+	if len(shortened) <= maxWidth {
+		return shortened
+	}
+
+	// Strategy 4: Truncate to fit
+	if maxWidth > 0 {
+		return name[:maxWidth]
+	}
+
+	return name
+}
+
+// splitIntoWords splits a name into words, handling different separators
+func (m *AppCardModel) splitIntoWords(name string) []string {
+	var words []string
+	var current []rune
+	
+	for _, r := range name {
+		if r == ' ' || r == '-' || r == '_' {
+			if len(current) > 0 {
+				words = append(words, string(current))
+				current = nil
+			}
+		} else {
+			current = append(current, r)
+		}
+	}
+	
+	if len(current) > 0 {
+		words = append(words, string(current))
+	}
+	
+	return words
+}
+
+// tryRemoveSuffixes attempts to remove common suffixes to shorten names
+func (m *AppCardModel) tryRemoveSuffixes(words []string, maxWidth int) string {
+	// Common suffixes to try removing
+	suffixes := []string{"Code", "Editor", "Terminal", "IDE", "App"}
+	
+	for _, suffix := range suffixes {
+		if len(words) > 1 && words[len(words)-1] == suffix {
+			candidate := ""
+			for i, word := range words[:len(words)-1] {
+				if i > 0 {
+					candidate += " "
+				}
+				candidate += word
+			}
+			if len(candidate) <= maxWidth {
+				return candidate
+			}
+		}
+	}
+	
+	// Return original joined words if no suffix removal helped
+	result := ""
+	for i, word := range words {
+		if i > 0 {
+			result += " "
+		}
+		result += word
+	}
+	return result
+}
+
+// createAcronym creates an acronym from multiple words
+func (m *AppCardModel) createAcronym(words []string) string {
+	if len(words) <= 1 {
+		return ""
+	}
+	
+	acronym := ""
+	for _, word := range words {
+		if len(word) > 0 {
+			acronym += string(word[0])
+		}
+	}
+	return acronym
+}
+
+// removeVowels removes vowels except from the first character
+func (m *AppCardModel) removeVowels(name string) string {
+	if len(name) <= 1 {
+		return name
+	}
+	
+	vowels := "aeiouAEIOU"
+	result := []rune{rune(name[0])} // Keep first character
+	
+	for _, r := range name[1:] {
+		isVowel := false
+		for _, v := range vowels {
+			if r == v {
+				isVowel = true
+				break
+			}
+		}
+		if !isVowel {
+			result = append(result, r)
+		}
+	}
+	
+	return string(result)
+}
+
+// buildCompactStatusLine creates a minimal status indicator
+func (m *AppCardModel) buildCompactStatusLine() string {
+	// Single character status indicator
+	var status string
+	if m.Status.IsInstalled {
+		status = "●" // Installed
+	} else {
+		status = "○" // Not installed
+	}
+
+	// Style the status
+	statusStyle := lipgloss.NewStyle().
+		Width(m.Width - 2).
+		Align(lipgloss.Center)
+
+	if m.Status.IsInstalled {
+		statusStyle = statusStyle.Foreground(lipgloss.Color("76")) // Green
+		if m.Selected {
+			statusStyle = statusStyle.Foreground(lipgloss.Color("82")) // Brighter green
+		}
+	} else {
+		statusStyle = statusStyle.Foreground(lipgloss.Color("240")) // Dim
+	}
+
+	return statusStyle.Render(status)
 }
 
 // Performance and visual enhancement methods

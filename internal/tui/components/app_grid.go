@@ -58,10 +58,7 @@ func NewAppGrid() *AppGridModel {
 		cards[i] = NewAppCard(status)
 	}
 
-	// Select first card if available and set selectedIdx
-	if len(cards) > 0 {
-		cards[0].SetSelected(true)
-	}
+	// Initialize with proper selection handling (will be set in NewModel)
 
 	// Viewport disabled - was causing border alignment issues
 	vp := viewport.New(80, 24)
@@ -70,17 +67,17 @@ func NewAppGrid() *AppGridModel {
 	return &AppGridModel{
 		cards:         cards,
 		statuses:      statuses,
-		selectedIdx:   0,  // Initialize to 0 to fix double press issue
+		selectedIdx:   -1, // Will be set properly in updateFilter
 		columns:       4,  // Default to 4 columns (production standard)
-		cardSize:      30, // Width of cards (rectangular)
-		cardHeight:    10, // Height of cards (shorter than width for rectangular)
+		cardSize:      15, // Width of compact cards (half original size)
+		cardHeight:    5,  // Height of compact cards (half original size)
 		keyMap:        keys.DefaultKeyMap(),
 		styles:        styles.GetStyles(),
 		showAll:       false,
 		viewport:      vp,
 		cacheDuration: 16 * time.Millisecond, // 60fps optimization
-		minCardSize:   24,
-		maxCardSize:   36, // Reduced max size for better 4-column fit
+		minCardSize:   12, // Minimum size for compact cards
+		maxCardSize:   18, // Maximum size for compact cards
 		cardSpacing:   2,  // Optimized spacing for 4 columns
 		showAnimation: true,
 	}
@@ -92,6 +89,10 @@ func (m *AppGridModel) Init() tea.Cmd {
 	for _, card := range m.cards {
 		cmds = append(cmds, card.Init())
 	}
+	
+	// Initialize selection properly
+	m.updateFilter()
+	
 	return tea.Batch(cmds...)
 }
 
@@ -237,47 +238,31 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 		return m.renderEmptyState()
 	}
 
-	// Calculate optimal spacing for perfect alignment with 10% margins
-	sideMarginPercent := 10
-	if m.width < 80 {
-		sideMarginPercent = 5 // Smaller margins on narrow screens
-	}
-
-	totalMargins := (m.width * sideMarginPercent * 2) / 100 // 10% on each side
-	availableContentWidth := m.width - totalMargins
-
-	totalSpacing := (m.columns - 1) * m.cardSpacing
-	idealCardWidth := (availableContentWidth - totalSpacing) / m.columns
-
-	// Use ideal width but constrain by min/max
-	if idealCardWidth > m.maxCardSize {
-		m.cardSize = m.maxCardSize
-	} else if idealCardWidth < m.minCardSize {
-		m.cardSize = m.minCardSize
-	} else {
-		m.cardSize = idealCardWidth
-	}
-
-	// Recalculate actual margins based on card size
+	// Use fixed card size for consistent layout
+	m.cardSize = 16 // Fixed compact width
+	m.cardHeight = 5 // Fixed compact height
+	
+	// Calculate spacing to center the grid
 	totalCardWidth := m.columns * m.cardSize
+	totalSpacing := (m.columns - 1) * m.cardSpacing
 	actualContentWidth := totalCardWidth + totalSpacing
 	leftMargin := (m.width - actualContentWidth) / 2
 
 	// Ensure leftMargin is never negative
 	if leftMargin < 0 {
-		leftMargin = 2 // Minimum padding
+		leftMargin = 1 // Minimum padding
 	}
 
 	visibleLen := len(visibleCards)
 	for i := 0; i < visibleLen; i += m.columns {
 		var rowCards []string
 
-		// Build row with rectangular cards
+		// Build row with compact cards
 		for j := 0; j < m.columns && i+j < visibleLen; j++ {
 			idx := i + j
 			card := visibleCards[idx]
 
-			// Ensure rectangular dimensions (width x height)
+			// Ensure compact dimensions (width x height)
 			card.SetSize(m.cardSize, m.cardHeight)
 
 			// Consistent card rendering without layout-shifting animations
@@ -306,11 +291,9 @@ func (m *AppGridModel) renderAdvancedGrid() string {
 		performance.PutBuilder(builder)
 		rows = append(rows, row)
 
-		// Add consistent vertical spacing between rows
+		// Add minimal vertical spacing between rows for compact cards
 		if i+m.columns < visibleLen {
-			for s := 0; s < 2; s++ {
-				rows = append(rows, "")
-			}
+			rows = append(rows, "") // Single line spacing for compact design
 		}
 	}
 
@@ -465,45 +448,73 @@ func (m *AppGridModel) moveSelectionAnimated(offset int) tea.Cmd {
 		return nil
 	}
 
+	// Map visible cards to their indices in the main array
+	visibleIndices := m.getVisibleCardIndices()
+	
+	// Find current visible position
+	currentVisiblePos := -1
+	for i, idx := range visibleIndices {
+		if idx == m.selectedIdx {
+			currentVisiblePos = i
+			break
+		}
+	}
+
+	// If no current selection or selection not in visible cards, start at 0
+	if currentVisiblePos < 0 {
+		currentVisiblePos = 0
+	}
+
 	// Clear current selection
 	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) {
 		m.cards[m.selectedIdx].SetSelected(false)
 	}
 
-	// Initialize selectedIdx if it's unset (fixes double press issue)
-	if m.selectedIdx < 0 && len(visibleCards) > 0 {
-		m.selectedIdx = 0
-	}
-
-	// Calculate new index with bounds checking
-	newIdx := m.selectedIdx + offset
+	// Calculate new visible position with bounds checking
+	newVisiblePos := currentVisiblePos + offset
 
 	// Smart wrapping for grid navigation
 	if offset == -m.columns || offset == m.columns {
 		// Vertical movement
-		if newIdx < 0 {
-			// Wrap to bottom row, same column
-			col := m.selectedIdx % m.columns
-			lastRowStart := ((len(visibleCards) - 1) / m.columns) * m.columns
-			newIdx = lastRowStart + col
-			if newIdx >= len(visibleCards) {
-				newIdx = len(visibleCards) - 1
+		if newVisiblePos < 0 {
+			// Wrap to bottom - for small lists, go to last item
+			if len(visibleCards) <= m.columns {
+				newVisiblePos = len(visibleCards) - 1
+			} else {
+				// Normal wrapping for larger grids
+				col := currentVisiblePos % m.columns
+				lastRowStart := ((len(visibleCards) - 1) / m.columns) * m.columns
+				newVisiblePos = lastRowStart + col
+				if newVisiblePos >= len(visibleCards) {
+					newVisiblePos = len(visibleCards) - 1
+				}
 			}
-		} else if newIdx >= len(visibleCards) {
-			// Wrap to top row, same column
-			col := m.selectedIdx % m.columns
-			newIdx = col
+		} else if newVisiblePos >= len(visibleCards) {
+			// Wrap to top - for small lists, go to first item
+			if len(visibleCards) <= m.columns {
+				newVisiblePos = 0
+			} else {
+				// Normal wrapping for larger grids
+				col := currentVisiblePos % m.columns
+				newVisiblePos = col
+				if newVisiblePos >= len(visibleCards) {
+					newVisiblePos = 0
+				}
+			}
 		}
 	} else {
 		// Horizontal movement
-		if newIdx < 0 {
-			newIdx = len(visibleCards) - 1
-		} else if newIdx >= len(visibleCards) {
-			newIdx = 0
+		if newVisiblePos < 0 {
+			newVisiblePos = len(visibleCards) - 1
+		} else if newVisiblePos >= len(visibleCards) {
+			newVisiblePos = 0
 		}
 	}
 
-	m.selectedIdx = newIdx
+	// Convert back to main array index
+	if newVisiblePos >= 0 && newVisiblePos < len(visibleIndices) {
+		m.selectedIdx = visibleIndices[newVisiblePos]
+	}
 
 	// Set new selection with animation
 	if m.selectedIdx >= 0 && m.selectedIdx < len(m.cards) {
@@ -541,6 +552,27 @@ func (m *AppGridModel) getVisibleCards() []*AppCardModel {
 	return visible
 }
 
+// getVisibleCardIndices returns the indices of visible cards in the main array
+func (m *AppGridModel) getVisibleCardIndices() []int {
+	if m.showAll {
+		indices := make([]int, len(m.cards))
+		for i := range m.cards {
+			indices[i] = i
+		}
+		return indices
+	}
+
+	var indices []int
+	for i, _ := range m.cards {
+		status := m.statuses[i]
+		if status.IsInstalled || status.HasConfig {
+			indices = append(indices, i)
+		}
+	}
+
+	return indices
+}
+
 // updateResponsiveLayout updates the grid layout with responsive design
 func (m *AppGridModel) updateResponsiveLayout() {
 	// Ensure minimum spacing
@@ -554,30 +586,30 @@ func (m *AppGridModel) updateResponsiveLayout() {
 		availableWidth = 40 // Minimum working width
 	}
 
-	// Determine optimal layout - prioritize 4 columns (production standard)
-	if m.width < 60 {
+	// Determine optimal layout with compact cards - force smaller sizes
+	if m.width < 50 {
 		// Very small screens - single column
 		m.columns = 1
-		m.cardSize = min(availableWidth, 30)
-		m.cardHeight = 10
+		m.cardSize = min(availableWidth, 15)
+		m.cardHeight = 5
 	} else if m.width < 80 {
-		// Small screens - two columns
-		m.columns = 2
-		m.cardSize = (availableWidth - m.cardSpacing) / 2
-		m.cardHeight = 10
-	} else if m.width < 120 {
-		// Medium screens - three columns
+		// Small screens - three columns with compact cards
 		m.columns = 3
-		m.cardSize = (availableWidth - 2*m.cardSpacing) / 3
-		m.cardHeight = 10
-	} else {
-		// Standard and large screens - four columns (default and preferred)
+		m.cardSize = min((availableWidth - 2*m.cardSpacing) / 3, 18)
+		m.cardHeight = 5
+	} else if m.width < 120 {
+		// Medium screens - four columns (default)
 		m.columns = 4
-		m.cardSize = min((availableWidth-3*m.cardSpacing)/4, 36)
-		m.cardHeight = 10 // Consistent rectangular height
+		m.cardSize = min((availableWidth - 3*m.cardSpacing) / 4, 18)
+		m.cardHeight = 5
+	} else {
+		// Large screens - up to 6 columns with compact cards
+		m.columns = 6
+		m.cardSize = min((availableWidth-5*m.cardSpacing)/6, 18)
+		m.cardHeight = 5 // Consistent compact height
 	}
 
-	// Enforce size constraints
+	// Enforce size constraints for compact cards
 	if m.cardSize < m.minCardSize {
 		m.cardSize = m.minCardSize
 		// Recalculate columns with minimum size
@@ -589,7 +621,7 @@ func (m *AppGridModel) updateResponsiveLayout() {
 		m.cardSize = m.maxCardSize
 	}
 
-	// Update all card sizes to rectangular dimensions (width x height)
+	// Update all card sizes to compact dimensions (width x height)
 	for _, card := range m.cards {
 		card.SetSize(m.cardSize, m.cardHeight)
 	}
@@ -606,17 +638,11 @@ func (m *AppGridModel) updateFilter() {
 		m.cards[m.selectedIdx].SetSelected(false)
 	}
 
-	// Select first visible card
-	visible := m.getVisibleCards()
-	if len(visible) > 0 {
-		// Find the index of the first visible card in the main array
-		for i, card := range m.cards {
-			if card == visible[0] {
-				m.selectedIdx = i
-				m.cards[i].SetSelected(true)
-				break
-			}
-		}
+	// Select first visible card using proper index mapping
+	visibleIndices := m.getVisibleCardIndices()
+	if len(visibleIndices) > 0 {
+		m.selectedIdx = visibleIndices[0]
+		m.cards[m.selectedIdx].SetSelected(true)
 	} else {
 		m.selectedIdx = -1
 	}
@@ -698,3 +724,4 @@ func (m *AppGridModel) GetSelectedApp() string {
 	}
 	return ""
 }
+

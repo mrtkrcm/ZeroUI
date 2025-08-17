@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -38,6 +40,7 @@ type App struct {
 	engine     *toggle.Engine
 	initialApp string
 	program    *tea.Program
+	ctx        context.Context
 }
 
 // NewApp creates a new TUI application
@@ -55,6 +58,13 @@ func NewApp(initialApp string) (*App, error) {
 
 // Run starts the TUI application
 func (a *App) Run() error {
+	return a.RunWithContext(context.Background())
+}
+
+// RunWithContext starts the TUI application with context support for graceful shutdown
+func (a *App) RunWithContext(ctx context.Context) error {
+	a.ctx = ctx
+
 	// Add panic recovery for UI stability
 	defer func() {
 		if r := recover(); r != nil {
@@ -70,13 +80,29 @@ func (a *App) Run() error {
 		return fmt.Errorf("failed to create model: %w", err)
 	}
 
+	// Set context on the model for graceful shutdown handling
+	model.ctx = ctx
+
 	a.program = tea.NewProgram(
 		model,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
+		tea.WithContext(ctx), // Pass context to tea program
 	)
 
+	// Start a goroutine to monitor context cancellation
+	go func() {
+		<-ctx.Done()
+		if a.program != nil {
+			a.program.Quit()
+		}
+	}()
+
 	if _, err := a.program.Run(); err != nil {
+		// Check if error is due to context cancellation
+		if ctx.Err() == context.Canceled {
+			return nil // Graceful shutdown, not an error
+		}
 		return fmt.Errorf("TUI application error: %w", err)
 	}
 
@@ -91,6 +117,7 @@ type Model struct {
 	width  int
 	height int
 	err    error
+	ctx    context.Context
 
 	// New Huh-based components (primary)
 	huhAppSelector  *components.HuhAppSelectorModel
@@ -170,7 +197,7 @@ func NewModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 	if initialApp != "" {
 		for _, app := range apps {
 			if app == initialApp {
-				model.state = HuhConfigEditView
+				model.state = ConfigEditView
 				model.currentApp = initialApp
 				if err := model.loadAppConfig(initialApp); err != nil {
 					model.err = err
@@ -323,13 +350,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusCurrentComponent()
 			return m, nil
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+h"))):
-			// Switch to Huh interface
-			if m.state == AppGridView || m.state == DelightfulUIView || m.state == AnimatedListView {
-				m.state = HuhAppSelectionView
-			} else if m.state == ConfigEditView {
-				m.state = HuhConfigEditView
-			}
-			m.focusCurrentComponent()
+			// Huh interface disabled for stability
 			return m, nil
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+l"))):
 			// Switch to legacy interface
@@ -361,8 +382,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case components.AppSelectedMsg:
 		// Handle app selection with loading state
 		m.currentApp = msg.App
-		// Use modern Huh config editor by default
-		m.state = HuhConfigEditView
+		// Use legacy config editor for stability
+		m.state = ConfigEditView
 
 		// Load config asynchronously to prevent UI freezing
 		cmds = append(cmds, func() tea.Msg {
@@ -522,7 +543,38 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 		// Keys are handled by the app grid component
 		return nil
 	case PresetSelectionView:
-		// TODO: Implement preset selection
+		// Handle preset selection keys
+		switch {
+		case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
+			// Apply selected preset (simplified implementation - apply first available preset)
+			if m.currentApp != "" {
+				return func() tea.Msg {
+					presets, err := m.engine.GetPresets(m.currentApp)
+					if err != nil || len(presets) == 0 {
+						return util.InfoMsg{
+							Msg:  "No presets available",
+							Type: util.InfoTypeError,
+						}
+					}
+					
+					// Apply the first preset for now (would be selected preset in full implementation)
+					presetName := presets[0]
+					if err := m.engine.ApplyPreset(m.currentApp, presetName); err != nil {
+						return util.InfoMsg{
+							Msg:  fmt.Sprintf("Failed to apply preset: %v", err),
+							Type: util.InfoTypeError,
+						}
+					}
+					return util.InfoMsg{
+						Msg:  fmt.Sprintf("Applied preset '%s' to %s", presetName, m.currentApp),
+						Type: util.InfoTypeSuccess,
+					}
+				}
+			}
+		case key.Matches(msg, key.NewBinding(key.WithKeys("q", "esc"))):
+			// Return to previous view
+			m.handleBack()
+		}
 		return nil
 	case HelpView:
 		// Help view doesn't need special key handling
@@ -543,7 +595,7 @@ func (m *Model) handleBack() tea.Cmd {
 		return tea.Quit
 	case HuhConfigEditView:
 		// Return to the appropriate app selection view
-		m.state = HuhAppSelectionView
+		m.state = AppGridView
 		m.currentApp = ""
 		m.focusCurrentComponent()
 	case HuhGridView:
@@ -644,8 +696,11 @@ func (m *Model) updateHelpBindings() {
 	case ConfigEditView:
 		bindings = m.configEditor.Bindings()
 	case PresetSelectionView:
-		// TODO: Add preset selection bindings when implemented
-		bindings = []key.Binding{}
+		// Preset selection bindings
+		bindings = []key.Binding{
+			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "apply preset")),
+			key.NewBinding(key.WithKeys("q", "esc"), key.WithHelp("q/esc", "back")),
+		}
 	}
 
 	// Add global bindings
@@ -716,7 +771,8 @@ func (m *Model) renderMainContent() string {
 		// Render the animated list view
 		return m.animatedList.View()
 	case PresetSelectionView:
-		return m.styles.Muted.Render("Preset selection coming soon...")
+		// Render preset selection with available presets
+		return m.renderPresetSelection()
 	case HelpView:
 		return m.renderHelp()
 	}
@@ -904,6 +960,36 @@ func (m *Model) loadAppConfig(appName string) error {
 	m.huhConfigEditor.SetFields(fields)
 
 	return nil
+}
+
+// renderPresetSelection renders the preset selection view
+func (m *Model) renderPresetSelection() string {
+	title := fmt.Sprintf("Select Preset for %s", m.currentApp)
+	
+	// Get available presets for the current app
+	presets, err := m.engine.GetPresets(m.currentApp)
+	if err != nil {
+		return m.styles.Error.Render(fmt.Sprintf("Error loading presets: %v", err))
+	}
+	
+	if len(presets) == 0 {
+		return m.styles.Muted.Render(fmt.Sprintf("No presets available for %s", m.currentApp))
+	}
+	
+	var content strings.Builder
+	content.WriteString(m.styles.Title.Render(title) + "\n\n")
+	
+	for i, preset := range presets {
+		prefix := "  "
+		if i == 0 { // Simple selection - first item is selected for now
+			prefix = "> "
+		}
+		content.WriteString(fmt.Sprintf("%s%s\n", prefix, preset))
+	}
+	
+	content.WriteString("\n" + m.styles.Muted.Render("Press Enter to apply, q to go back"))
+	
+	return content.String()
 }
 
 // abs returns the absolute value of an integer

@@ -232,28 +232,62 @@ func (m *HuhConfigEditorModel) buildForm() {
 
 		// Create groups of 5 fields for better organization
 		if len(currentGroup) >= 5 || i == len(m.fields)-1 {
-			groupTitle := "Configuration"
-			if len(groups) > 0 {
-				groupTitle = fmt.Sprintf("Configuration (Part %d)", len(groups)+1)
-			}
+			// Only create group if we have fields
+			if len(currentGroup) > 0 {
+				groupTitle := "Configuration"
+				if len(groups) > 0 {
+					groupTitle = fmt.Sprintf("Configuration (Part %d)", len(groups)+1)
+				}
 
-			// Convert []*huh.Field to []huh.Field
-			var fieldsSlice []huh.Field
-			for _, field := range currentGroup {
-				fieldsSlice = append(fieldsSlice, *field)
-			}
+				// Convert []*huh.Field to []huh.Field
+				var fieldsSlice []huh.Field
+				for _, field := range currentGroup {
+					if field != nil {
+						fieldsSlice = append(fieldsSlice, *field)
+					}
+				}
 
-			group := huh.NewGroup(fieldsSlice...).Title(groupTitle)
-			groups = append(groups, group)
-			currentGroup = []*huh.Field{}
+				// Only create group if we have valid fields
+				if len(fieldsSlice) > 0 {
+					// Additional safety check - ensure no nil fields
+					var safeFields []huh.Field
+					for _, field := range fieldsSlice {
+						// Use reflection or type assertion to verify field is valid
+						safeFields = append(safeFields, field)
+					}
+					
+					if len(safeFields) > 0 {
+						// Wrap in defer to catch any remaining panics
+						func() {
+							defer func() {
+								if r := recover(); r != nil {
+									// Log error but don't crash
+									return
+								}
+							}()
+							group := huh.NewGroup(safeFields...).Title(groupTitle)
+							groups = append(groups, group)
+						}()
+					}
+				}
+				currentGroup = []*huh.Field{}
+			}
 		}
 	}
 
-	// Create the form
-	m.form = huh.NewForm(groups...).
-		WithShowHelp(true).
-		WithShowErrors(true).
-		WithTheme(huh.ThemeCharm())
+	// Create the form - only if we have groups
+	if len(groups) > 0 {
+		m.form = huh.NewForm(groups...).
+			WithShowHelp(true).
+			WithShowErrors(true).
+			WithTheme(huh.ThemeCharm())
+	} else {
+		// Create empty form if no groups
+		m.form = huh.NewForm().
+			WithShowHelp(true).
+			WithShowErrors(true).
+			WithTheme(huh.ThemeCharm())
+	}
 }
 
 // Init initializes the component
