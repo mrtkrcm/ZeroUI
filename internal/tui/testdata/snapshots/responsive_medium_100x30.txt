@@ -9,14 +9,14 @@
                                                                                                     
                                                                                                     
                                                                                                     
-                          🎯 ZeroUI - Application Manager                                         
+                          🎯 ZeroUI - Application Manager                                           
                                                                                                     
                           ZeroUI Applications                                                       
                                                                                                     
                          No applications detected. Press 'r' to refresh.                            
                          Add schemas to apps/ or install plugins.                                   
                                                                                                     
-                         ↑/↓: Navigate • Enter: Select • ?: Help • q: Quit                
+                         ↑/↓: Navigate • Enter: Select • ?: Help • q: Quit                          
                                                                                                     
                                                                                                     
                                                                                                     

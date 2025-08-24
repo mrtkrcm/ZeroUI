@@ -1,0 +1,177 @@
+# ZeroUI Applications Registry
+# This file defines known applications and their configuration paths
+
+applications:
+  - name: zeroui
+    display_name: ZeroUI
+    icon: "○"
+    description: "Zero-configuration UI toolkit manager"
+    category: tools
+    config_paths:
+      - "~/.config/zeroui/config.yml"
+      - "~/.config/zeroui/config.yaml"
+    config_format: yaml
+    
+  - name: ghostty
+    display_name: Ghostty
+    icon: "◉"
+    description: "GPU-accelerated terminal emulator"
+    category: terminal
+    config_paths:
+      - "~/.config/ghostty/config"
+      - "~/.ghostty/config"
+    config_format: custom
+    
+  - name: alacritty
+    display_name: Alacritty
+    icon: "○"
+    description: "A cross-platform, GPU-accelerated terminal emulator"
+    category: terminal
+    config_paths:
+      - "~/.config/alacritty/alacritty.yml"
+      - "~/.config/alacritty/alacritty.yaml"
+      - "~/.config/alacritty/alacritty.toml"
+    config_format: yaml
+    
+  - name: kitty
+    display_name: Kitty
+    icon: "○"
+    description: "The fast, feature-rich, GPU based terminal emulator"
+    category: terminal
+    config_paths:
+      - "~/.config/kitty/kitty.conf"
+    config_format: custom
+    
+  - name: wezterm
+    display_name: WezTerm
+    icon: "○"
+    description: "A GPU-accelerated cross-platform terminal emulator"
+    category: terminal
+    config_paths:
+      - "~/.config/wezterm/wezterm.lua"
+      - "~/.wezterm.lua"
+    config_format: lua
+    
+  - name: zed
+    display_name: Zed
+    icon: "○"
+    description: "A high-performance, multiplayer code editor"
+    category: editor
+    config_paths:
+      - "~/.config/zed/settings.json"
+    config_format: json
+    
+  - name: neovim
+    display_name: Neovim
+    icon: "○"
+    description: "Hyperextensible Vim-based text editor"
+    category: editor
+    config_paths:
+      - "~/.config/nvim/init.lua"
+      - "~/.config/nvim/init.vim"
+    config_format: lua
+    
+  - name: vscode
+    display_name: Visual Studio Code
+    icon: "○"
+    description: "Code editor redefined and optimized for building modern apps"
+    category: editor
+    config_paths:
+      - "~/.config/Code/User/settings.json"
+      - "~/Library/Application Support/Code/User/settings.json"
+    config_format: json
+    
+  - name: sublime
+    display_name: Sublime Text
+    icon: "○"
+    description: "A sophisticated text editor for code, markup and prose"
+    category: editor
+    config_paths:
+      - "~/.config/sublime-text/Packages/User/Preferences.sublime-settings"
+      - "~/Library/Application Support/Sublime Text/Packages/User/Preferences.sublime-settings"
+    config_format: json
+    
+  - name: tmux
+    display_name: tmux
+    icon: "○"
+    description: "Terminal multiplexer"
+    category: terminal
+    config_paths:
+      - "~/.tmux.conf"
+      - "~/.config/tmux/tmux.conf"
+    config_format: custom
+    
+  - name: zsh
+    display_name: Zsh
+    icon: "○"
+    description: "The Z shell"
+    category: shell
+    config_paths:
+      - "~/.zshrc"
+      - "~/.config/zsh/.zshrc"
+    config_format: shell
+    
+  - name: bash
+    display_name: Bash
+    icon: "○"
+    description: "The Bourne Again SHell"
+    category: shell
+    config_paths:
+      - "~/.bashrc"
+      - "~/.bash_profile"
+    config_format: shell
+    
+  - name: fish
+    display_name: Fish
+    icon: "○"
+    description: "The friendly interactive shell"
+    category: shell
+    config_paths:
+      - "~/.config/fish/config.fish"
+    config_format: shell
+    
+  - name: starship
+    display_name: Starship
+    icon: "○"
+    description: "The minimal, blazing-fast, and infinitely customizable prompt"
+    category: shell
+    config_paths:
+      - "~/.config/starship.toml"
+    config_format: toml
+    
+  - name: lazygit
+    display_name: LazyGit
+    icon: "○"
+    description: "Simple terminal UI for git commands"
+    category: tools
+    config_paths:
+      - "~/.config/lazygit/config.yml"
+      - "~/Library/Application Support/lazygit/config.yml"
+    config_format: yaml
+    
+  - name: git
+    display_name: Git
+    icon: "○"
+    description: "Distributed version control system"
+    category: tools
+    config_paths:
+      - "~/.gitconfig"
+      - "~/.config/git/config"
+    config_format: ini
+
+categories:
+  - name: terminal
+    display_name: Terminal Emulators
+    icon: "○"
+    
+  - name: editor
+    display_name: Code Editors
+    icon: "○"
+    
+  - name: shell
+    display_name: Shells & Prompts
+    icon: "○"
+    
+  - name: tools
+    display_name: Developer Tools
+    icon: "○"

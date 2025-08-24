@@ -126,7 +126,7 @@ def generate_reference_yaml():
     }
     
     # Write to YAML
-    output_path = "/Users/m/code/muka-hq/configtoggle/configs/zed.yaml"
+    output_path = "configs/zed.yaml"
     with open(output_path, 'w') as f:
         yaml.dump(reference, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     

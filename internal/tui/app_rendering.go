@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -11,6 +10,11 @@ import (
 
 // View renders the current view
 func (m *Model) View() string {
+	// Early return for uninitialized state
+	if m.width == 0 || m.height == 0 {
+		return ""
+	}
+	
 	// Check for cached view first (performance optimization)
 	if cached, ok := m.getCachedView(); ok {
 		return cached
@@ -65,37 +69,10 @@ func (m *Model) View() string {
 		content = statusLine + "\n" + content
 	}
 
-	// Strip ANSI control sequences and truncate any overly long lines to the model width
-	// before caching and returning the snapshot. This keeps automated snapshot tests
-	// deterministic and prevents accidental baseline overflows.
-	ansiRE := regexp.MustCompile("\x1b\\[[0-9;]*[A-Za-z]")
-	lines := strings.Split(content, "\n")
-	for i, line := range lines {
-		// Remove ANSI sequences for the cached snapshot
-		plain := ansiRE.ReplaceAllString(line, "")
-		// Truncate by bytes while preserving rune boundaries.
-		// Build the output by appending full runes only if the resulting byte length
-		// does not exceed the model width. This prevents splitting multi-byte UTF-8
-		// characters while ensuring the final byte length <= m.width.
-		if m.width > 0 {
-			var b []byte
-			for _, r := range plain {
-				rs := string(r) // rune as UTF-8 bytes
-				if len(b)+len(rs) > m.width {
-					break
-				}
-				b = append(b, rs...)
-			}
-			lines[i] = string(b)
-		} else {
-			lines[i] = plain
-		}
-	}
-	cleaned := strings.Join(lines, "\n")
-
-	// Cache and return the cleaned snapshot
-	m.cacheView(cleaned)
-	return cleaned
+	// Return the styled content directly for proper terminal rendering
+	// Cache for performance but don't strip ANSI codes as that breaks rendering
+	m.cacheView(content)
+	return content
 }
 
 // renderListView renders the application list view
@@ -143,95 +120,42 @@ func (m *Model) renderListView() string {
 
 // renderFormView renders the configuration form view
 func (m *Model) renderFormView() string {
-	// Use the streamlined interface as primary
-	if m.streamlinedConfig != nil {
-		return m.renderStreamlinedConfigView()
+	// Use the enhanced interface as primary
+	if m.enhancedConfig != nil {
+		return m.renderEnhancedConfigView()
+	}
+	// Fall back to tabbed interface
+	if m.tabbedConfig != nil {
+		return m.renderTabbedConfigView()
 	}
 	
-	// Fallback to intuitive interface if available
-	if m.intuitiveConfig != nil {
-		return m.renderIntuitiveConfigView()
-	}
-	
-	if m.configForm == nil {
-		return m.styles.Error.Render("Configuration form not initialized")
-	}
-
-	// Get the form view
-	formView := m.configForm.View()
-
-	// Add header with app name
-	header := m.styles.Title.Render(fmt.Sprintf("⚙️  Configuring %s", m.currentApp))
-
-	// Add footer with hints
-	var footer string
-	if m.configForm.IsValid() {
-		footer = m.styles.Success.Render("✓ Valid • Ctrl+S: Save • Esc: Cancel • ?: Help")
-	} else {
-		footer = m.styles.Warning.Render("✗ Invalid • Fix errors • Esc: Cancel • ?: Help")
-	}
-
-	// Combine with proper spacing
-	content := lipgloss.JoinVertical(
-		lipgloss.Top,
-		header,
-		"",
-		formView,
-		"",
-		footer,
-	)
-
-	// Use full window for forms
-	// Render through base styles first, then wrap to the model width to avoid overflow.
-	styled := m.styles.Base.Render(content)
-	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(styled)
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Left,
-		lipgloss.Top,
-		wrapped,
-	)
+	return m.styles.Error.Render("Configuration not initialized")
 }
 
-// renderStreamlinedConfigView renders the streamlined configuration interface
-func (m *Model) renderStreamlinedConfigView() string {
-	if m.streamlinedConfig == nil {
-		return m.styles.Error.Render("Streamlined configuration not initialized")
+// renderTabbedConfigView renders the tabbed configuration interface
+func (m *Model) renderTabbedConfigView() string {
+	if m.tabbedConfig == nil {
+		return m.styles.Error.Render("Tabbed configuration not initialized")
 	}
 
-	// Get the streamlined config view
-	configView := m.streamlinedConfig.View()
+	// Get the tabbed config view
+	configView := m.tabbedConfig.View()
 
-	// Ensure the content fits within the terminal bounds
-	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(configView)
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Left,
-		lipgloss.Top,
-		wrapped,
-	)
+	// The tabbed view handles its own layout
+	return configView
 }
 
-// renderIntuitiveConfigView renders the new intuitive configuration interface
-func (m *Model) renderIntuitiveConfigView() string {
-	if m.intuitiveConfig == nil {
-		return m.styles.Error.Render("Intuitive configuration not initialized")
+// renderEnhancedConfigView renders the enhanced configuration interface
+func (m *Model) renderEnhancedConfigView() string {
+	if m.enhancedConfig == nil {
+		return m.styles.Error.Render("Enhanced configuration not initialized")
 	}
 
-	// Get the intuitive config view
-	configView := m.intuitiveConfig.View()
+	// Get the enhanced config view
+	configView := m.enhancedConfig.View()
 
-	// Ensure the content fits within the terminal bounds
-	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(configView)
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Left,
-		lipgloss.Top,
-		wrapped,
-	)
+	// The enhanced view handles its own layout
+	return configView
 }
 
 // renderHelpView renders the help view
@@ -241,7 +165,7 @@ func (m *Model) renderHelpView() string {
 	}
 
 	// Basic help content available if needed
-	// TODO: Use helpContent when implementing help system
+	// NOTE: Dynamic help content integration not yet implemented - currently uses static help system
 
 	// Render the help view
 	helpView := m.helpSystem.View()
@@ -275,7 +199,12 @@ func (m *Model) renderHelpView() string {
 
 // renderProgressView renders the progress/loading view
 func (m *Model) renderProgressView() string {
-	// Simple progress view for now
+	// If we have a scanner, show its progress
+	if m.appScanner != nil && m.appScanner.IsScanning() {
+		return m.renderScannerProgress()
+	}
+	
+	// Simple progress view for other loading states
 	spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	idx := (m.frameCount / 2) % len(spinner)
 
@@ -289,6 +218,26 @@ func (m *Model) renderProgressView() string {
 	// Wrap progress content to avoid lines exceeding terminal width
 	styled := m.styles.Help.Render(content)
 	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(styled)
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Center,
+		wrapped,
+	)
+}
+
+// renderScannerProgress renders the scanner progress view
+func (m *Model) renderScannerProgress() string {
+	if m.appScanner == nil {
+		return "Initializing scanner..."
+	}
+	
+	// Get scanner view
+	scannerView := m.appScanner.View()
+	
+	// Center it on screen
+	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(scannerView)
 	return lipgloss.Place(
 		m.width,
 		m.height,

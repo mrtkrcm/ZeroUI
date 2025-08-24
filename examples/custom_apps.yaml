@@ -1,0 +1,47 @@
+# Example custom apps configuration for ZeroUI
+# Place this file at ~/.config/zeroui/apps.yaml to add your own applications
+
+applications:
+  # Example: Add a custom application
+  - name: my-app
+    display_name: My Custom App
+    icon: "●"
+    description: "My custom application configuration"
+    category: custom
+    config_paths:
+      - "~/.config/my-app/config.yaml"
+      - "~/.my-app.conf"
+    config_format: yaml
+    
+  # Example: Override an existing app (e.g., add more config paths for ghostty)
+  - name: ghostty
+    display_name: Ghostty Terminal
+    icon: "◉"
+    description: "GPU-accelerated terminal emulator with custom paths"
+    category: terminal
+    config_paths:
+      - "~/.config/ghostty/config"
+      - "~/.ghostty/config"
+      - "~/Documents/configs/ghostty.conf"  # Add custom path
+    config_format: custom
+
+  # Example: Add a project-specific config
+  - name: project-x
+    display_name: Project X Settings
+    icon: "▣"
+    description: "Configuration for Project X development environment"
+    category: projects
+    config_paths:
+      - "~/projects/project-x/.env"
+      - "~/projects/project-x/config/settings.yaml"
+    config_format: yaml
+
+# Optional: Add custom categories
+categories:
+  - name: custom
+    display_name: Custom Applications
+    icon: "◆"
+    
+  - name: projects
+    display_name: Project Configs
+    icon: "▦"
