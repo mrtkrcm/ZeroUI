@@ -1,3 +1,20 @@
+---
+current_app: "ghostty"
+description: "Configuration Editor"
+metadata:
+  hasError: false
+  showingHelp: false
+screen_size:
+  height: 40
+  width: 120
+state: "form"
+test_name: "manual_screenshot_demo"
+timestamp: "2025-08-25 05:49:10"
+user_actions:
+  - "Select ghostty"
+  - "Enter config mode"
+
+---
 ╔══════════════════════════════════════════════════════════╗
 ║               Configuration Editor                      ║
 ╚══════════════════════════════════════════════════════════╝

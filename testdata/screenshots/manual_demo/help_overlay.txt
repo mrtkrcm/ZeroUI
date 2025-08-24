@@ -1,3 +1,19 @@
+---
+current_app: ""
+description: "Help Overlay"
+metadata:
+  hasError: false
+  showingHelp: true
+screen_size:
+  height: 40
+  width: 120
+state: "help"
+test_name: "manual_screenshot_demo"
+timestamp: "2025-08-25 05:49:10"
+user_actions:
+  - "Press '?' for help"
+
+---
 ┌─────────────────────────────────────────────────────────────┐
 │ Help: Keyboard Shortcuts                                     │
 │                                                             │

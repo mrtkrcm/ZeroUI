@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroUI Screenshot Viewer</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #2d2d2d, #3d3d3d);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid #555;
+        }
+        .header h1 {
+            color: #00ff88;
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        .header p {
+            margin: 5px 0;
+            color: #cccccc;
+        }
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .screenshot-card {
+            background: #2d2d2d;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #555;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .screenshot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+        .card-header {
+            background: linear-gradient(90deg, #3d3d3d, #4d4d4d);
+            padding: 15px;
+            border-bottom: 1px solid #555;
+        }
+        .card-title {
+            margin: 0 0 10px 0;
+            color: #00ff88;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .card-meta {
+            font-size: 0.9em;
+            color: #cccccc;
+            margin: 5px 0;
+        }
+        .card-meta strong {
+            color: #00ff88;
+        }
+        .screen-content {
+            background: #000000;
+            color: #00ff00;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            overflow-x: auto;
+            max-height: 400px;
+            border: none;
+            border-radius: 0;
+        }
+        .metadata-section {
+            background: #252525;
+            padding: 15px;
+            border-top: 1px solid #444;
+            font-size: 0.9em;
+            color: #cccccc;
+        }
+        .metadata-section strong {
+            color: #00ff88;
+        }
+        .status-bar {
+            background: #333;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #999;
+        }
+        .error {
+            background: #3d1d1d;
+            border: 1px solid #ff4444;
+        }
+        .help {
+            background: #1d3d3d;
+            border: 1px solid #44ffff;
+        }
+        .config {
+            background: #3d3d1d;
+            border: 1px solid #ffff44;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 ZeroUI Screenshot Viewer</h1>
+            <p>Comprehensive TUI Test Screenshots</p>
+            <p><strong>Total Screenshots:</strong> <span id="screenshot-count">0</span></p>
+            <p><strong>Last Updated:</strong> <span id="last-updated">Loading...</span></p>
+        </div>
+
+        <div id="screenshots-container" class="screenshot-grid">
+            <div style="text-align: center; padding: 40px; background: #2d2d2d; border-radius: 12px; grid-column: 1/-1;">
+                <div style="font-size: 1.2em; color: #cccccc; margin-bottom: 10px;">Loading screenshots...</div>
+                <div style="color: #666;">Please wait while we load the screenshot data.</div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            ZeroUI TUI Testing Infrastructure | Built with Bubble Tea
+        </div>
+    </div>
+
+    <script>
+        // Screenshot files to load
+        const screenshotFiles = [
+            'manual_demo/initial_grid.txt',
+            'manual_demo/app_selection.txt',
+            'manual_demo/config_editor.txt',
+            'manual_demo/help_overlay.txt'
+        ];
+
+        // State colors for different screenshot types
+        const stateColors = {
+            'list': '#00ff88',
+            'app_selection': '#0088ff',
+            'config_editor': '#ffff44',
+            'help_overlay': '#44ffff'
+        };
+
+        // Simple YAML to JSON parser for frontmatter
+        function yamlToJson(yamlString) {
+            const result = {};
+            const lines = yamlString.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+
+                const indent = line.length - line.trimStart().length;
+
+                if (trimmed.includes(':')) {
+                    const [key, ...valueParts] = trimmed.split(':');
+                    const cleanKey = key.trim();
+                    let value = valueParts.join(':').trim();
+
+                    // Handle quoted strings
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    } else if (value === 'true') {
+                        value = true;
+                    } else if (value === 'false') {
+                        value = false;
+                    } else if (value === 'null') {
+                        value = null;
+                    } else if (!isNaN(value) && value !== '') {
+                        value = parseFloat(value);
+                    }
+
+                    // Check if this is a nested object
+                    if (value === '' && i + 1 < lines.length) {
+                        const nextLine = lines[i + 1];
+                        const nextIndent = nextLine.length - nextLine.trimStart().length;
+
+                        if (nextIndent > indent) {
+                            // This is a nested object, parse it
+                            const nestedLines = [];
+                            i++; // Skip current line
+                            while (i < lines.length) {
+                                const nestedLine = lines[i];
+                                const nestedIndent = nestedLine.length - nestedLine.trimStart().length;
+
+                                if (nestedIndent <= indent) {
+                                    i--; // Go back one line
+                                    break;
+                                }
+
+                                nestedLines.push(nestedLine);
+                                i++;
+                            }
+
+                            // Recursively parse nested object
+                            const nestedYaml = nestedLines.join('\n');
+                            value = yamlToJson(nestedYaml);
+                        }
+                    }
+
+                    result[cleanKey] = value;
+                } else if (trimmed.startsWith('- ')) {
+                    // Handle arrays
+                    const value = trimmed.slice(2).replace(/"/g, '');
+                    if (!result.user_actions) result.user_actions = [];
+                    result.user_actions.push(value);
+                }
+            }
+
+            return result;
+        }
+
+        async function loadScreenshot(filename) {
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const text = await response.text();
+                return parseScreenshotData(text, filename);
+            } catch (error) {
+                console.error(`Error loading ${filename}:`, error);
+                return createErrorScreenshot(filename, error.message);
+            }
+        }
+
+        function parseScreenshotData(text, filename) {
+            // Check if the file has the new metadata format
+            if (text.startsWith('---')) {
+                const parts = text.split('---');
+                if (parts.length >= 3) {
+                    try {
+                        const yamlMetadata = parts[1].trim();
+                        const metadata = yamlToJson(yamlMetadata);
+                        const screenContent = parts[2].trim();
+                        return {
+                            ...metadata,
+                            screen_text: screenContent,
+                            filename: filename,
+                            hasMetadata: true
+                        };
+                    } catch (e) {
+                        console.warn(`Failed to parse metadata in ${filename}:`, e);
+                    }
+                }
+            }
+
+            // Fallback for files without proper metadata structure
+            return {
+                filename: filename,
+                description: filename.replace(/.*\//, '').replace('.txt', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                screen_text: text,
+                state: 'unknown',
+                current_app: '',
+                timestamp: new Date().toISOString(),
+                metadata: { hasError: false, showingHelp: false },
+                screen_size: { width: 120, height: 40 },
+                user_actions: ['Unknown'],
+                hasMetadata: false
+            };
+        }
+
+        function createErrorScreenshot(filename, error) {
+            return {
+                filename: filename,
+                description: `Error Loading: ${filename}`,
+                screen_text: `Error loading screenshot:\n\n${error}\n\nFile: ${filename}`,
+                state: 'error',
+                current_app: '',
+                timestamp: new Date().toISOString(),
+                metadata: { hasError: true, error: error },
+                screen_size: { width: 80, height: 20 },
+                user_actions: ['Error occurred'],
+                hasMetadata: false
+            };
+        }
+
+        function createScreenshotCard(data) {
+            const card = document.createElement('div');
+            card.className = `screenshot-card ${data.state}`;
+
+            // Get color for state
+            const color = stateColors[data.state] || '#ff4444';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="card-title" style="color: ${color};">${data.description}</div>
+                    <div class="card-meta"><strong>File:</strong> ${data.filename}</div>
+                    <div class="card-meta"><strong>State:</strong> <span style="color: ${color};">${data.state}</span></div>
+                    <div class="card-meta"><strong>Size:</strong> ${data.screen_size.width}x${data.screen_size.height}</div>
+                    <div class="card-meta"><strong>App:</strong> ${data.current_app || 'None'}</div>
+                    <div class="card-meta"><strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}</div>
+                </div>
+                <div class="screen-content">${data.screen_text}</div>
+                ${data.hasMetadata ? `
+                <div class="metadata-section">
+                    <div><strong>Actions:</strong> ${Array.isArray(data.user_actions) ? data.user_actions.join(', ') : 'None'}</div>
+                    <div><strong>Has Error:</strong> ${data.metadata?.hasError || false}</div>
+                    <div><strong>Showing Help:</strong> ${data.metadata?.showingHelp || false}</div>
+                    ${data.metadata?.selectedIndex !== undefined ? `<div><strong>Selected Index:</strong> ${data.metadata.selectedIndex}</div>` : ''}
+                    ${data.metadata?.configFields !== undefined ? `<div><strong>Config Fields:</strong> ${data.metadata.configFields}</div>` : ''}
+                    ${data.metadata?.helpSections !== undefined ? `<div><strong>Help Sections:</strong> ${data.metadata.helpSections}</div>` : ''}
+                </div>
+                ` : ''}
+            `;
+
+            return card;
+        }
+
+        async function loadAllScreenshots() {
+            const container = document.getElementById('screenshots-container');
+            container.innerHTML = '<div style="text-align: center; padding: 40px; background: #2d2d2d; border-radius: 12px; grid-column: 1/-1;"><div style="font-size: 1.2em; color: #cccccc; margin-bottom: 10px;">Loading screenshots...</div><div style="color: #666;">Please wait while we load the screenshot data.</div></div>';
+
+            const screenshots = await Promise.all(screenshotFiles.map(loadScreenshot));
+
+            container.innerHTML = '';
+            screenshots.forEach(data => {
+                container.appendChild(createScreenshotCard(data));
+            });
+
+            // Update stats
+            document.getElementById('screenshot-count').textContent = screenshots.length;
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        }
+
+        // Load screenshots when page loads
+        document.addEventListener('DOMContentLoaded', loadAllScreenshots);
+
+        // Add refresh functionality
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' || e.key === 'R') {
+                loadAllScreenshots();
+            }
+        });
+    </script>
+</body>
+</html>
