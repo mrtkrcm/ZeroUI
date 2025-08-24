@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 ```
 
 This automatically:
-- Prepends `test/bin` to PATH
+- Prepends `testdata/bin` to PATH
 - Creates isolated temporary HOME directory
 - Cleans up after tests complete
 
@@ -81,9 +81,9 @@ func TestMyFunction(t *testing.T) {
 - `helpers.ReadFileSafe()` - Safe file reading
 
 ### Test Data
-- Test binaries in `test/bin/`
-- Test configurations in `test/configs/`
-- Visual snapshots in `test/snapshots/`
+- Test binaries in `testdata/bin/`
+- Test configurations in `testdata/configs/`
+- Visual snapshots in `testdata/snapshots/`
 
 ## Writing Tests
 
@@ -191,17 +191,17 @@ go test -bench=. ./internal/performance
 ## Test Data Management
 
 ### Test Binaries
-- Add stub binaries to `test/bin/`
-- Make executable: `chmod +x test/bin/*`
+- Add stub binaries to `testdata/bin/`
+- Make executable: `chmod +x testdata/bin/*`
 - Use in tests via PATH setup
 
 ### Test Configurations
-- Store test configs in `test/configs/`
+- Store test configs in `testdata/configs/`
 - Use relative paths in tests
 
 ### Visual Snapshots
 - Generated automatically during tests
-- Compare with `test/snapshots/` for regression testing
+- Compare with `testdata/snapshots/` for regression testing
 
 ## Continuous Integration
 
@@ -221,7 +221,7 @@ make test-setup  # Setup test environment
 
 ### Common Issues
 
-1. **PATH issues**: Ensure `test/bin` is in PATH
+1. **PATH issues**: Ensure `testdata/bin` is in PATH
 2. **HOME directory**: Tests create isolated HOME directories
 3. **File permissions**: Test binaries need execute permissions
 4. **Race conditions**: Use proper synchronization in async tests
@@ -229,8 +229,8 @@ make test-setup  # Setup test environment
 ### Debug Tips
 - Use `t.Logf()` for debug output
 - Set `ZEROUI_TEST_MODE=true` for test-specific behavior
-- Check `test/bin/` for missing test binaries
-- Verify file permissions with `ls -la test/bin/`
+- Check `testdata/bin/` for missing test binaries
+- Verify file permissions with `ls -la testdata/bin/`
 
 ## Contributing
 
