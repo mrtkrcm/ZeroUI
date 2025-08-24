@@ -6,7 +6,7 @@ ZeroUI is an extensible Go framework that provides a powerful CLI and TUI interf
 ## 📊 Project Status
 - **Current Phase**: Alpha Development
 - **Version**: 0.1.0-alpha
-- **Language**: Go 1.21+
+- **Language**: Go 1.24+
 - **Primary Focus**: Core functionality and Ghostty integration
 
 ## 🗺️ Development Phases

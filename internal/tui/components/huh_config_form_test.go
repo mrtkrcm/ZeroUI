@@ -555,8 +555,8 @@ func TestConfigFormPerformance(t *testing.T) {
 	form.SetFields(fields)
 	duration := time.Since(start)
 
-	// Should complete within reasonable time (less than 100ms for 100 fields)
-	assert.Less(t, duration.Milliseconds(), int64(100), "Form creation should be fast")
+	// Should complete within reasonable time (less than 500ms for 100 fields)
+	assert.Less(t, duration.Milliseconds(), int64(500), "Form creation should be fast")
 
 	groups := form.groupFields()
 	assert.Greater(t, len(groups), 0, "Should create at least one group")

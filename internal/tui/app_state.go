@@ -20,21 +20,23 @@ import (
 // Model represents the application state
 type Model struct {
 	// Core state
-	engine *toggle.Engine
-	state  ViewState
-	width  int
-	height int
-	err    error
-	ctx    context.Context
-	logger *logging.CharmLogger
+	engine       *toggle.Engine
+	state        ViewState
+	stateMachine *StateMachine
+	width        int
+	height       int
+	err          error
+	ctx          context.Context
+	logger       *logging.CharmLogger
+	errorHandler *ErrorHandler
 
 	// Modern components using Charm libraries
-	appList           *components.ApplicationListModel
-	configForm        *components.HuhConfigFormModel
-	intuitiveConfig   *components.IntuitiveConfigModel
-	streamlinedConfig *components.StreamlinedConfigModel
-	helpSystem        *components.GlamourHelpModel
-	presetSel         *components.PresetsSelector
+	appList        *components.ApplicationListModel
+	appScanner     *components.AppScannerV2        // Improved scanner
+	tabbedConfig   *components.TabbedConfigModel   // Basic tabbed interface
+	enhancedConfig *components.EnhancedConfigModel  // Enhanced config editor
+	helpSystem     *components.GlamourHelpModel
+	presetSel      *components.PresetsSelector
 
 	// UI state
 	keyMap      keybindings.AppKeyMap
@@ -56,6 +58,7 @@ type Model struct {
 	lastRenderTime time.Time
 	frameCount     int
 	renderCache    map[ViewState]string
+	eventBatcher   *EventBatcher
 
 	// Render caching and debounce control for app list refreshes
 	cacheDuration   time.Duration
@@ -83,23 +86,28 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		return nil, fmt.Errorf("failed to get apps: %w", err)
 	}
 	appList := components.NewApplicationList()
+	appScanner := components.NewAppScannerV2()
+	stateMachine := NewStateMachine(ListView)
+	errorHandler := NewErrorHandler(logger)
 
 	// Create base model
 	model := &Model{
-		engine:  engine,
-		state:   ListView,
-		keyMap:  keybindings.NewAppKeyMap(),
-		styles:  appStyles,
-		theme:   theme,
-		appList: appList,
-		// Initialize help system and a placeholder config form so callers/tests
-		// don't need to rely on side-effects of loading an initial app.
-		helpSystem:  helpModel,
-		configForm:  nil, // will be set when an app is loaded; left nil otherwise
-		presetSel:   components.NewPresetsSelector(),
-		renderCache: make(map[ViewState]string),
-		logger:      logger,
-		ctx:         context.Background(),
+		engine:       engine,
+		state:        ListView,
+		stateMachine: stateMachine,
+		keyMap:       keybindings.NewAppKeyMap(),
+		styles:       appStyles,
+		theme:        theme,
+		appList:      appList,
+		appScanner:   appScanner,
+		errorHandler: errorHandler,
+		// Initialize help system
+		helpSystem:    helpModel,
+		presetSel:     components.NewPresetsSelector(),
+		renderCache:   make(map[ViewState]string),
+		eventBatcher:  NewEventBatcher(),
+		logger:        logger,
+		ctx:           context.Background(),
 		// sensible default debounce/cache duration for tests and UI refreshes
 		cacheDuration: 300 * time.Millisecond,
 	}
@@ -113,11 +121,6 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		} else {
 			logger.LogError(err, "initial_app_load", "app", initialApp)
 		}
-	} else {
-		// Ensure the config form is at least present for UI tests even if no
-		// app was requested. Some tests expect a non-nil config form and help
-		// system to exist immediately after model creation.
-		model.configForm = components.NewHuhConfigForm("")
 	}
 
 	return model, nil
@@ -134,26 +137,29 @@ func (m *Model) Init() tea.Cmd {
 			"duration_ms", time.Since(startTime).Milliseconds())
 	}()
 
+	// Set initial dimensions to prevent flicker during startup
+	if m.width == 0 || m.height == 0 {
+		m.width = 80
+		m.height = 24
+	}
+
+	// Start with scanning state
+	m.state = ProgressView
+	m.isLoading = true
+	m.loadingText = "Scanning applications..."
+	
 	// Initialize with screen detection
 	return tea.Batch(
-		// Capture initial window size
-		func() tea.Msg {
-			// Force reasonable defaults if detection fails
-			return tea.WindowSizeMsg{
-				Width:  80,
-				Height: 24,
-			}
-		},
+		// Start application scanning
+		m.appScanner.Init(),
 		// Initialize application list component
 		m.appList.Init(),
-		// Initialize help system (if available)
-		// m.helpSystem.Init(),
 		// Enable mouse support
 		tea.EnableMouseCellMotion,
-		// Show initial help tip
-		func() tea.Msg {
-			return util.ShowInfoMsg("Press ? for help, q to quit")
-		},
+		// Request actual terminal size (will trigger WindowSizeMsg)
+		tea.WindowSize(),
+		// Start event batching for better performance
+		m.eventBatcher.StartBatching(),
 	)
 }
 
@@ -213,12 +219,32 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		targetConfig = make(map[string]interface{})
 	}
 
-	// Create streamlined configuration interface (primary)
-	m.streamlinedConfig = components.NewStreamlinedConfig(appName)
+	// Create configuration interfaces
+	m.tabbedConfig = components.NewTabbedConfig(appName)
+	m.enhancedConfig = components.NewEnhancedConfig(appName)
 	
-	// Keep legacy interfaces for backward compatibility
-	m.configForm = components.NewHuhConfigForm(appName)
-	m.intuitiveConfig = components.NewIntuitiveConfig(appName)
+	// Set initial size to prevent flicker when switching views
+	if m.width > 0 && m.height > 0 {
+		m.enhancedConfig.SetSize(m.width, m.height)
+		if m.tabbedConfig != nil {
+			// Try to set size if method exists
+			if setter, ok := interface{}(m.tabbedConfig).(interface{ SetSize(int, int) }); ok {
+				setter.SetSize(m.width, m.height)
+			}
+		}
+	}
+	
+	// Load the actual config file content for viewing
+	if targetPath != "" {
+		content, err := os.ReadFile(targetPath)
+		if err == nil {
+			m.enhancedConfig.SetConfigFile(targetPath, string(content))
+		} else {
+			m.logger.Warn("Failed to read config file for viewing",
+				"path", targetPath,
+				"error", err.Error())
+		}
+	}
 
 	// Convert config fields to the format expected by components
 	var configFields []components.ConfigField
@@ -276,12 +302,11 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		configFields = append(configFields, configField)
 	}
 
-	// Set fields on all interfaces
-	m.streamlinedConfig.SetFields(configFields)
-	m.configForm.SetFields(configFields)
-	m.intuitiveConfig.SetFields(configFields)
+	// Set fields on both interfaces
+	m.tabbedConfig.SetFields(configFields)
+	m.enhancedConfig.SetFields(configFields)
 
-	// TODO: Use targetConfig to populate form values
+	// NOTE: targetConfig integration not yet implemented - forms currently use field definitions only
 	_ = targetConfig // Suppress unused variable warning for now
 
 	// Also create preset selector
@@ -302,8 +327,8 @@ func (m *Model) saveConfiguration(appName string, values map[string]interface{})
 	return func() tea.Msg {
 		m.logger.Info("Saving configuration", "app", appName, "values", len(values))
 
-		// TODO: Implement save through engine
-		// For now, just return success
+		// NOTE: Engine-based save not yet implemented - configuration changes are logged but not persisted
+		// For now, just return success (future enhancement needed)
 		_ = values // Suppress unused variable warning
 
 		m.logger.Info("Configuration saved successfully", "app", appName)
@@ -323,8 +348,11 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	if m.appList != nil {
 		m.appList.SetSize(m.width, m.height-4) // Leave room for header/footer
 	}
-	if m.configForm != nil {
-		m.configForm.SetSize(m.width, m.height-4)
+	if m.tabbedConfig != nil {
+		m.tabbedConfig.SetSize(m.width, m.height-4)
+	}
+	if m.enhancedConfig != nil {
+		m.enhancedConfig.SetSize(m.width, m.height-4)
 	}
 	if m.helpSystem != nil {
 		m.helpSystem.SetSize(m.width, m.height-4)

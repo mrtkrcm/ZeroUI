@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -132,6 +133,79 @@ func SetupTestEnvWithHome(t *testing.T, homeDir string) {
 			}
 		}
 	})
+}
+
+// RunTestMainWithCleanup provides a shared TestMain implementation for packages
+// that need deterministic PATH and HOME setup for tests. This eliminates code
+// duplication across multiple TestMain implementations.
+//
+// Parameters:
+//   - packageName: Name of the package (for logging)
+//   - tempDirPrefix: Prefix for temporary directory name
+//   - clearCache: Function to clear any package-specific caches (optional)
+func RunTestMainWithCleanup(m *testing.M, packageName string, tempDirPrefix string, clearCache func()) {
+	origPATH := os.Getenv("PATH")
+	origHOME, hadHOME := os.LookupEnv("HOME")
+
+	// Attempt to locate repository root by walking up from current working dir.
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		log.Printf("%s: TestMain: unable to locate repo root: %v", packageName, err)
+	} else {
+		testBin := filepath.Join(repoRoot, "testdata", "bin")
+		if fi, err := os.Stat(testBin); err == nil && fi.IsDir() {
+			newPATH := testBin + string(os.PathListSeparator) + origPATH
+			if err := os.Setenv("PATH", newPATH); err != nil {
+				log.Printf("%s: TestMain: failed to set PATH: %v", packageName, err)
+			} else {
+				log.Printf("%s: TestMain: prepended %s to PATH", packageName, testBin)
+			}
+		}
+	}
+
+	// Create temporary HOME for tests to avoid interfering with developer environment.
+	var tmpHome string
+	if tempDirPrefix != "" {
+		tmpHome, err = os.MkdirTemp("", tempDirPrefix)
+		if err != nil {
+			log.Printf("%s: TestMain: failed to create temp HOME dir: %v", packageName, err)
+		} else {
+			if err := os.Setenv("HOME", tmpHome); err != nil {
+				log.Printf("%s: TestMain: failed to set HOME: %v", packageName, err)
+			} else {
+				// Clear any caches that might be affected by HOME change
+				if clearCache != nil {
+					clearCache()
+				}
+				log.Printf("%s: TestMain: set HOME=%s", packageName, tmpHome)
+			}
+		}
+	}
+
+	// Ensure environment is restored and temp HOME removed after tests.
+	defer func() {
+		if err := os.Setenv("PATH", origPATH); err != nil {
+			log.Printf("%s: TestMain: failed to restore PATH: %v", packageName, err)
+		}
+		if hadHOME {
+			if err := os.Setenv("HOME", origHOME); err != nil {
+				log.Printf("%s: TestMain: failed to restore HOME: %v", packageName, err)
+			}
+		} else {
+			if err := os.Unsetenv("HOME"); err != nil {
+				log.Printf("%s: TestMain: failed to unset HOME: %v", packageName, err)
+			}
+		}
+		if tmpHome != "" {
+			if err := os.RemoveAll(tmpHome); err != nil {
+				log.Printf("%s: TestMain: failed to remove tmp HOME %s: %v", packageName, tmpHome, err)
+			}
+		}
+	}()
+
+	// Run tests
+	code := m.Run()
+	os.Exit(code)
 }
 
 // findRepoRoot locates the repository root directory by walking up from this file's

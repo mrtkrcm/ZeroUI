@@ -44,10 +44,10 @@ type StreamlinedConfigModel struct {
 type StreamlinedView int
 
 const (
-	MainView StreamlinedView = iota
-	SearchView
-	EditView
-	PreviewView
+	StreamMainView StreamlinedView = iota
+	StreamSearchView
+	StreamEditView
+	StreamPreviewView
 )
 
 // StreamlinedStyles for the interface
@@ -73,7 +73,7 @@ func NewStreamlinedConfig(appName string) *StreamlinedConfigModel {
 	
 	return &StreamlinedConfigModel{
 		appName:        appName,
-		currentView:    MainView,
+		currentView:    StreamMainView,
 		searchInput:    searchInput,
 		values:         make(map[string]string),
 		originalValues: make(map[string]string),
@@ -164,9 +164,9 @@ func (m *StreamlinedConfigModel) Update(msg tea.Msg) (*StreamlinedConfigModel, t
 // handleKeyPress manages keyboard input
 func (m *StreamlinedConfigModel) handleKeyPress(msg tea.KeyMsg) (*StreamlinedConfigModel, tea.Cmd) {
 	switch m.currentView {
-	case SearchView:
+	case StreamSearchView:
 		return m.handleSearchInput(msg)
-	case EditView:
+	case StreamEditView:
 		return m.handleEditInput(msg)
 	default:
 		return m.handleMainNavigation(msg)
@@ -198,14 +198,14 @@ func (m *StreamlinedConfigModel) handleMainNavigation(msg tea.KeyMsg) (*Streamli
 		
 	case "/", "ctrl+f":
 		// Start search
-		m.currentView = SearchView
+		m.currentView = StreamSearchView
 		m.searchInput.Focus()
 		return m, textinput.Blink
 		
 	case "enter", " ", "e":
 		// Edit selected field
 		if m.cursor < len(m.filteredFields) {
-			m.currentView = EditView
+			m.currentView = StreamEditView
 		}
 		
 	case "r":
@@ -262,7 +262,7 @@ func (m *StreamlinedConfigModel) handleMainNavigation(msg tea.KeyMsg) (*Streamli
 	case "p":
 		// Preview changes
 		if len(m.changedFields) > 0 {
-			m.currentView = PreviewView
+			m.currentView = StreamPreviewView
 		}
 		
 	case "q", "esc":
@@ -276,7 +276,7 @@ func (m *StreamlinedConfigModel) handleMainNavigation(msg tea.KeyMsg) (*Streamli
 func (m *StreamlinedConfigModel) handleSearchInput(msg tea.KeyMsg) (*StreamlinedConfigModel, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
-		m.currentView = MainView
+		m.currentView = StreamMainView
 		m.filterText = ""
 		m.searchInput.SetValue("")
 		m.updateFilteredFields()
@@ -284,7 +284,7 @@ func (m *StreamlinedConfigModel) handleSearchInput(msg tea.KeyMsg) (*Streamlined
 		return m, nil
 		
 	case "enter":
-		m.currentView = MainView
+		m.currentView = StreamMainView
 		m.filterText = m.searchInput.Value()
 		m.updateFilteredFields()
 		m.cursor = 0
@@ -305,7 +305,7 @@ func (m *StreamlinedConfigModel) handleSearchInput(msg tea.KeyMsg) (*Streamlined
 // handleEditInput handles field editing
 func (m *StreamlinedConfigModel) handleEditInput(msg tea.KeyMsg) (*StreamlinedConfigModel, tea.Cmd) {
 	if m.cursor >= len(m.filteredFields) {
-		m.currentView = MainView
+		m.currentView = StreamMainView
 		return m, nil
 	}
 	
@@ -318,7 +318,7 @@ func (m *StreamlinedConfigModel) handleEditInput(msg tea.KeyMsg) (*StreamlinedCo
 		current := m.values[field.Key] == "true"
 		m.values[field.Key] = fmt.Sprintf("%v", !current)
 		m.updateChangedFields()
-		m.currentView = MainView
+		m.currentView = StreamMainView
 		
 	case FieldTypeSelect:
 		// Cycle through options
@@ -334,12 +334,12 @@ func (m *StreamlinedConfigModel) handleEditInput(msg tea.KeyMsg) (*StreamlinedCo
 			m.values[field.Key] = field.Options[nextIdx]
 			m.updateChangedFields()
 		}
-		m.currentView = MainView
+		m.currentView = StreamMainView
 		
 	default:
 		// For string/number fields, we'd need a text input
 		// For now, just go back
-		m.currentView = MainView
+		m.currentView = StreamMainView
 	}
 	
 	return m, nil
@@ -348,9 +348,9 @@ func (m *StreamlinedConfigModel) handleEditInput(msg tea.KeyMsg) (*StreamlinedCo
 // View renders the interface
 func (m *StreamlinedConfigModel) View() string {
 	switch m.currentView {
-	case SearchView:
+	case StreamSearchView:
 		return m.renderSearchView()
-	case PreviewView:
+	case StreamPreviewView:
 		return m.renderPreviewView()
 	default:
 		return m.renderMainView()
@@ -538,20 +538,6 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max-1] + "…"
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 func createStreamlinedStyles() StreamlinedStyles {

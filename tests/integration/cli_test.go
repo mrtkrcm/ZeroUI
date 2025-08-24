@@ -215,6 +215,13 @@ func TestCLI_BackupCommands(t *testing.T) {
 func buildBinary(t testing.TB) string {
 	t.Helper()
 
+	// Use a cached binary if available and recent
+	cacheKey := "zeroui-test-binary"
+	if cached, exists := getCachedBinary(cacheKey); exists && isBinaryRecent(cached) {
+		t.Logf("Using cached binary: %s", cached)
+		return cached
+	}
+
 	tmpDir, err := os.MkdirTemp("", "zeroui-test-binary")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir for binary: %v", err)
@@ -222,24 +229,77 @@ func buildBinary(t testing.TB) string {
 
 	binaryPath := filepath.Join(tmpDir, "zeroui")
 
-	// Change to project root directory
-	originalDir, _ := os.Getwd()
-	projectRoot := filepath.Join(originalDir, "..", "..")
-	_ = os.Chdir(projectRoot)
-	defer os.Chdir(originalDir)
+	// Find project root more reliably
+	projectRoot, err := findProjectRoot()
+	if err != nil {
+		t.Fatalf("Failed to find project root: %v", err)
+	}
 
-	// Build the binary
+	// Build the binary with optimizations
 	{
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "go", "build", "-o", binaryPath, ".")
+		cmd := exec.CommandContext(ctx, "go", "build",
+			"-ldflags=-s -w", // Strip debug info for smaller binary
+			"-o", binaryPath, ".")
+		cmd.Dir = projectRoot
 		cmd.Env = os.Environ()
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("Failed to build binary: %v\nOutput: %s", err, out)
 		}
 	}
 
+	// Cache the binary
+	cacheBinary(cacheKey, binaryPath)
 	return binaryPath
+}
+
+// findProjectRoot finds the project root directory by looking for go.mod
+func findProjectRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	dir := wd
+	for i := 0; i < 10; i++ {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "", os.ErrNotExist
+}
+
+// Binary cache for performance
+var binaryCache = make(map[string]string)
+var binaryTimestamps = make(map[string]time.Time)
+
+func getCachedBinary(key string) (string, bool) {
+	path, exists := binaryCache[key]
+	return path, exists && fileExists(path)
+}
+
+func cacheBinary(key, path string) {
+	binaryCache[key] = path
+	binaryTimestamps[key] = time.Now()
+}
+
+func isBinaryRecent(path string) bool {
+	if timestamp, exists := binaryTimestamps[path]; exists {
+		// Consider binary recent if less than 5 minutes old
+		return time.Since(timestamp) < 5*time.Minute
+	}
+	return false
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // setupTestConfig creates a test configuration directory structure and returns

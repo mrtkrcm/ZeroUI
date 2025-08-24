@@ -276,7 +276,7 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 	return k, nil
 }
 
-// SaveTargetConfig saves the configuration back to the target file.
+// SaveTargetConfig saves the configuration back to the target file using temporary files for safety.
 func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 	configPath := appConfig.Path
 	if strings.HasPrefix(configPath, "~") {
@@ -292,17 +292,24 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		}
 	}
 
-	// Create backup
-	backupPath := configPath + ".backup"
-	if _, err := os.Stat(configPath); err == nil {
-		if err := copyFile(configPath, backupPath); err != nil {
-			return fmt.Errorf("failed to create backup: %w", err)
-		}
+	// Initialize temp file manager and integrity checker
+	tempManager, err := NewTempFileManager()
+	if err != nil {
+		return fmt.Errorf("failed to initialize temp manager: %w", err)
+	}
+	defer tempManager.CleanupAll()
+
+	integrityChecker := NewIntegrityChecker()
+
+	// Create temporary copy of the file
+	tempFile, err := tempManager.CreateTempCopy(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to create temporary copy: %w", err)
 	}
 
+	// Marshal configuration data
 	var data []byte
-	var err error
-
+	
 	switch strings.ToLower(appConfig.Format) {
 	case "json":
 		data, err = k.Marshal(json.Parser())
@@ -311,7 +318,17 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 	case "toml":
 		data, err = k.Marshal(toml.Parser())
 	case "custom":
-		return l.saveCustomFormat(configPath, k)
+		// For custom formats, handle separately
+		if err := l.saveCustomFormatWithTemp(tempFile.TempPath, k); err != nil {
+			tempManager.Rollback(tempFile)
+			return fmt.Errorf("failed to save custom format: %w", err)
+		}
+		// Validate and commit
+		if err := integrityChecker.ValidateFormat(tempFile.TempPath); err != nil {
+			tempManager.Rollback(tempFile)
+			return fmt.Errorf("validation failed: %w", err)
+		}
+		return tempManager.CommitTemp(tempFile)
 	default:
 		ext := strings.ToLower(filepath.Ext(configPath))
 		switch ext {
@@ -322,16 +339,49 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		case ".toml":
 			data, err = k.Marshal(toml.Parser())
 		default:
+			tempManager.Rollback(tempFile)
 			return fmt.Errorf("unsupported config format: %s", appConfig.Format)
 		}
 	}
 
 	if err != nil {
+		tempManager.Rollback(tempFile)
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+	// Write to temporary file
+	if err := os.WriteFile(tempFile.TempPath, data, 0o644); err != nil {
+		tempManager.Rollback(tempFile)
+		return fmt.Errorf("failed to write temp file: %w", err)
+	}
+
+	// Validate the temporary file before committing
+	if err := integrityChecker.ValidateFormat(tempFile.TempPath); err != nil {
+		tempManager.Rollback(tempFile)
+		return fmt.Errorf("config validation failed: %w", err)
+	}
+
+	// Verify content integrity
+	if err := integrityChecker.ValidateContent(tempFile.TempPath, nil); err != nil {
+		tempManager.Rollback(tempFile)
+		return fmt.Errorf("content validation failed: %w", err)
+	}
+
+	// Commit the temporary file to the actual location
+	if err := tempManager.CommitTemp(tempFile); err != nil {
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+
+	// Verify final file integrity
+	finalChecksum, err := integrityChecker.CalculateChecksum(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to verify saved file: %w", err)
+	}
+
+	// Log success with checksum for audit
+	if finalChecksum != "" {
+		// Could log this for audit purposes
+		_ = finalChecksum
 	}
 
 	return nil
@@ -345,6 +395,25 @@ func (l *Loader) loadCustomFormat(configPath string) (*koanf.Koanf, error) {
 // saveCustomFormat handles saving custom formats.
 func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
 	return WriteGhosttyConfig(configPath, k, configPath)
+}
+
+// saveCustomFormatWithTemp handles saving custom formats to a temporary file.
+func (l *Loader) saveCustomFormatWithTemp(tempPath string, k *koanf.Koanf) error {
+	// For now, write directly to temp path
+	// This would be enhanced for specific custom formats
+	data := make(map[string]interface{})
+	for _, key := range k.Keys() {
+		data[key] = k.Get(key)
+	}
+	
+	// Write as simple key=value format for custom configs
+	var lines []string
+	for key, value := range data {
+		lines = append(lines, fmt.Sprintf("%s = %v", key, value))
+	}
+	
+	content := strings.Join(lines, "\n")
+	return os.WriteFile(tempPath, []byte(content), 0o644)
 }
 
 // initFileWatcher initializes the file watcher for cache invalidation.
