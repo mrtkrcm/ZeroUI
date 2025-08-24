@@ -7,6 +7,14 @@
 configtoggle
 zeroui
 zeroui-test
+ZeroUI
+analyze-usage
+cleanup-deps
+enhanced-analyzer
+full
+remove-deps-batch
+simple
+targeted-cleanup
 
 # Test binary, built with `go test -c`
 *.test
