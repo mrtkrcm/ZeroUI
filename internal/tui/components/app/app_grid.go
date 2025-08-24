@@ -1,4 +1,4 @@
-package components
+package appcomponents
 
 import (
 	"fmt"
@@ -73,6 +73,28 @@ func NewAppGrid() *AppGridModel {
 		maxCardSize:   18,
 		cardSpacing:   2,
 		showAnimation: false, // Disabled for stability
+	}
+}
+
+// RefreshAppStatuses refreshes the application statuses from the registry
+// This is useful when the test environment has been updated with new configurations
+func (m *AppGridModel) RefreshAppStatuses() {
+	// Get updated statuses from registry
+	newStatuses := registry.GetAppStatuses()
+
+	// Create new cards for the updated statuses
+	newCards := make([]*AppCardModel, len(newStatuses))
+	for i, status := range newStatuses {
+		newCards[i] = NewAppCard(status)
+	}
+
+	// Update the component with fresh data
+	m.statuses = newStatuses
+	m.cards = newCards
+
+	// Reset selection if it's out of bounds
+	if m.selectedIdx >= len(newCards) {
+		m.selectedIdx = -1
 	}
 }
 
@@ -744,4 +766,26 @@ func (m *AppGridModel) GetSelectedApp() string {
 		return m.statuses[m.selectedIdx].Definition.Name
 	}
 	return ""
+}
+
+// GetASCIILogo returns the ZeroUI ASCII art logo
+func GetASCIILogo() string {
+	return `
+    ███████╗███████╗██████╗  ██████╗ ██╗   ██╗██╗
+    ╚══███╔╝██╔════╝██╔══██╗██╔═══██╗██║   ██║██║
+      ███╔╝ █████╗  ██████╔╝██║   ██║██║   ██║██║
+     ███╔╝  ██╔══╝  ██╔══██╗██║   ██║██║   ██║██║
+    ███████╗███████╗██║  ██║╚██████╔╝╚██████╔╝██║
+    ╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝`
+}
+
+// GetMinimalLogo returns a minimal text-based logo
+func GetMinimalLogo() string {
+	return `
+ ______                _    _ _____
+|___  /               | |  | |_   _|
+   / / ___ _ __ ___   | |  | | | |
+  / / / _ \ '__/ _ \  | |  | | | |
+ / /_|  __/ | | (_) | | |__| |_| |_
+/_____\___|_|  \___/   \____/|_____|`
 }

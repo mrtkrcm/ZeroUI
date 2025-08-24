@@ -1,0 +1,12 @@
+┌─────────────────────────────────────────────────────────────┐
+│ Help: Keyboard Shortcuts                                     │
+│                                                             │
+│ Navigation:                                                 │
+│   ↑↓      Move selection                                    │
+│   Enter    Select/Confirm                                   │
+│   Esc      Cancel/Back                                      │
+│   ?        Show this help                                   │
+│   q        Quit application                                 │
+│                                                             │
+│ [Close Help]                                                │
+└─────────────────────────────────────────────────────────────┘

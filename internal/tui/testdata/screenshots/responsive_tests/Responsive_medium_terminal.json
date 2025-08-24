@@ -1,0 +1,21 @@
+{
+  "current_app": "",
+  "description": "Responsive medium terminal",
+  "metadata": {
+    "currentApp": "",
+    "hasError": false,
+    "showingHelp": false,
+    "state": "list_view"
+  },
+  "screen_size": {
+    "height": 30,
+    "width": 100
+  },
+  "screen_text": "                          🎯 ZeroUI - Application Manager                                           \n                                                                                                    \n                            ZeroUI Applications                                                     \n                                                                                                    \n                           6 items                                                                  \n                                                                                                    \n                         ? Ghostty                                                                  \n                           Terminal application • Ready                                             \n                                                                                                    \n                         ? Alacritty                                                                \n                           Terminal application • Ready                                             \n                                                                                                    \n                         ? WezTerm                                                                  \n                           Terminal application • Ready                                             \n                                                                                                    \n                         ? VS Code                                                                  \n                           Editor application • Ready                                               \n                                                                                                    \n                         ? Neovim                                                                   \n                           Editor application • Ready                                               \n                                                                                                    \n                         ? Zed                                                                      \n                           Editor application • Ready                                               \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                         ↑/k up • ↓/j down • / filter • q quit • ? more                             \n                                                                                                    \n                         ↑/↓: Navigate • Enter: Select • ?: Help • q: Quit                          ",
+  "state": "list_view",
+  "test_name": "responsive_tests",
+  "timestamp": "2025-08-25 04:50:56",
+  "user_actions": [
+    "Resize to 100x30"
+  ]
+}

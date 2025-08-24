@@ -1,0 +1,23 @@
+{
+  "current_app": "ghostty",
+  "description": "Configuration Editor",
+  "metadata": {
+    "currentApp": "ghostty",
+    "hasError": false,
+    "showingHelp": false,
+    "state": "form_view"
+  },
+  "screen_size": {
+    "height": 40,
+    "width": 120
+  },
+  "screen_text": "                                                                                                                      \n  ⚙️  ghostty Configuration                                                                                           \n                                                                                                                      \n╭───────────────╮╭────────────────────╮╭─────────────────────╮╭────────────────────╮╭──────────────────╮              \n│  [1] [A] All  ││  [2] [M] Modified  ││  [3] [*] Favorites  ││  [4] [+] Advanced  ││  [5] [/] Search  │              \n╰───────────────╯╰────────────────────╯╰─────────────────────╯╰────────────────────╯╰──────────────────╯              \n╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\n│                                                                                                                    │\n│ No items to display                                                                                                │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n│                                                                                                                    │\n╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯\n  ? help • / search • enter edit • space quick • ctrl+s save                                                          ",
+  "state": "form_view",
+  "test_name": "form_view_tests",
+  "timestamp": "2025-08-25 04:50:56",
+  "user_actions": [
+    "Select ghostty",
+    "Enter config mode",
+    "View configuration form"
+  ]
+}

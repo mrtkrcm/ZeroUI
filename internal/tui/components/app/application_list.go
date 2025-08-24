@@ -1,4 +1,4 @@
-package components
+package appcomponents
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mrtkrcm/ZeroUI/internal/tui/registry"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 )
 
@@ -246,10 +247,14 @@ func (m *ApplicationListModel) Update(msg tea.Msg) (*ApplicationListModel, tea.C
 				}
 			}
 		case key.Matches(msg, m.keyMap.Refresh):
-			return m, func() tea.Msg {
-				return RefreshAppsMsg{}
-			}
+			// Refresh the application list from registry
+			m.RefreshFromRegistry()
+			return m, nil
 		}
+	case RefreshAppsMsg:
+		// Handle refresh message from main model
+		m.RefreshFromRegistry()
+		return m, nil
 	}
 
 	// Update the list with error boundary
@@ -304,6 +309,41 @@ func (m *ApplicationListModel) SetApplications(apps []ApplicationInfo) {
 		}
 	}
 	m.list.SetItems(items)
+}
+
+// RefreshFromRegistry loads applications from the TUI registry and updates the list
+func (m *ApplicationListModel) RefreshFromRegistry() {
+	// Get application statuses from registry
+	statuses := registry.GetAppStatuses()
+
+	// Convert to ApplicationInfo format
+	apps := make([]ApplicationInfo, 0, len(statuses))
+	for _, status := range statuses {
+		// Only include applications that are installed and have configs
+		if status.IsInstalled && status.ConfigExists {
+			apps = append(apps, ApplicationInfo{
+				Name:        status.Definition.Name,
+				Description: fmt.Sprintf("%s application", status.Definition.Category),
+				Status:      getStatusString(status),
+				ConfigPath:  status.Definition.ConfigPath,
+			})
+		}
+	}
+
+	// Update the list
+	m.SetApplications(apps)
+}
+
+// getStatusString converts registry status to display string
+func getStatusString(status registry.AppStatus) string {
+	if status.IsInstalled && status.ConfigExists {
+		return "Ready"
+	} else if status.IsInstalled {
+		return "No Config"
+	} else if status.ConfigExists {
+		return "Not Installed"
+	}
+	return "Unknown"
 }
 
 // GetSelectedApp returns the currently selected application

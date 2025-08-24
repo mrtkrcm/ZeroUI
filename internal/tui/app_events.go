@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	appcomponents "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
 )
 
@@ -308,7 +309,7 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				},
 				"appList",
 			)
-			if updated, ok := updatedModel.(*components.ApplicationListModel); ok {
+			if updated, ok := updatedModel.(*appcomponents.ApplicationListModel); ok {
 				m.appList = updated
 			}
 			return m, cmd
@@ -371,7 +372,7 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 				"appList",
 			)
-			if updated, ok := updatedModel.(*components.ApplicationListModel); ok {
+			if updated, ok := updatedModel.(*appcomponents.ApplicationListModel); ok {
 				m.appList = updated
 			}
 			return m, cmd

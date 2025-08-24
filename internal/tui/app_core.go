@@ -77,8 +77,7 @@ func (app *App) RunWithContext(ctx context.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
 			app.logger.LogPanic(r, "app_crash")
-			fmt.Printf("Application crashed: %v\n", r)
-			fmt.Println("Check logs at:", app.logger.GetFileLocation())
+			app.logger.Error("Application crashed", "error", r)
 		}
 	}()
 

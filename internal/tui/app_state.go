@@ -12,6 +12,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	appcomponents "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/keybindings"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
@@ -31,7 +32,7 @@ type Model struct {
 	errorHandler *ErrorHandler
 
 	// Modern components using Charm libraries
-	appList        *components.ApplicationListModel
+	appList        *appcomponents.ApplicationListModel
 	appScanner     *components.AppScannerV2        // Improved scanner
 	tabbedConfig   *components.TabbedConfigModel   // Basic tabbed interface
 	enhancedConfig *components.EnhancedConfigModel  // Enhanced config editor
@@ -68,7 +69,7 @@ type Model struct {
 // RefreshAppsMsg signals a UI-level request to refresh the apps list.
 // Tests and some components send this message to request a refresh; it's
 // handled by the model (debounced) via the helper methods added below.
-type RefreshAppsMsg = components.RefreshAppsMsg
+type RefreshAppsMsg = appcomponents.RefreshAppsMsg
 
 // NewModel creates a new model for the application
 func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLogger) (*Model, error) {
@@ -85,7 +86,7 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 	if err != nil {
 		return nil, fmt.Errorf("failed to get apps: %w", err)
 	}
-	appList := components.NewApplicationList()
+	appList := appcomponents.NewApplicationList()
 	appScanner := components.NewAppScannerV2()
 	stateMachine := NewStateMachine(ListView)
 	errorHandler := NewErrorHandler(logger)
@@ -458,6 +459,9 @@ func (m *Model) HandleRefreshApps() {
 
 	// Debounce: ignore if last refresh was recent
 	if now.Sub(m.lastAppsRefresh) < m.cacheDuration {
+		if m.logger != nil {
+			m.logger.Debug("HandleRefreshApps debounced due to recent refresh")
+		}
 		return
 	}
 
@@ -465,15 +469,25 @@ func (m *Model) HandleRefreshApps() {
 
 	// Trigger component refresh if component exists
 	if m.appList != nil {
-		updatedModel, cmd := m.appList.Update(components.RefreshAppsMsg{})
+		// Create a RefreshAppsMsg using the same type as defined in the component
+		var refreshMsg appcomponents.RefreshAppsMsg
+		updatedModel, cmd := m.appList.Update(refreshMsg)
 		// ApplicationListModel.Update returns (*ApplicationListModel, tea.Cmd) so we can
 		// assign the returned pointer directly if non-nil.
 		if updatedModel != nil {
 			m.appList = updatedModel
+		} else {
+			if m.logger != nil {
+				m.logger.Warn("appList.Update returned nil model")
+			}
 		}
 		// Best-effort: run cmd if non-nil (most commands are harmless no-ops in tests)
 		if cmd != nil {
 			_ = cmd
+		}
+	} else {
+		if m.logger != nil {
+			m.logger.Warn("appList is nil, cannot refresh applications")
 		}
 	}
 
