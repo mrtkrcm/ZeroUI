@@ -1,5 +1,6 @@
 #!/bin/bash
-source "/Users/m/code/muka-hq/configtoggle/scripts/lib/dry_run.sh" && dry_run_init
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/dry_run.sh" && dry_run_init
 
 # TUI Testing Automation Script
 # Comprehensive TUI testing with automated rendering correctness verification

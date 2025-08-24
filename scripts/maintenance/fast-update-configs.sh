@@ -1,5 +1,6 @@
 #!/bin/bash
-source "/Users/m/code/muka-hq/configtoggle/scripts/lib/dry_run.sh" && dry_run_init
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/dry_run.sh" && dry_run_init
 
 # High-performance config updater using parallel extraction
 # This script leverages the fast batch extraction for maximum efficiency

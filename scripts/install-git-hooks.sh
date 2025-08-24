@@ -4,7 +4,9 @@
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ -n "$REPO_ROOT" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   # Path to this file relative to repository root
-  GIT_REL_PATH="configtoggle/scripts/install-git-hooks.sh"
+  # Calculate path relative to repository root
+  SCRIPT_PATH="$(realpath "$0")"
+  GIT_REL_PATH="${SCRIPT_PATH#$REPO_ROOT/}"
   # Try to set the executable bit in the index (harmless if it fails)
   git -C "$REPO_ROOT" update-index --add --chmod=+x "$GIT_REL_PATH" 2>/dev/null || true
 fi
