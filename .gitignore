@@ -112,3 +112,5 @@ test_output/
 config.local.*
 .env.local
 coverage.out
+internal/tui/testdata/screenshots/*.json
+internal/tui/testdata/screenshots/*.json
