@@ -249,7 +249,9 @@ func (m *ApplicationListModel) Update(msg tea.Msg) (*ApplicationListModel, tea.C
 		case key.Matches(msg, m.keyMap.Refresh):
 			// Refresh the application list from registry
 			m.RefreshFromRegistry()
-			return m, nil
+			return m, func() tea.Msg {
+				return RefreshAppsMsg{}
+			}
 		}
 	case RefreshAppsMsg:
 		// Handle refresh message from main model

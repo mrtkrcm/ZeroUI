@@ -61,7 +61,7 @@ type (
 	// UpdateMsg is sent to update component data
 	UpdateMsg struct {
 		ComponentID string
-		Data        interface{}
+		Data        ConfigData
 	}
 
 	// RefreshMsg is sent to refresh component data
@@ -76,7 +76,7 @@ type (
 	ListItemSelectedMsg struct {
 		ListID string
 		Index  int
-		Item   interface{}
+		Item   ListItem
 	}
 
 	// ListFilterMsg is sent to filter list items
@@ -204,7 +204,7 @@ func UpdateStatus(message string) tea.Cmd {
 	}
 }
 
-func SelectListItem(listID string, index int, item interface{}) tea.Cmd {
+func SelectListItem(listID string, index int, item ListItem) tea.Cmd {
 	return func() tea.Msg {
 		return ListItemSelectedMsg{ListID: listID, Index: index, Item: item}
 	}

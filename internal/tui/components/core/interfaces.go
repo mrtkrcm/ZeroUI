@@ -91,7 +91,7 @@ type ListItem interface {
 	FilterValue() string
 }
 
-// Form represents a form component
+// Form represents a form component with type-safe configuration
 type Form interface {
 	Focusable
 	Sizeable
@@ -100,19 +100,22 @@ type Form interface {
 	GetField(id string) FormField
 	GetFields() []FormField
 	IsValid() bool
-	GetData() map[string]interface{}
+	GetData() ConfigData
+	GetLegacyData() map[string]interface{} // For backward compatibility
 	Reset() tea.Cmd
+	Validate() []ValidationError
 }
 
-// FormField represents a field in a form
+// FormField represents a field in a form with type safety
 type FormField interface {
 	Focusable
 	ID() string
 	Label() string
-	Value() interface{}
-	SetValue(value interface{}) tea.Cmd
+	Value() ConfigValue
+	SetValue(value ConfigValue) tea.Cmd
 	IsValid() bool
 	ValidationError() string
+	Type() ValueType
 }
 
 // StatusBar represents a status bar component

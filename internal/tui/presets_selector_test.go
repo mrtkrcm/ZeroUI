@@ -23,6 +23,6 @@ func TestPresetsSelectorFlow(t *testing.T) {
 	model.presetSel.SetPresets([]string{"minimal", "dark", "light"})
 
 	// Move selection down and select
-	updated, _ := model.presetSel.Update(components.PresetSelectedMsg{App: "ghostty", Name: "minimal"})
+	updated, _ := model.presetSel.Update(app.PresetSelectedMsg{App: "ghostty", Name: "minimal"})
 	assert.NotNil(t, updated)
 }
