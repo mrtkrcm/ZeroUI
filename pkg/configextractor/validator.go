@@ -244,6 +244,650 @@ func Max(value float64) *float64 {
 	return &value
 }
 
+// GhosttySchemaValidator provides schema-aware validation for Ghostty configurations
+type GhosttySchemaValidator struct {
+	schema map[string]GhosttyFieldSchema
+}
+
+// GhosttyFieldSchema represents the schema for a Ghostty configuration field
+type GhosttyFieldSchema struct {
+	Name         string   `yaml:"name"`
+	Type         string   `yaml:"type"`
+	Description  string   `yaml:"description"`
+	DefaultValue interface{} `yaml:"default_value"`
+	Category     string   `yaml:"category"`
+	Values       []string `yaml:"values,omitempty"` // For enum types
+}
+
+// NewGhosttySchemaValidator creates a validator that validates against the official Ghostty schema
+func NewGhosttySchemaValidator() *GhosttySchemaValidator {
+	return &GhosttySchemaValidator{
+		schema: loadGhosttySchema(),
+	}
+}
+
+// ValidateField validates a single field against the Ghostty schema
+func (v *GhosttySchemaValidator) ValidateField(fieldName string, value interface{}) ValidationResult {
+	fieldSchema, exists := v.schema[fieldName]
+	if !exists {
+		return ValidationResult{
+			Valid: false,
+			Errors: []string{fmt.Sprintf("field '%s' is not a valid Ghostty configuration option", fieldName)},
+		}
+	}
+
+	var errors []string
+
+	// Type validation
+	if !v.validateGhosttyType(value, fieldSchema.Type) {
+		errors = append(errors, fmt.Sprintf("field '%s' must be of type %s", fieldName, fieldSchema.Type))
+	}
+
+	// Value validation for enum types
+	if len(fieldSchema.Values) > 0 {
+		if str := fmt.Sprintf("%v", value); !v.isValidEnumValue(str, fieldSchema.Values) {
+			errors = append(errors, fmt.Sprintf("field '%s' must be one of: %s", fieldName, strings.Join(fieldSchema.Values, ", ")))
+		}
+	}
+
+	// Special validation for specific field types
+	switch fieldSchema.Name {
+	case "cursor-color", "cursor-text":
+		if str, ok := value.(string); ok && !v.isValidColor(str) {
+			errors = append(errors, fmt.Sprintf("field '%s' must be a valid color (hex or named color)", fieldName))
+		}
+	case "font-family":
+		if str, ok := value.(string); ok && strings.Contains(str, ",") {
+			// Multiple font families should be space-separated, not comma-separated
+			if !strings.Contains(str, ", ") {
+				errors = append(errors, fmt.Sprintf("field '%s' should use spaces between font families, not commas", fieldName))
+			}
+		}
+	}
+
+	return ValidationResult{
+		Valid: len(errors) == 0,
+		Errors: errors,
+	}
+}
+
+// ValidateConfig validates an entire Ghostty configuration
+func (v *GhosttySchemaValidator) ValidateConfig(config map[string]interface{}) ValidationResult {
+	var allErrors []string
+
+	for fieldName, value := range config {
+		result := v.ValidateField(fieldName, value)
+		if !result.Valid {
+			allErrors = append(allErrors, result.Errors...)
+		}
+	}
+
+	return ValidationResult{
+		Valid: len(allErrors) == 0,
+		Errors: allErrors,
+	}
+}
+
+// validateGhosttyType validates the type of a value against Ghostty's expected types
+func (v *GhosttySchemaValidator) validateGhosttyType(value interface{}, expectedType string) bool {
+	switch expectedType {
+	case "string":
+		_, ok := value.(string)
+		return ok
+	case "number":
+		if _, ok := value.(float64); ok {
+			return true
+		}
+		if _, ok := value.(int); ok {
+			return true
+		}
+		if str, ok := value.(string); ok {
+			_, err := strconv.ParseFloat(str, 64)
+			return err == nil
+		}
+		return false
+	case "boolean":
+		if _, ok := value.(bool); ok {
+			return true
+		}
+		if str, ok := value.(string); ok {
+			_, err := strconv.ParseBool(str)
+			return err == nil
+		}
+		return false
+	case "color":
+		if str, ok := value.(string); ok {
+			return v.isValidColor(str)
+		}
+		return false
+	default:
+		// For unknown types, accept string representation
+		return true
+	}
+}
+
+// isValidEnumValue checks if a value is in the list of allowed enum values
+func (v *GhosttySchemaValidator) isValidEnumValue(value string, allowedValues []string) bool {
+	for _, allowed := range allowedValues {
+		if value == allowed {
+			return true
+		}
+	}
+	return false
+}
+
+// isValidColor validates color formats (hex or named colors)
+func (v *GhosttySchemaValidator) isValidColor(color string) bool {
+	color = strings.TrimSpace(color)
+
+	// Check for hex colors
+	if strings.HasPrefix(color, "#") {
+		hex := color[1:]
+		if len(hex) == 3 || len(hex) == 6 {
+			for _, r := range hex {
+				if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+					return false
+				}
+			}
+			return true
+		}
+	}
+
+	// Check for named colors (basic validation - could be expanded)
+	namedColors := []string{
+		"black", "white", "red", "green", "blue", "yellow", "magenta", "cyan",
+		"gray", "grey", "background", "foreground", "extend",
+	}
+
+	for _, named := range namedColors {
+		if color == named {
+			return true
+		}
+	}
+
+	return false
+}
+
+// loadGhosttySchema loads the Ghostty schema from the embedded configuration
+func loadGhosttySchema() map[string]GhosttyFieldSchema {
+	// This would ideally load from the actual ghostty.yaml file
+	// For now, we'll define the most common invalid fields that we've seen
+	return map[string]GhosttyFieldSchema{
+		// Valid cursor fields
+		"cursor-color": {
+			Name: "cursor-color",
+			Type: "color",
+			Description: "The color of the cursor",
+		},
+		"cursor-invert-fg-bg": {
+			Name: "cursor-invert-fg-bg",
+			Type: "boolean",
+			Description: "Swap foreground and background colors under cursor",
+		},
+		"cursor-opacity": {
+			Name: "cursor-opacity",
+			Type: "number",
+			Description: "Opacity level of the cursor",
+		},
+		"cursor-style": {
+			Name: "cursor-style",
+			Type: "string",
+			Description: "Style of the cursor",
+			Values: []string{"block", "bar", "underline", "outline"},
+		},
+		"cursor-style-blink": {
+			Name: "cursor-style-blink",
+			Type: "boolean",
+			Description: "Whether cursor blinks",
+		},
+		"cursor-text": {
+			Name: "cursor-text",
+			Type: "color",
+			Description: "Color of text under cursor",
+		},
+		"cursor-click-to-move": {
+			Name: "cursor-click-to-move",
+			Type: "boolean",
+			Description: "Enable cursor click-to-move",
+		},
+
+		// Valid window padding fields
+		"window-padding-x": {
+			Name: "window-padding-x",
+			Type: "number",
+			Description: "Horizontal window padding",
+		},
+		"window-padding-y": {
+			Name: "window-padding-y",
+			Type: "number",
+			Description: "Vertical window padding",
+		},
+		"window-padding-balance": {
+			Name: "window-padding-balance",
+			Type: "boolean",
+			Description: "Balance padding dimensions",
+		},
+		"window-padding-color": {
+			Name: "window-padding-color",
+			Type: "color",
+			Description: "Color of window padding area",
+		},
+
+		// Common font fields
+		"font-family": {
+			Name: "font-family",
+			Type: "string",
+			Description: "Font family for terminal text",
+		},
+		"font-size": {
+			Name: "font-size",
+			Type: "number",
+			Description: "Font size",
+		},
+
+		// Common theme fields
+		"theme": {
+			Name: "theme",
+			Type: "string",
+			Description: "Color theme",
+		},
+		"background": {
+			Name: "background",
+			Type: "color",
+			Description: "Background color",
+		},
+		"foreground": {
+			Name: "foreground",
+			Type: "color",
+			Description: "Foreground color",
+		},
+	}
+}
+
+// ValidateGhosttyConfig is a convenience function for validating Ghostty configurations
+func ValidateGhosttyConfig(config map[string]interface{}) ValidationResult {
+	validator := NewGhosttySchemaValidator()
+	return validator.ValidateConfig(config)
+}
+
+// ConfigDiff represents the differences between two configuration states
+type ConfigDiff struct {
+	Added     map[string]interface{} `json:"added,omitempty"`
+	Modified  map[string]ValueDiff   `json:"modified,omitempty"`
+	Removed   map[string]interface{} `json:"removed,omitempty"`
+	Unchanged map[string]interface{} `json:"unchanged,omitempty"`
+}
+
+// ValueDiff represents a change in a single configuration value
+type ValueDiff struct {
+	Old interface{} `json:"old"`
+	New interface{} `json:"new"`
+}
+
+// ConfigDiffer provides functionality to compare configuration states
+type ConfigDiffer struct{}
+
+// NewConfigDiffer creates a new configuration differ
+func NewConfigDiffer() *ConfigDiffer {
+	return &ConfigDiffer{}
+}
+
+// DiffConfigurations compares two configuration maps and returns the differences
+func (d *ConfigDiffer) DiffConfigurations(oldConfig, newConfig map[string]interface{}) *ConfigDiff {
+	diff := &ConfigDiff{
+		Added:     make(map[string]interface{}),
+		Modified:  make(map[string]ValueDiff),
+		Removed:   make(map[string]interface{}),
+		Unchanged: make(map[string]interface{}),
+	}
+
+	// Track keys we've seen in new config
+	seenKeys := make(map[string]bool)
+
+	// Check for added and modified keys
+	for key, newValue := range newConfig {
+		seenKeys[key] = true
+		if oldValue, exists := oldConfig[key]; exists {
+			// Key exists in both - check if value changed
+			if d.valuesEqual(oldValue, newValue) {
+				diff.Unchanged[key] = newValue
+			} else {
+				diff.Modified[key] = ValueDiff{
+					Old: oldValue,
+					New: newValue,
+				}
+			}
+		} else {
+			// Key only in new config - it's added
+			diff.Added[key] = newValue
+		}
+	}
+
+	// Check for removed keys
+	for key, oldValue := range oldConfig {
+		if !seenKeys[key] {
+			diff.Removed[key] = oldValue
+		}
+	}
+
+	return diff
+}
+
+// valuesEqual compares two values for equality, handling different types appropriately
+func (d *ConfigDiffer) valuesEqual(a, b interface{}) bool {
+	// Handle nil values
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	// Handle arrays/slices
+	if aSlice, ok := a.([]interface{}); ok {
+		if bSlice, ok := b.([]interface{}); ok {
+			if len(aSlice) != len(bSlice) {
+				return false
+			}
+			for i := range aSlice {
+				if !d.valuesEqual(aSlice[i], bSlice[i]) {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	}
+
+	// Handle string arrays
+	if aSlice, ok := a.([]string); ok {
+		if bSlice, ok := b.([]string); ok {
+			if len(aSlice) != len(bSlice) {
+				return false
+			}
+			for i := range aSlice {
+				if aSlice[i] != bSlice[i] {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	}
+
+	// For other types, use standard equality
+	return a == b
+}
+
+// HasChanges returns true if the diff contains any changes
+func (d *ConfigDiff) HasChanges() bool {
+	return len(d.Added) > 0 || len(d.Modified) > 0 || len(d.Removed) > 0
+}
+
+// Summary returns a human-readable summary of the changes
+func (d *ConfigDiff) Summary() string {
+	var parts []string
+
+	if len(d.Added) > 0 {
+		parts = append(parts, fmt.Sprintf("+%d added", len(d.Added)))
+	}
+	if len(d.Modified) > 0 {
+		parts = append(parts, fmt.Sprintf("~%d modified", len(d.Modified)))
+	}
+	if len(d.Removed) > 0 {
+		parts = append(parts, fmt.Sprintf("-%d removed", len(d.Removed)))
+	}
+	if len(d.Unchanged) > 0 {
+		parts = append(parts, fmt.Sprintf("=%d unchanged", len(d.Unchanged)))
+	}
+
+	if len(parts) == 0 {
+		return "No changes"
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+// FormatDiff returns a formatted string representation of the diff
+func (d *ConfigDiff) FormatDiff() string {
+	var result strings.Builder
+
+	if len(d.Added) > 0 {
+		result.WriteString("Added:\n")
+		for key, value := range d.Added {
+			result.WriteString(fmt.Sprintf("  + %s = %v\n", key, value))
+		}
+		result.WriteString("\n")
+	}
+
+	if len(d.Modified) > 0 {
+		result.WriteString("Modified:\n")
+		for key, diff := range d.Modified {
+			result.WriteString(fmt.Sprintf("  ~ %s: %v → %v\n", key, diff.Old, diff.New))
+		}
+		result.WriteString("\n")
+	}
+
+	if len(d.Removed) > 0 {
+		result.WriteString("Removed:\n")
+		for key, value := range d.Removed {
+			result.WriteString(fmt.Sprintf("  - %s = %v\n", key, value))
+		}
+		result.WriteString("\n")
+	}
+
+	return result.String()
+}
+
+// KeybindValidator provides specialized validation for Ghostty keybind configurations
+type KeybindValidator struct{}
+
+// NewKeybindValidator creates a new keybind validator
+func NewKeybindValidator() *KeybindValidator {
+	return &KeybindValidator{}
+}
+
+// ValidateKeybind validates a single keybind string
+func (v *KeybindValidator) ValidateKeybind(keybind string) KeybindValidationResult {
+	result := KeybindValidationResult{Valid: true}
+
+	// Parse keybind format: "keys=action[:arg]"
+	if !strings.Contains(keybind, "=") {
+		result.Valid = false
+		result.Errors = append(result.Errors, "keybind must contain '=' separator")
+		return result
+	}
+
+	parts := strings.SplitN(keybind, "=", 2)
+	if len(parts) != 2 {
+		result.Valid = false
+		result.Errors = append(result.Errors, "invalid keybind format")
+		return result
+	}
+
+	keys := strings.TrimSpace(parts[0])
+	action := strings.TrimSpace(parts[1])
+
+	if keys == "" {
+		result.Valid = false
+		result.Errors = append(result.Errors, "keybind keys cannot be empty")
+	}
+
+	if action == "" {
+		result.Valid = false
+		result.Errors = append(result.Errors, "keybind action cannot be empty")
+	}
+
+	if !result.Valid {
+		return result
+	}
+
+	// Validate key combination
+	keyResult := v.validateKeyCombination(keys)
+	if !keyResult.Valid {
+		result.Valid = false
+		result.Errors = append(result.Errors, keyResult.Errors...)
+	}
+
+	// Validate action
+	actionResult := v.validateAction(action)
+	if !actionResult.Valid {
+		result.Valid = false
+		result.Errors = append(result.Errors, actionResult.Errors...)
+	}
+
+	// Include warnings from action validation
+	if len(actionResult.Warnings) > 0 {
+		result.Warnings = append(result.Warnings, actionResult.Warnings...)
+	}
+
+	result.Keys = keys
+	result.Action = action
+	result.ParsedKeybind = KeybindComponents{
+		Keys:   keys,
+		Action: action,
+	}
+
+	return result
+}
+
+// validateKeyCombination validates the key combination part of a keybind
+func (v *KeybindValidator) validateKeyCombination(keys string) KeybindValidationResult {
+	result := KeybindValidationResult{Valid: true}
+
+	// Common modifiers
+	validModifiers := []string{
+		"ctrl", "alt", "shift", "super", "cmd", "meta", "hyper",
+		"primary", "secondary",
+	}
+
+	// Special keys
+	specialKeys := []string{
+		"escape", "tab", "capslock", "backspace", "enter", "return",
+		"space", "up", "down", "left", "right",
+		"home", "end", "pageup", "pagedown", "insert", "delete",
+		"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
+	}
+
+	lowerKeys := strings.ToLower(keys)
+	keyParts := strings.Split(lowerKeys, "+")
+
+	// Check for valid modifiers and keys
+	hasValidComponent := false
+	for _, part := range keyParts {
+		part = strings.TrimSpace(part)
+
+		// Check if it's a valid modifier
+		isModifier := false
+		for _, modifier := range validModifiers {
+			if part == modifier {
+				isModifier = true
+				break
+			}
+		}
+
+		// Check if it's a special key
+		isSpecialKey := false
+		for _, special := range specialKeys {
+			if part == special {
+				isSpecialKey = true
+				break
+			}
+		}
+
+		// Check if it's a single character
+		isSingleChar := len(part) == 1 && part[0] >= 32 && part[0] <= 126
+
+		// Check if it's a function key
+		isFunctionKey := strings.HasPrefix(part, "f") && len(part) >= 2 && len(part) <= 3
+		if isFunctionKey {
+			numStr := part[1:]
+			if num, err := strconv.Atoi(numStr); err != nil || num < 1 || num > 12 {
+				isFunctionKey = false
+			}
+		}
+
+		if !isModifier && !isSpecialKey && !isSingleChar && !isFunctionKey {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("invalid key component: '%s'", part))
+		} else {
+			hasValidComponent = true
+		}
+	}
+
+	if !hasValidComponent {
+		result.Valid = false
+		result.Errors = append(result.Errors, "keybind must contain at least one valid key")
+	}
+
+	return result
+}
+
+// validateAction validates the action part of a keybind
+func (v *KeybindValidator) validateAction(action string) KeybindValidationResult {
+	result := KeybindValidationResult{Valid: true}
+
+	// Handle action with arguments: "action:arg"
+	var baseAction string
+	if strings.Contains(action, ":") {
+		parts := strings.SplitN(action, ":", 2)
+		baseAction = strings.TrimSpace(parts[0])
+	} else {
+		baseAction = action
+	}
+
+	// Common valid actions
+	validActions := []string{
+		"copy", "paste", "cut", "select_all",
+		"new_tab", "new_window", "close_tab", "close_window",
+		"next_tab", "prev_tab", "goto_tab",
+		"split_right", "split_down", "split_left", "split_up",
+		"select_split_right", "select_split_down", "select_split_left", "select_split_up",
+		"resize_split_right", "resize_split_down", "resize_split_left", "resize_split_up",
+		"equalize_splits", "close_split",
+		"increase_font_size", "decrease_font_size", "reset_font_size",
+		"reload_config", "inspect", "show_inspector",
+		"scroll_to_top", "scroll_to_bottom", "scroll_page_up", "scroll_page_down",
+		"scroll_line_up", "scroll_line_down",
+		"clear_screen", "reset_terminal",
+		"toggle_fullscreen", "toggle_maximize",
+		"quit", "minimize_window",
+	}
+
+	lowerAction := strings.ToLower(baseAction)
+	actionValid := false
+	for _, valid := range validActions {
+		if lowerAction == valid {
+			actionValid = true
+			break
+		}
+	}
+
+	// Allow custom actions (we can't validate all possible actions)
+	if !actionValid {
+		// Log a warning but don't fail validation for unknown actions
+		result.Warnings = append(result.Warnings, fmt.Sprintf("unknown action: '%s' (may still be valid)", baseAction))
+	}
+
+	return result
+}
+
+// KeybindValidationResult represents the result of keybind validation
+type KeybindValidationResult struct {
+	Valid         bool     `json:"valid"`
+	Errors        []string `json:"errors,omitempty"`
+	Warnings      []string `json:"warnings,omitempty"`
+	Keys          string   `json:"keys,omitempty"`
+	Action        string   `json:"action,omitempty"`
+	ParsedKeybind KeybindComponents `json:"parsed_keybind,omitempty"`
+}
+
+// KeybindComponents represents the parsed components of a keybind
+type KeybindComponents struct {
+	Keys   string `json:"keys"`
+	Action string `json:"action"`
+}
+
 // DefaultValidationRules returns common validation rules for typical apps
 func DefaultValidationRules() map[string]ValidationRule {
 	return map[string]ValidationRule{

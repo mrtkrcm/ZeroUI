@@ -17,6 +17,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
+	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 	"github.com/spf13/viper"
 )
 
@@ -143,26 +144,55 @@ func (e *Engine) Toggle(appName, key, value string) error {
 			WithSuggestions("Check if the config file exists and is readable")
 	}
 
+	// Store original config for diff calculation
+	originalConfig := targetConfig.All()
+
 	// Set the value
 	if err := targetConfig.Set(key, convertedValue); err != nil {
 		return errors.Wrap(errors.ConfigWriteError, "failed to set config value", err).
 			WithApp(appName).WithField(key).WithValue(value)
 	}
 
+	// Calculate diff for preview
+	differ := configextractor.NewConfigDiffer()
+	newConfig := targetConfig.All()
+	diff := differ.DiffConfigurations(originalConfig, newConfig)
+
 	if viper.GetBool("dry-run") {
 		log.Info("Would set configuration", map[string]interface{}{
 			"converted_value": convertedValue,
+			"changes":         diff.Summary(),
 		})
+
+		// Show diff in verbose mode
+		if viper.GetBool("verbose") {
+			fmt.Println("\nConfiguration changes preview:")
+			fmt.Print(diff.FormatDiff())
+		}
 		return nil
 	}
 
-	// Create safe operation with automatic backup
+	// Create safe operation with automatic backup and validation
 	configPath := e.expandPath(appConfig.Path)
 
-	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	// Create a validator adapter that converts our validation system to the recovery interface
+	validatorAdapter := &ghosttyValidatorAdapter{
+		appName: appName,
+		engine:  e,
+	}
+
+	safeOp, err := recovery.NewSafeOperationWithValidator(configPath, appName, validatorAdapter)
 	if err != nil {
 		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
 			WithApp(appName)
+	}
+
+	// Pre-save validation checkpoint
+	configMap := targetConfig.All()
+	if err := safeOp.PreSaveCheckpoint(configMap); err != nil {
+			return errors.Wrap(errors.ValidationError, "pre-save validation failed", err).
+		WithApp(appName).
+		WithSuggestions("Check configuration values and field names")
 	}
 
 	// Save the config
@@ -176,9 +206,15 @@ func (e *Engine) Toggle(appName, key, value string) error {
 			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
 	}
 
-	// Commit the operation (remove backup)
+	// Commit the operation (includes post-save verification)
 	if err := safeOp.Commit(); err != nil {
-		log.Error("Failed to cleanup backup", err)
+		// If commit fails, attempt rollback
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback after commit failure", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "post-save verification failed", err).
+			WithApp(appName).
+			WithSuggestions("Configuration may be corrupted", "Check saved file integrity")
 	}
 
 	// Cleanup old backups
@@ -299,6 +335,9 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		return fmt.Errorf("failed to load target config: %w", err)
 	}
 
+	// Store original config for diff calculation
+	originalConfig := targetConfig.All()
+
 	// Apply all values from the preset
 	for key, value := range preset.Values {
 		fieldConfig, exists := appConfig.Fields[key]
@@ -322,10 +361,22 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		_ = targetConfig.Set(key, convertedValue)
 	}
 
+	// Calculate diff for preview
+	differ := configextractor.NewConfigDiffer()
+	newConfig := targetConfig.All()
+	diff := differ.DiffConfigurations(originalConfig, newConfig)
+
 	if viper.GetBool("dry-run") {
 		log.Info("Would apply preset", map[string]interface{}{
-			"values": preset.Values,
+			"values":  preset.Values,
+			"changes": diff.Summary(),
 		})
+
+		// Show diff in verbose mode
+		if viper.GetBool("verbose") {
+			fmt.Println("\nPreset application preview:")
+			fmt.Print(diff.FormatDiff())
+		}
 		return nil
 	}
 
@@ -634,4 +685,33 @@ func (e *Engine) expandPath(path string) string {
 	e.pathMutex.Unlock()
 
 	return expanded
+}
+
+// ghosttyValidatorAdapter adapts the ghostty validation system to the recovery ConfigValidator interface
+type ghosttyValidatorAdapter struct {
+	appName string
+	engine  *Engine
+}
+
+// ValidateConfig validates the configuration using ghostty-specific validation rules
+func (v *ghosttyValidatorAdapter) ValidateConfig(config map[string]interface{}) recovery.ValidationResult {
+	// For ghostty configs, use the schema validator
+	if strings.ToLower(v.appName) == "ghostty" {
+		validator := configextractor.NewGhosttySchemaValidator()
+		result := validator.ValidateConfig(config)
+
+		// Convert the result format
+		var errors []string
+		if !result.Valid {
+			errors = result.Errors
+		}
+
+		return recovery.ValidationResult{
+			Valid:  result.Valid,
+			Errors: errors,
+		}
+	}
+
+	// For other apps, use basic validation (could be extended)
+	return recovery.ValidationResult{Valid: true}
 }
