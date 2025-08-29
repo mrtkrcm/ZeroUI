@@ -1,4 +1,4 @@
-package appcomponents
+package app
 
 import (
 	"context"

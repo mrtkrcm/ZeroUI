@@ -75,46 +75,105 @@ func (m *Model) View() string {
 	return content
 }
 
-// renderListView renders the application list view
+// renderListView renders the application list view with enhanced UI integration
 func (m *Model) renderListView() string {
+	// Initialize UI manager if needed
+	if m.uiManager != nil && !m.uiManager.IsInitialized() {
+		m.uiManager.Initialize(m.width, m.height)
+	}
+
 	if m.appList == nil {
+		if m.uiManager != nil {
+			return m.uiManager.CreateErrorMessage("Application list not initialized")
+		}
 		return m.styles.Error.Render("Application list not initialized")
 	}
 
-	// Get the list view
+	// Get the list view with proper styling
 	listView := m.appList.View()
 
-	// Add header
-	header := m.styles.Title.Render("🎯 ZeroUI - Application Manager")
+	// Enhanced header with status information using UI manager
+	appCount := m.appList.GetItemCount()
+	selectedIndex := m.appList.Index()
+	var statusInfo string
+	if selectedIndex >= 0 && selectedIndex < appCount {
+		if item := m.appList.SelectedItem(); item != nil {
+			// Extract app name from the item
+			if appItem, ok := item.(interface{ Title() string }); ok {
+				appName := appItem.Title()
+				statusInfo = fmt.Sprintf(" • Selected: %s", appName)
+			}
+		}
+	}
 
-	// Add footer with hints
-	footer := m.styles.Help.Render("↑/↓: Navigate • Enter: Select • ?: Help • q: Quit")
+	var header string
+	if m.uiManager != nil {
+		header = m.uiManager.CreateHeader(
+			fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo),
+			"")
+	} else {
+		headerText := fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo)
+		header = m.styles.Title.Render(headerText)
+	}
 
-	// Wrap each major piece individually to ensure no single element exceeds the terminal width.
-	// This prevents automated snapshot tests from reporting overflow when components render
-	// long lines (for example a long list item).
-	headerWrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(header)
-	listWrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(listView)
-	footerWrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(footer)
+	// Enhanced footer with contextual information using UI manager
+	var footer string
+	if m.appList.IsFiltered() {
+		filteredCount := len(m.appList.VisibleItems())
+		footerText := fmt.Sprintf("↑/↓: Navigate • Enter: Select • /: Clear Filter (%d/%d) • ?: Help • q: Quit",
+			filteredCount, appCount)
+		if m.uiManager != nil {
+			footer = m.uiManager.CreateFooter(footerText, "", "")
+		} else {
+			footer = m.styles.Help.Render(footerText)
+		}
+	} else {
+		footerText := fmt.Sprintf("↑/↓: Navigate • Enter: Select • /: Filter • ?: Help • q: Quit (%d)", appCount)
+		if m.uiManager != nil {
+			footer = m.uiManager.CreateFooter(footerText, "", "")
+		} else {
+			footer = m.styles.Help.Render(footerText)
+		}
+	}
 
-	// Combine with proper spacing using the wrapped pieces
+	// Status indicators for screenshot integration
+	var statusIndicator string
+	if m.screenshotComp != nil && m.screenshotComp.IsCapturing() {
+		if m.uiManager != nil {
+			statusIndicator = m.uiManager.CreateInfoMessage("Capturing screenshot...")
+		} else {
+			statusIndicator = m.styles.Info.Render("📸 Capturing screenshot...")
+		}
+	}
+
+	// Combine all elements with improved spacing and layout
+	elements := []string{header, ""}
+
+	if statusIndicator != "" {
+		elements = append(elements, statusIndicator, "")
+	}
+
+	elements = append(elements, listView, "", footer)
+
 	content := lipgloss.JoinVertical(
 		lipgloss.Top,
-		headerWrapped,
-		"",
-		listWrapped,
-		"",
-		footerWrapped,
+		elements...,
 	)
 
-	// Finally ensure the combined content respects the model width and return placed content.
-	finalWrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(content)
+	// Ensure proper width constraints and centering
+	finalContent := lipgloss.NewStyle().
+		MaxWidth(m.width).
+		Align(lipgloss.Left).
+		Render(content)
+
 	return lipgloss.Place(
 		m.width,
 		m.height,
 		lipgloss.Center,
-		lipgloss.Center,
-		finalWrapped,
+		lipgloss.Top,
+		finalContent,
+		lipgloss.WithWhitespaceChars("·"),
+		lipgloss.WithWhitespaceForeground(m.styles.Muted.GetForeground()),
 	)
 }
 

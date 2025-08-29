@@ -1,3 +1,21 @@
+---
+current_app: ""
+description: "App Grid View"
+metadata:
+  showingHelp: false
+  hasError: false
+  currentApp: 
+  state: list_view
+screen_size:
+  height: 40
+  width: 120
+state: "list_view"
+test_name: "list_view_tests"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Application start"
+  - "View app grid"
+---
                                                                                                                         
                                     🎯 ZeroUI - Application Manager                                                     
                                                                                                                         

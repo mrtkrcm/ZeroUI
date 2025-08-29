@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 )
 
 // NewTestModel creates a model for testing with a default logger
@@ -23,7 +23,7 @@ func NewTestModel(engine *toggle.Engine, initialApp string) (*Model, error) {
 
 	// Initialize help system so tests that call ShowPage/View won't hit nil.
 	// Use the components constructor which provides sensible defaults.
-	model.helpSystem = components.NewGlamourHelp()
+	model.helpSystem = display.NewGlamourHelp()
 
 	// Ensure component sizes are set for deterministic test snapshots.
 	// If tests haven't set explicit sizes, provide reasonable defaults.

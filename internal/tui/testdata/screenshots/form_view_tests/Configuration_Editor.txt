@@ -1,3 +1,22 @@
+---
+current_app: "ghostty"
+description: "Configuration Editor"
+metadata:
+  showingHelp: false
+  hasError: false
+  currentApp: ghostty
+  state: form_view
+screen_size:
+  height: 40
+  width: 120
+state: "form_view"
+test_name: "form_view_tests"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Select ghostty"
+  - "Enter config mode"
+  - "View configuration form"
+---
                                                                                                                       
   ⚙️  ghostty Configuration                                                                                           
                                                                                                                       

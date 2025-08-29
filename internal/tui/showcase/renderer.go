@@ -11,7 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	core "github.com/mrtkrcm/ZeroUI/internal/tui/components/core"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/themes"
 )
 
@@ -116,7 +116,7 @@ func (r *ShowcaseRenderer) RenderSidebar(sectionList list.Model, width, height i
 		help,
 	)
 
-	return components.SidebarStyle.
+	return core.SidebarStyle.
 		Width(sidebarWidth).
 		Height(height).
 		Render(sidebar)

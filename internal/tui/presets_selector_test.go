@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 )
 
 func TestPresetsSelectorFlow(t *testing.T) {

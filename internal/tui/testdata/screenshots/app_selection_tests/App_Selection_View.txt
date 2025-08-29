@@ -1,3 +1,21 @@
+---
+current_app: ""
+description: "App Selection View"
+metadata:
+  state: list_view
+  showingHelp: false
+  hasError: false
+  currentApp: 
+screen_size:
+  height: 40
+  width: 120
+state: "list_view"
+test_name: "app_selection_tests"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Navigate to app selection"
+  - "View selectable apps"
+---
                                                                                                                         
                                                                                                                         
                                                                                                                         

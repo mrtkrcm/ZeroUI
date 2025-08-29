@@ -9,7 +9,7 @@ screen_size:
   width: 120
 state: "help"
 test_name: "manual_screenshot_demo"
-timestamp: "2025-08-25 05:49:10"
+timestamp: "2025-08-25 06:18:32"
 user_actions:
   - "Press '?' for help"
 

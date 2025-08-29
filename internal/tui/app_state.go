@@ -11,8 +11,10 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
-	appcomponents "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
+	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
+	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
+	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/keybindings"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
@@ -31,13 +33,22 @@ type Model struct {
 	logger       *logging.CharmLogger
 	errorHandler *ErrorHandler
 
-	// Modern components using Charm libraries
-	appList        *appcomponents.ApplicationListModel
-	appScanner     *components.AppScannerV2        // Improved scanner
-	tabbedConfig   *components.TabbedConfigModel   // Basic tabbed interface
-	enhancedConfig *components.EnhancedConfigModel  // Enhanced config editor
-	helpSystem     *components.GlamourHelpModel
-	presetSel      *components.PresetsSelector
+	// Modern components using unified component system
+	appList        *app.ApplicationListModel
+	appScanner     *app.AppScannerV2        // Improved scanner
+	tabbedConfig   *forms.TabbedConfigModel   // Basic tabbed interface
+	enhancedConfig *forms.EnhancedConfigModel  // Enhanced config editor
+	helpSystem     *display.GlamourHelpModel
+	presetSel      *app.PresetsSelector
+
+	// Unified component system
+	componentManager   *ui.ComponentManager
+	screenshotComp     *ui.ScreenshotComponent
+	uiManager          *ui.UIIntegrationManager
+	enhancedAppList    *ui.EnhancedApplicationList
+
+	// UI implementation selection
+	uiSelector         *UISelector
 
 	// UI state
 	keyMap      keybindings.AppKeyMap
@@ -69,7 +80,7 @@ type Model struct {
 // RefreshAppsMsg signals a UI-level request to refresh the apps list.
 // Tests and some components send this message to request a refresh; it's
 // handled by the model (debounced) via the helper methods added below.
-type RefreshAppsMsg = appcomponents.RefreshAppsMsg
+type RefreshAppsMsg = app.RefreshAppsMsg
 
 // NewModel creates a new model for the application
 func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLogger) (*Model, error) {
@@ -80,16 +91,21 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 	// Initialize modern components
 	// Create a help system and a basic config form so tests and the UI have
 	// sensible defaults even when no app is loaded yet.
-	helpModel := components.NewGlamourHelp()
+	helpModel := display.NewGlamourHelp()
 	// Get available apps from engine
 	_, err := engine.GetApps()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get apps: %w", err)
 	}
-	appList := appcomponents.NewApplicationList()
-	appScanner := components.NewAppScannerV2()
+	appList := app.NewApplicationList()
+	appScanner := app.NewAppScannerV2()
 	stateMachine := NewStateMachine(ListView)
 	errorHandler := NewErrorHandler(logger)
+
+	// Initialize unified component system
+	componentManager := ui.NewComponentManager()
+	screenshotComp := ui.NewScreenshotComponent("testdata/screenshots")
+	uiManager := ui.NewUIIntegrationManager()
 
 	// Create base model
 	model := &Model{
@@ -103,12 +119,15 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		appScanner:   appScanner,
 		errorHandler: errorHandler,
 		// Initialize help system
-		helpSystem:    helpModel,
-		presetSel:     components.NewPresetsSelector(),
-		renderCache:   make(map[ViewState]string),
-		eventBatcher:  NewEventBatcher(),
-		logger:        logger,
-		ctx:           context.Background(),
+		helpSystem:       helpModel,
+		presetSel:        app.NewPresetsSelector(),
+		componentManager: componentManager,
+		screenshotComp:   screenshotComp,
+		uiManager:        uiManager,
+		renderCache:      make(map[ViewState]string),
+		eventBatcher:     NewEventBatcher(),
+		logger:           logger,
+		ctx:              context.Background(),
 		// sensible default debounce/cache duration for tests and UI refreshes
 		cacheDuration: 300 * time.Millisecond,
 	}
@@ -221,8 +240,8 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 	}
 
 	// Create configuration interfaces
-	m.tabbedConfig = components.NewTabbedConfig(appName)
-	m.enhancedConfig = components.NewEnhancedConfig(appName)
+	m.tabbedConfig = forms.NewTabbedConfig(appName)
+	m.enhancedConfig = forms.NewEnhancedConfig(appName)
 	
 	// Set initial size to prevent flicker when switching views
 	if m.width > 0 && m.height > 0 {
@@ -248,9 +267,9 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 	}
 
 	// Convert config fields to the format expected by components
-	var configFields []components.ConfigField
+	var configFields []forms.ConfigField
 	for key, field := range appConfig.Fields {
-		configField := components.ConfigField{
+		configField := forms.ConfigField{
 			Key:         key,
 			Description: field.Description,
 			Required:    false, // AppConfig doesn't carry required info; validator/schema can enrich later
@@ -280,13 +299,13 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 				// Fall back to type declared in AppConfig if provided.
 				switch field.Type {
 				case "choice":
-					configField.Type = components.FieldTypeSelect
+					configField.Type = forms.FieldTypeSelect
 				case "boolean":
-					configField.Type = components.FieldTypeBool
+					configField.Type = forms.FieldTypeBool
 				case "number":
-					configField.Type = components.FieldTypeInt
+					configField.Type = forms.FieldTypeInt
 				default:
-					configField.Type = components.FieldTypeString
+					configField.Type = forms.FieldTypeString
 				}
 			}
 		}
@@ -295,8 +314,8 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		if len(field.Values) > 0 {
 			configField.Options = field.Values
 			// Ensure select type if not already set by runtime/default
-			if configField.Type == components.FieldTypeString {
-				configField.Type = components.FieldTypeSelect
+			if configField.Type == forms.FieldTypeString {
+				configField.Type = forms.FieldTypeSelect
 			}
 		}
 
@@ -312,7 +331,7 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 
 	// Also create preset selector
 	if len(appConfig.Presets) > 0 {
-		m.presetSel = components.NewPresetsSelector()
+		m.presetSel = app.NewPresetsSelector()
 	}
 
 	m.logger.Info("App config loaded successfully",
@@ -432,16 +451,16 @@ func (m *Model) isStatusActive() bool {
 }
 
 // inferFieldType determines the field type from the value
-func inferFieldType(value interface{}) components.ConfigFieldType {
+func inferFieldType(value interface{}) forms.ConfigFieldType {
 	switch value.(type) {
 	case bool:
-		return components.FieldTypeBool
+		return forms.FieldTypeBool
 	case int, int32, int64:
-		return components.FieldTypeInt
+		return forms.FieldTypeInt
 	case float32, float64:
-		return components.FieldTypeFloat
+		return forms.FieldTypeFloat
 	default:
-		return components.FieldTypeString
+		return forms.FieldTypeString
 	}
 }
 
@@ -470,7 +489,7 @@ func (m *Model) HandleRefreshApps() {
 	// Trigger component refresh if component exists
 	if m.appList != nil {
 		// Create a RefreshAppsMsg using the same type as defined in the component
-		var refreshMsg appcomponents.RefreshAppsMsg
+		var refreshMsg app.RefreshAppsMsg
 		updatedModel, cmd := m.appList.Update(refreshMsg)
 		// ApplicationListModel.Update returns (*ApplicationListModel, tea.Cmd) so we can
 		// assign the returned pointer directly if non-nil.

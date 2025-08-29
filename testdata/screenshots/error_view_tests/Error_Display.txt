@@ -1,0 +1,57 @@
+---
+current_app: ""
+description: "Error Display"
+metadata:
+  hasError: true
+  showingHelp: false
+screen_size:
+  height: 40
+  width: 120
+state: "list_view"
+test_name: "error_view_tests"
+timestamp: "2025-08-25 06:14:40"
+user_actions:
+  - "Trigger configuration error"
+  - "View error message"
+
+---
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                   ❌ Error: test error: unable to load configuration                                   
+                                                                                                                        
+                                          Press 'q' to quit or 'Esc' to go back                                         
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        

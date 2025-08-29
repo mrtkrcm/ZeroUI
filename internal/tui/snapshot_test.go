@@ -1,13 +1,11 @@
 package tui
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +13,8 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
+	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/registry"
 )
 
@@ -228,8 +227,8 @@ func TestSnapshotFormView(t *testing.T) {
 
 	// Initialize form components for testing - use a simpler approach
 	// Create basic form components without loading actual config
-	model.enhancedConfig = components.NewEnhancedConfig("ghostty")
-	model.tabbedConfig = components.NewTabbedConfig("ghostty")
+	model.enhancedConfig = forms.NewEnhancedConfig("ghostty")
+	model.tabbedConfig = forms.NewTabbedConfig("ghostty")
 
 	// Set basic size
 	if model.enhancedConfig != nil {
@@ -450,47 +449,86 @@ func saveSnapshot(t *testing.T, filename, content string) {
 func saveScreenshot(t *testing.T, testName, description string, model *Model, actions ...string) {
 	t.Helper()
 
-	// Create capture directory
-	captureDir := filepath.Join("testdata", "screenshots", testName)
-	ensureDir(t, captureDir)
+	// Use the new screenshot component for better integration
+	captureDir := filepath.Join("testdata", "screenshots")
+	screenshotComp := ui.NewScreenshotComponent(captureDir)
+	screenshotComp.SetSize(model.width, model.height)
 
-	// Get screen content from real TUI model with error recovery
-	screenText := safeView(model)
+	// Create a wrapper interface to extract model information
+	modelWrapper := &ModelWrapper{model}
 
-	// Create capture info with real component data
-	capture := map[string]interface{}{
-		"timestamp":    time.Now().Format("2006-01-02 15:04:05"),
-		"test_name":    testName,
-		"description":  description,
-		"screen_size":  map[string]int{"width": model.width, "height": model.height},
-		"state":        getStateName(model.state),
-		"current_app":  model.currentApp,
-		"user_actions": actions,
-		"screen_text":  screenText,
-		"metadata": map[string]interface{}{
-			"showingHelp": model.showingHelp,
-			"hasError":    model.err != nil,
-			"currentApp":  model.currentApp,
-			"state":       getStateName(model.state),
-		},
+	// Try to use enhanced integration if components are available
+	var err error
+
+	// For list view tests, try to integrate with application list
+	if strings.Contains(testName, "list_view") {
+		if appList := getApplicationListComponent(model); appList != nil {
+			integrator := screenshotComp.IntegrateWithComponents().WithApplicationList(appList)
+			err = integrator.Capture(modelWrapper, description, testName, actions...)
+		} else {
+			err = screenshotComp.Capture(modelWrapper, description, testName, actions...)
+		}
+	} else {
+		// Use standard capture for other tests
+		err = screenshotComp.Capture(modelWrapper, description, testName, actions...)
 	}
 
-	// Add error info if present
-	if model.err != nil {
-		capture["error"] = model.err.Error()
+	if err != nil {
+		t.Errorf("Failed to capture screenshot: %v", err)
+		return
 	}
 
-	// Save as JSON for structured data
 	captureName := strings.ReplaceAll(description, " ", "_")
-	jsonPath := filepath.Join(captureDir, fmt.Sprintf("%s.json", captureName))
-	jsonData, _ := json.MarshalIndent(capture, "", "  ")
-	writeFile(t, jsonPath, jsonData, FilePerm)
-
-	// Save screen text for easy viewing
-	txtPath := filepath.Join(captureDir, fmt.Sprintf("%s.txt", captureName))
-	writeFile(t, txtPath, []byte(screenText), FilePerm)
-
+	txtPath := filepath.Join(captureDir, testName, fmt.Sprintf("%s.txt", captureName))
 	t.Logf("Screen captured: %s", txtPath)
+}
+
+// getApplicationListComponent attempts to extract the application list component from the model
+func getApplicationListComponent(model *Model) interface{} {
+	// This is a helper function that tries to access the application list component
+	// In a real implementation, this would depend on the model's structure
+	return nil // For now, return nil to use the standard capture method
+}
+
+// ModelWrapper provides a consistent interface for the screenshot component
+type ModelWrapper struct {
+	model *Model
+}
+
+func (m *ModelWrapper) Init() tea.Cmd {
+	return nil
+}
+
+func (m *ModelWrapper) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
+func (m *ModelWrapper) View() string {
+	return safeView(m.model)
+}
+
+func (m *ModelWrapper) GetState() string {
+	return getStateName(m.model.state)
+}
+
+func (m *ModelWrapper) GetCurrentApp() string {
+	return m.model.currentApp
+}
+
+func (m *ModelWrapper) GetWidth() int {
+	return m.model.width
+}
+
+func (m *ModelWrapper) GetHeight() int {
+	return m.model.height
+}
+
+func (m *ModelWrapper) IsShowingHelp() bool {
+	return m.model.showingHelp
+}
+
+func (m *ModelWrapper) GetError() error {
+	return m.model.err
 }
 
 // Helper function to get state name
@@ -669,4 +707,17 @@ func TestUILayoutCoverage(t *testing.T) {
 			vs.validate(t, snapshot)
 		})
 	}
+}
+
+// formatActions formats the actions array for YAML frontmatter
+func formatActions(actions []string) string {
+	if len(actions) == 0 {
+		return "  - \"No actions\""
+	}
+
+	var result strings.Builder
+	for _, action := range actions {
+		result.WriteString(fmt.Sprintf("  - \"%s\"\n", action))
+	}
+	return result.String()
 }

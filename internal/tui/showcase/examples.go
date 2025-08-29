@@ -8,7 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	core "github.com/mrtkrcm/ZeroUI/internal/tui/components/core"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/themes"
 )
 
@@ -16,7 +17,7 @@ import (
 type ExampleRenderer struct {
 	colorTheme      *themes.DefaultColorTheme
 	typographyTheme *themes.DefaultTypographyTheme
-	spacing         *components.SpacingSystem
+	spacing         *core.SpacingSystem
 }
 
 // NewExampleRenderer creates a new example renderer
@@ -24,7 +25,7 @@ func NewExampleRenderer() *ExampleRenderer {
 	return &ExampleRenderer{
 		colorTheme:      themes.NewDefaultColorTheme(),
 		typographyTheme: themes.NewDefaultTypographyTheme(),
-		spacing:         components.NewSpacingSystem(),
+		spacing:         core.NewSpacingSystem(),
 	}
 }
 
@@ -66,7 +67,7 @@ Navigation:
 - Press Q to quit the showcase
 `)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -123,7 +124,7 @@ func (e *ExampleRenderer) RenderColors(width int) string {
 	// Color codes
 	colorInfo := themes.CodeStyle.Width(width - 4).Render(themes.GetColorInfo())
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -150,7 +151,7 @@ func (e *ExampleRenderer) RenderTypography(width int) string {
 
 	titleDemo, textDemo, emphasisDemo, codeDemo := themes.GetTypographyDemo()
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -177,7 +178,7 @@ func (e *ExampleRenderer) RenderComponents(width int, progressVal float64, progr
 	title := themes.ContentTitleStyle.Width(width - 4).Render("🧩 UI Components Library")
 
 	// List component demo
-	listDemo := components.ComponentBoxStyle.Render(
+	listDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("📋 List Component"),
@@ -190,13 +191,13 @@ func (e *ExampleRenderer) RenderComponents(width int, progressVal float64, progr
 	)
 
 	// Button-like elements
-	buttonDemo := components.ComponentBoxStyle.Render(components.GetButtonsExample())
+	buttonDemo := core.ComponentBoxStyle.Render(forms.GetButtonsExample())
 
 	// Input component
-	inputDemo := components.ComponentBoxStyle.Render(components.GetInputExample())
+	inputDemo := core.ComponentBoxStyle.Render(forms.GetInputExample())
 
 	// Progress bar
-	progressDemo := components.ComponentBoxStyle.Render(
+	progressDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("📊 Progress Bar"),
@@ -213,7 +214,7 @@ func (e *ExampleRenderer) RenderComponents(width int, progressVal float64, progr
 		lipgloss.JoinHorizontal(lipgloss.Top, inputDemo, " ", progressDemo),
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -230,13 +231,13 @@ func (e *ExampleRenderer) RenderLayout(width int) string {
 	title := themes.ContentTitleStyle.Width(width - 4).Render("📐 Layout Patterns & Spacing")
 
 	// Spacing demo
-	spacingDemo := components.LayoutBoxStyle.Render(components.GetSpacingDemo())
+	spacingDemo := core.LayoutBoxStyle.Render(core.GetSpacingDemo())
 
 	// Alignment demo
-	alignmentDemo := components.LayoutBoxStyle.Render(components.GetAlignmentDemo())
+	alignmentDemo := core.LayoutBoxStyle.Render(core.GetAlignmentDemo())
 
 	// Container demo
-	containerDemo := components.LayoutBoxStyle.Render(components.GetContainerDemo())
+	containerDemo := core.LayoutBoxStyle.Render(core.GetContainerDemo())
 
 	layouts := lipgloss.JoinHorizontal(
 		lipgloss.Top,
@@ -247,7 +248,7 @@ func (e *ExampleRenderer) RenderLayout(width int) string {
 		containerDemo,
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -264,7 +265,7 @@ func (e *ExampleRenderer) RenderInteractive(width int, textInput textinput.Model
 	title := themes.ContentTitleStyle.Width(width - 4).Render("⚡ Interactive Elements")
 
 	// Live text input
-	inputDemo := components.ComponentBoxStyle.Render(
+	inputDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("📝 Live Text Input"),
@@ -275,7 +276,7 @@ func (e *ExampleRenderer) RenderInteractive(width int, textInput textinput.Model
 	)
 
 	// Key bindings demo
-	keysDemo := components.ComponentBoxStyle.Render(
+	keysDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("⌨️ Key Bindings"),
@@ -289,7 +290,7 @@ func (e *ExampleRenderer) RenderInteractive(width int, textInput textinput.Model
 	)
 
 	// Mouse interaction demo
-	mouseDemo := components.ComponentBoxStyle.Render(
+	mouseDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("🖱️ Mouse Support"),
@@ -308,7 +309,7 @@ func (e *ExampleRenderer) RenderInteractive(width int, textInput textinput.Model
 		lipgloss.JoinHorizontal(lipgloss.Top, keysDemo, " ", mouseDemo),
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -325,7 +326,7 @@ func (e *ExampleRenderer) RenderAnimations(width int, spinner spinner.Model, pro
 	title := themes.ContentTitleStyle.Width(width - 4).Render("🎬 Animations & Loading States")
 
 	// Spinner demo
-	spinnerDemo := components.ComponentBoxStyle.Render(
+	spinnerDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("🔄 Spinners"),
@@ -339,7 +340,7 @@ func (e *ExampleRenderer) RenderAnimations(width int, spinner spinner.Model, pro
 	)
 
 	// Progress animation
-	progressDemo := components.ComponentBoxStyle.Render(
+	progressDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("📈 Progress Animation"),
@@ -355,7 +356,7 @@ func (e *ExampleRenderer) RenderAnimations(width int, spinner spinner.Model, pro
 		cursor = " "
 	}
 
-	cursorDemo := components.ComponentBoxStyle.Render(
+	cursorDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("💫 Cursor Animation"),
@@ -371,7 +372,7 @@ func (e *ExampleRenderer) RenderAnimations(width int, spinner spinner.Model, pro
 		lipgloss.JoinHorizontal(lipgloss.Top, progressDemo, " ", cursorDemo),
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -388,7 +389,7 @@ func (e *ExampleRenderer) RenderErrorStates(width int) string {
 	title := themes.ContentTitleStyle.Width(width - 4).Render("❌ Error States & Feedback")
 
 	// Error message
-	errorDemo := components.ComponentBoxStyle.Render(
+	errorDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("🚨 Error Messages"),
@@ -399,7 +400,7 @@ func (e *ExampleRenderer) RenderErrorStates(width int) string {
 	)
 
 	// Success feedback
-	successDemo := components.ComponentBoxStyle.Render(
+	successDemo := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.ComponentTitleStyle.Render("✅ Success States"),
@@ -410,7 +411,7 @@ func (e *ExampleRenderer) RenderErrorStates(width int) string {
 	)
 
 	// Validation states
-	validationDemo := components.ComponentBoxStyle.Render(components.GetValidationExample())
+	validationDemo := core.ComponentBoxStyle.Render(forms.GetValidationExample())
 
 	states := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -419,7 +420,7 @@ func (e *ExampleRenderer) RenderErrorStates(width int) string {
 		lipgloss.JoinHorizontal(lipgloss.Top, successDemo, " ", validationDemo),
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -436,10 +437,10 @@ func (e *ExampleRenderer) RenderBoxDrawing(width int) string {
 	title := themes.ContentTitleStyle.Width(width - 4).Render("📦 Box Drawing & Borders")
 
 	// Basic boxes
-	basicBox, roundedBox, thickBox, doubleBox := components.GetBoxDrawingDemo()
+	basicBox, roundedBox, thickBox, doubleBox := core.GetBoxDrawingDemo()
 
 	// Complex layout with mixed borders
-	complexDemo := components.GetComplexLayoutDemo()
+	complexDemo := core.GetComplexLayoutDemo()
 
 	boxes := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -453,7 +454,7 @@ func (e *ExampleRenderer) RenderBoxDrawing(width int) string {
 		complexDemo,
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(
@@ -470,7 +471,7 @@ func (e *ExampleRenderer) RenderRealExamples(width int) string {
 	title := themes.ContentTitleStyle.Width(width - 4).Render("🚀 Real ZeroUI Examples")
 
 	// App selection example (from actual TUI)
-	appExample := components.ComponentBoxStyle.Render(
+	appExample := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.TitleStyle.Render("ZeroUI - Select Application"),
@@ -485,7 +486,7 @@ func (e *ExampleRenderer) RenderRealExamples(width int) string {
 	)
 
 	// Config editing example
-	configExample := components.ComponentBoxStyle.Render(
+	configExample := core.ComponentBoxStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			themes.TitleStyle.Render("ZeroUI - ghostty"),
@@ -508,7 +509,7 @@ func (e *ExampleRenderer) RenderRealExamples(width int) string {
 		configExample,
 	)
 
-	return components.ContentBoxStyle.
+	return core.ContentBoxStyle.
 		Width(width).
 		Render(
 			lipgloss.JoinVertical(

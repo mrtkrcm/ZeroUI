@@ -1,0 +1,28 @@
+---
+current_app: "ghostty"
+description: "Integrated Form"
+metadata:
+  formValid: true
+  componentType: form
+  showingHelp: false
+  hasError: false
+  currentApp: ghostty
+  state: form
+  currentField: font-family
+  fieldCount: 5
+screen_size:
+  height: 40
+  width: 120
+state: "form"
+test_name: "demo_form"
+timestamp: "2025-08-25 06:28:34"
+user_actions:
+  - "Form component integration"
+---
+⚙️ Configuration Editor
+
+App: ghostty
+Setting: font-family
+Value: JetBrains Mono
+
+[Save] [Cancel] [Help]

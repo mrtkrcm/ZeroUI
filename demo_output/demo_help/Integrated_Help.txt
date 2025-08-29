@@ -1,0 +1,31 @@
+---
+current_app: ""
+description: "Integrated Help"
+metadata:
+  currentApp: 
+  state: help
+  helpVisible: true
+  helpItemCount: 5
+  componentType: help
+  helpContext: main
+  showingHelp: true
+  hasError: false
+screen_size:
+  height: 40
+  width: 120
+state: "help"
+test_name: "demo_help"
+timestamp: "2025-08-25 06:28:34"
+user_actions:
+  - "Help component integration"
+---
+📖 Help & Shortcuts
+
+Navigation:
+  ↑↓    Move selection
+  Enter  Select/Confirm
+  Esc    Cancel/Back
+  ?      Show this help
+  q      Quit application
+
+[Close Help]

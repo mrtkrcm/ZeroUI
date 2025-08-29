@@ -139,16 +139,33 @@
     <script>
         // Screenshot files to load
         const screenshotFiles = [
+            // Manual demo screenshots
             'manual_demo/initial_grid.txt',
             'manual_demo/app_selection.txt',
             'manual_demo/config_editor.txt',
-            'manual_demo/help_overlay.txt'
+            'manual_demo/help_overlay.txt',
+
+            // Automated test screenshots
+            'list_view_tests/App_Grid_View.txt',
+            'app_selection_tests/App_Selection_View.txt',
+            'form_view_tests/Configuration_Editor.txt',
+            'help_view_tests/Help_Overlay.txt',
+            'error_view_tests/Error_Display.txt',
+            'component_states/Initial_Application_State.txt',
+            'component_states/Help_Overlay_Active.txt',
+            'component_states/Application_Selected.txt',
+            'responsive_tests/Responsive_small_terminal.txt',
+            'responsive_tests/Responsive_medium_terminal.txt',
+            'responsive_tests/Responsive_large_terminal.txt',
+            'responsive_tests/Responsive_wide_terminal.txt'
         ];
 
         // State colors for different screenshot types
         const stateColors = {
             'list': '#00ff88',
+            'list_view': '#00ff88',
             'app_selection': '#0088ff',
+            'form_view': '#ffff44',
             'config_editor': '#ffff44',
             'help_overlay': '#44ffff'
         };

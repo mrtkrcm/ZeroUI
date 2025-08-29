@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-08-25 06:28:34",
+  "description": "Integrated Form",
+  "test_name": "demo_form",
+  "screen_size": {
+    "height": 40,
+    "width": 120
+  },
+  "state": "form",
+  "current_app": "ghostty",
+  "user_actions": [
+    "Form component integration"
+  ],
+  "screen_text": "⚙️ Configuration Editor\n\nApp: ghostty\nSetting: font-family\nValue: JetBrains Mono\n\n[Save] [Cancel] [Help]",
+  "metadata": {
+    "componentType": "form",
+    "currentApp": "ghostty",
+    "currentField": "font-family",
+    "fieldCount": 5,
+    "formValid": true,
+    "hasError": false,
+    "showingHelp": false,
+    "state": "form"
+  }
+}

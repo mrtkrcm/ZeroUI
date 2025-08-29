@@ -1,0 +1,26 @@
+---
+current_app: ""
+description: "Basic App List"
+metadata:
+  showingHelp: false
+  hasError: false
+  currentApp: 
+  state: app_list
+screen_size:
+  height: 40
+  width: 120
+state: "app_list"
+test_name: "demo_basic"
+timestamp: "2025-08-25 06:28:34"
+user_actions:
+  - "Application start"
+---
+🎯 ZeroUI - Application Manager
+
+Applications (3)
+
+• ghostty    Terminal emulator    [Active]
+• zed        Code editor         [Active]
+• mise       Tool version manager [Active]
+
+↑/↓ Navigate • Enter Select • ? Help • q Quit

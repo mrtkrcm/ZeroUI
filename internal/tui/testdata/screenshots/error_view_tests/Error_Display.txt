@@ -1,3 +1,21 @@
+---
+current_app: ""
+description: "Error Display"
+metadata:
+  state: list_view
+  showingHelp: false
+  hasError: true
+  currentApp: 
+screen_size:
+  height: 40
+  width: 120
+state: "list_view"
+test_name: "error_view_tests"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Trigger configuration error"
+  - "View error message"
+---
                                                                                                                         
                                                                                                                         
                                                                                                                         

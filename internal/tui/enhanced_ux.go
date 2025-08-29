@@ -4,66 +4,30 @@ package tui
 // that have been moved to separate files for better organization.
 
 import (
-	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
+	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 )
 
 // Re-export types for backward compatibility
 type (
-	ToastLevel       = components.ToastLevel
-	Toast            = components.Toast
-	ToastTimeoutMsg  = components.ToastTimeoutMsg
-	SearchModel      = components.SearchModel
-	StatusBar        = components.EnhancedStatusBar
-	ContextualHelp   = components.ContextualHelp
-	HelpItem         = components.HelpItem
-	LoadingIndicator = components.LoadingIndicator
-	LoadingTickMsg   = components.LoadingTickMsg
-	EnhancedKeyMap   = components.EnhancedKeyMap
+	ToastLevel      = display.ToastLevel
+	Toast           = display.Toast
+	ToastTimeoutMsg = display.ToastTimeoutMsg
 )
 
 // Re-export constants
 const (
-	ToastInfo    = components.ToastInfo
-	ToastSuccess = components.ToastSuccess
-	ToastWarning = components.ToastWarning
-	ToastError   = components.ToastError
+	ToastInfo    = display.ToastInfo
+	ToastSuccess = display.ToastSuccess
+	ToastWarning = display.ToastWarning
+	ToastError   = display.ToastError
 )
 
 // Re-export constructor functions for backward compatibility
 var (
-	NewSearchModel      = components.NewSearchModel
-	NewStatusBar        = components.NewEnhancedStatusBar
-	NewContextualHelp   = components.NewContextualHelp
-	NewLoadingIndicator = components.NewLoadingIndicator
-	NewEnhancedKeyMap   = components.NewEnhancedKeyMap
+	NewToast = display.NewToast
 )
-
-// Legacy wrapper functions for any existing code that might depend on them
-
-// ShowToast creates and displays a toast notification (legacy wrapper)
-func ShowToast(statusBar *StatusBar, message string, level ToastLevel, duration time.Duration) tea.Cmd {
-	return statusBar.ShowToast(message, level, duration)
-}
-
-// ActivateSearch enables search mode (legacy wrapper)
-func ActivateSearch(searchModel *SearchModel) tea.Cmd {
-	return searchModel.ActivateSearch()
-}
-
-// StartLoading starts the loading indicator (legacy wrapper)
-func StartLoading(loader *LoadingIndicator, message string) tea.Cmd {
-	return loader.Start(message)
-}
-
-// RenderHelp renders contextual help (legacy wrapper)
-func RenderHelp(help *ContextualHelp, width, height int) string {
-	return help.View(width, height)
-}
 
 // CreateEnhancedStyles creates enhanced styling for the UX components
 func CreateEnhancedStyles() map[string]lipgloss.Style {
@@ -109,12 +73,3 @@ func CreateEnhancedStyles() map[string]lipgloss.Style {
 	}
 }
 
-// GetDefaultKeyBindings returns the default enhanced key bindings
-func GetDefaultKeyBindings() EnhancedKeyMap {
-	return NewEnhancedKeyMap()
-}
-
-// GetContextualKeyHelp returns contextual help for key bindings
-func GetContextualKeyHelp(keyMap EnhancedKeyMap, context string) []HelpItem {
-	return keyMap.GetContextualHelp(context)
-}

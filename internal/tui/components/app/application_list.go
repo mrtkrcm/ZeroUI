@@ -1,4 +1,4 @@
-package appcomponents
+package app
 
 import (
 	"fmt"
@@ -368,6 +368,31 @@ func (m *ApplicationListModel) SetSize(width, height int) tea.Cmd {
 	m.list.SetWidth(width)
 	m.list.SetHeight(height - 2)
 	return nil
+}
+
+// GetItemCount returns the total number of items in the list
+func (m *ApplicationListModel) GetItemCount() int {
+	return len(m.list.Items())
+}
+
+// Index returns the currently selected item index
+func (m *ApplicationListModel) Index() int {
+	return m.list.Index()
+}
+
+// SelectedItem returns the currently selected item
+func (m *ApplicationListModel) SelectedItem() list.Item {
+	return m.list.SelectedItem()
+}
+
+// IsFiltered returns whether the list is currently being filtered
+func (m *ApplicationListModel) IsFiltered() bool {
+	return m.list.IsFiltered()
+}
+
+// VisibleItems returns the currently visible items (after filtering)
+func (m *ApplicationListModel) VisibleItems() []list.Item {
+	return m.list.VisibleItems()
 }
 
 // ApplicationInfo represents application information

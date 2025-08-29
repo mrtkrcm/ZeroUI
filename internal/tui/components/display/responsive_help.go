@@ -1,4 +1,4 @@
-package components
+package display
 
 import (
 	"strings"

@@ -1,3 +1,20 @@
+---
+current_app: ""
+description: "Responsive small terminal"
+metadata:
+  showingHelp: false
+  hasError: false
+  currentApp: 
+  state: list_view
+screen_size:
+  height: 24
+  width: 80
+state: "list_view"
+test_name: "responsive_tests"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Resize to 80x24"
+---
                 🎯 ZeroUI - Application Manager                                 
                                                                                 
                   ZeroUI Applications                                           

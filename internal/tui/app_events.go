@@ -8,8 +8,10 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mrtkrcm/ZeroUI/internal/tui/components"
-	appcomponents "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
+	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
+	core "github.com/mrtkrcm/ZeroUI/internal/tui/components/core"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
+	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
 )
 
@@ -119,19 +121,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logger.Info("Info message", "message", string(msg))
 		return m, nil
 
-	case components.AppSelectedMsg:
+	case app.AppSelectedMsg:
 		return m.handleAppSelection(msg)
 
-	case components.ConfigSavedMsg:
+	case core.ConfigSavedMsg:
 		return m.handleConfigSaved(msg)
 
-	case components.PresetAppliedMsg:
+	case core.PresetAppliedMsg:
 		return m.handlePresetApplied(msg)
 	
-	case components.ScanProgressMsg:
+	case app.ScanProgressMsg:
 		return m.handleScanProgress(msg)
 	
-	case components.ScanCompleteMsg:
+	case app.ScanCompleteMsg:
 		return m.handleScanComplete(msg)
 
 	// Handle event batching for better performance
@@ -309,7 +311,7 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				},
 				"appList",
 			)
-			if updated, ok := updatedModel.(*appcomponents.ApplicationListModel); ok {
+			if updated, ok := updatedModel.(*app.ApplicationListModel); ok {
 				m.appList = updated
 			}
 			return m, cmd
@@ -324,7 +326,7 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				},
 				"enhancedConfig",
 			)
-			if updated, ok := updatedModel.(*components.EnhancedConfigModel); ok {
+			if updated, ok := updatedModel.(*forms.EnhancedConfigModel); ok {
 				m.enhancedConfig = updated
 			}
 			return m, cmd
@@ -337,7 +339,7 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				},
 				"tabbedConfig",
 			)
-			if updated, ok := updatedModel.(*components.TabbedConfigModel); ok {
+			if updated, ok := updatedModel.(*forms.TabbedConfigModel); ok {
 				m.tabbedConfig = updated
 			}
 			return m, cmd
@@ -351,7 +353,7 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				},
 				"helpSystem",
 			)
-			if updated, ok := updatedModel.(*components.GlamourHelpModel); ok {
+			if updated, ok := updatedModel.(*display.GlamourHelpModel); ok {
 				m.helpSystem = updated
 			}
 			return m, cmd
@@ -372,7 +374,7 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 				"appList",
 			)
-			if updated, ok := updatedModel.(*appcomponents.ApplicationListModel); ok {
+			if updated, ok := updatedModel.(*app.ApplicationListModel); ok {
 				m.appList = updated
 			}
 			return m, cmd
@@ -387,7 +389,7 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 				"enhancedConfig",
 			)
-			if updated, ok := updatedModel.(*components.EnhancedConfigModel); ok {
+			if updated, ok := updatedModel.(*forms.EnhancedConfigModel); ok {
 				m.enhancedConfig = updated
 			}
 			return m, cmd
@@ -400,7 +402,7 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 				"tabbedConfig",
 			)
-			if updated, ok := updatedModel.(*components.TabbedConfigModel); ok {
+			if updated, ok := updatedModel.(*forms.TabbedConfigModel); ok {
 				m.tabbedConfig = updated
 			}
 			return m, cmd
@@ -414,7 +416,7 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 				"helpSystem",
 			)
-			if updated, ok := updatedModel.(*components.GlamourHelpModel); ok {
+			if updated, ok := updatedModel.(*display.GlamourHelpModel); ok {
 				m.helpSystem = updated
 			}
 			return m, cmd
@@ -496,12 +498,12 @@ func (m *Model) handleAppSelected(appName string) tea.Cmd {
 }
 
 // handleAppSelection handles app selection message
-func (m *Model) handleAppSelection(msg components.AppSelectedMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handleAppSelection(msg app.AppSelectedMsg) (tea.Model, tea.Cmd) {
 	return m, m.handleAppSelected(msg.App)
 }
 
 // handleConfigSaved handles configuration saved message
-func (m *Model) handleConfigSaved(msg components.ConfigSavedMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handleConfigSaved(msg core.ConfigSavedMsg) (tea.Model, tea.Cmd) {
 	m.logger.Info("Configuration saved", "app", msg.AppName)
 	// Return to app list
 	m.state = ListView
@@ -519,7 +521,7 @@ func (m *Model) handleConfigSaved(msg components.ConfigSavedMsg) (tea.Model, tea
 }
 
 // handlePresetApplied handles preset application
-func (m *Model) handlePresetApplied(msg components.PresetAppliedMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handlePresetApplied(msg core.PresetAppliedMsg) (tea.Model, tea.Cmd) {
 	m.logger.Info("Preset applied", "preset", msg.PresetName)
 
 	// For now, presets are not integrated with tabbed config
@@ -544,7 +546,7 @@ func (m *Model) handleSuccess(msg util.SuccessMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleScanProgress handles scan progress updates
-func (m *Model) handleScanProgress(msg components.ScanProgressMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handleScanProgress(msg app.ScanProgressMsg) (tea.Model, tea.Cmd) {
 	// Update scanner
 	if m.appScanner != nil {
 		updated, cmd := m.appScanner.Update(msg)
@@ -555,7 +557,7 @@ func (m *Model) handleScanProgress(msg components.ScanProgressMsg) (tea.Model, t
 }
 
 // handleScanComplete handles scan completion
-func (m *Model) handleScanComplete(msg components.ScanCompleteMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handleScanComplete(msg app.ScanCompleteMsg) (tea.Model, tea.Cmd) {
 	m.logger.Info("Application scan complete", "apps", len(msg.Apps))
 	
 	// Update scanner
@@ -631,15 +633,15 @@ func (m *Model) processSingleEvent(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case util.ShowInfoMsg:
 		m.logger.Info("Info message", "message", string(msg))
 		return m, nil
-	case components.AppSelectedMsg:
+	case app.AppSelectedMsg:
 		return m.handleAppSelection(msg)
-	case components.ConfigSavedMsg:
+	case core.ConfigSavedMsg:
 		return m.handleConfigSaved(msg)
-	case components.PresetAppliedMsg:
+	case core.PresetAppliedMsg:
 		return m.handlePresetApplied(msg)
-	case components.ScanProgressMsg:
+	case app.ScanProgressMsg:
 		return m.handleScanProgress(msg)
-	case components.ScanCompleteMsg:
+	case app.ScanCompleteMsg:
 		return m.handleScanComplete(msg)
 	case RefreshAppsMsg:
 		m.HandleRefreshApps()

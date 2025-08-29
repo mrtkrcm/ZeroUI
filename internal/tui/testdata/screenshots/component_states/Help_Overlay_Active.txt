@@ -1,3 +1,20 @@
+---
+current_app: ""
+description: "Help Overlay Active"
+metadata:
+  showingHelp: true
+  hasError: false
+  currentApp: 
+  state: list_view
+screen_size:
+  height: 40
+  width: 120
+state: "list_view"
+test_name: "component_states"
+timestamp: "2025-08-25 06:29:14"
+user_actions:
+  - "Press '?' for help"
+---
                                                                                                                         
                                                                                                                         
                                                                                                                         

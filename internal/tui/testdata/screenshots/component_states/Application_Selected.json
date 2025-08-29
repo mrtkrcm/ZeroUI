@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-08-25 06:29:14",
+  "description": "Application Selected",
+  "test_name": "component_states",
+  "screen_size": {
+    "height": 40,
+    "width": 120
+  },
+  "state": "form_view",
+  "current_app": "ghostty",
+  "user_actions": [
+    "Select ghostty",
+    "Enter configuration mode"
+  ],
+  "screen_text": "Configuration not initialized",
+  "metadata": {
+    "currentApp": "ghostty",
+    "hasError": false,
+    "showingHelp": false,
+    "state": "form_view"
+  }
+}
