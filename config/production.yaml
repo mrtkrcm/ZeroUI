@@ -1,0 +1,63 @@
+# ZeroUI Production Configuration
+
+# Application settings
+app:
+  name: "ZeroUI"
+  version: "1.0.0"
+  environment: "production"
+  log_level: "info"
+
+# Server settings (for future web interface)
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_header_bytes: 1048576
+
+# Database settings (for future features)
+database:
+  type: "sqlite"
+  path: "./data/zeroui.db"
+  max_connections: 10
+  connection_timeout: "30s"
+
+# Cache settings
+cache:
+  enabled: true
+  ttl: "5m"
+  max_size: 100
+  cleanup_interval: "10m"
+
+# Logging
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  file: "./logs/zeroui.log"
+  max_size: "100m"
+  max_age: "30d"
+  max_backups: 10
+
+# Security
+security:
+  enable_tls: false
+  cert_file: ""
+  key_file: ""
+  allowed_origins: ["*"]
+  rate_limit: 100
+  rate_window: "1m"
+
+# Performance
+performance:
+  max_concurrent_requests: 50
+  request_timeout: "30s"
+  enable_compression: true
+  enable_cors: true
+
+# Monitoring
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  enable_health_check: true
+  health_check_path: "/health"

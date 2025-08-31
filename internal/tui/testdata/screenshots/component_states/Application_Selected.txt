@@ -2,16 +2,16 @@
 current_app: "ghostty"
 description: "Application Selected"
 metadata:
+  state: form_view
   showingHelp: false
   hasError: false
   currentApp: ghostty
-  state: form_view
 screen_size:
   height: 40
   width: 120
 state: "form_view"
 test_name: "component_states"
-timestamp: "2025-08-25 06:29:14"
+timestamp: "2025-08-30 04:44:15"
 user_actions:
   - "Select ghostty"
   - "Enter configuration mode"

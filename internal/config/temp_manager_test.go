@@ -25,7 +25,7 @@ func TestTempFileManager(t *testing.T) {
 	testDir := t.TempDir()
 	testFile := filepath.Join(testDir, "test.json")
 	testContent := `{"key": "value"}`
-	
+
 	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestTempFileManager(t *testing.T) {
 		if err := os.WriteFile(validateFile, []byte(testContent), 0644); err != nil {
 			t.Fatalf("Failed to create validate test file: %v", err)
 		}
-		
+
 		tempFile, err := manager.CreateTempCopy(validateFile)
 		if err != nil {
 			t.Fatalf("Failed to create temp copy: %v", err)
@@ -169,7 +169,7 @@ func TestTempFileManager(t *testing.T) {
 		if err := os.WriteFile(concurrentFile, []byte(testContent), 0644); err != nil {
 			t.Fatalf("Failed to create concurrent test file: %v", err)
 		}
-		
+
 		// Create temp copy
 		tempFile1, err := manager.CreateTempCopy(concurrentFile)
 		if err != nil {
@@ -199,7 +199,7 @@ func TestTempFileManager(t *testing.T) {
 		if err := os.WriteFile(staleFile, []byte(testContent), 0644); err != nil {
 			t.Fatalf("Failed to create stale test file: %v", err)
 		}
-		
+
 		// Create a temp file
 		_, err := manager.CreateTempCopy(staleFile)
 		if err != nil {
@@ -213,7 +213,7 @@ func TestTempFileManager(t *testing.T) {
 			tf.CreatedAt = time.Now().Add(-2 * time.Hour)
 		}
 		manager.mu.Unlock()
-		
+
 		// Clean up stale files older than 1 hour
 		if err := manager.CleanupStale(1 * time.Hour); err != nil {
 			t.Errorf("Failed to cleanup stale: %v", err)
@@ -224,23 +224,23 @@ func TestTempFileManager(t *testing.T) {
 			t.Error("Stale temp file not cleaned up")
 		}
 	})
-	
+
 	t.Run("Metrics", func(t *testing.T) {
 		metrics := manager.GetMetrics()
-		
+
 		// Check that metrics are present
 		if _, ok := metrics["operations"]; !ok {
 			t.Error("Missing operations metric")
 		}
-		
+
 		if _, ok := metrics["errors"]; !ok {
 			t.Error("Missing errors metric")
 		}
-		
+
 		if _, ok := metrics["temp_files"]; !ok {
 			t.Error("Missing temp_files metric")
 		}
-		
+
 		// Operations should be greater than 0 after all the tests
 		if ops, ok := metrics["operations"].(uint64); ok && ops == 0 {
 			t.Error("Expected operations count to be greater than 0")

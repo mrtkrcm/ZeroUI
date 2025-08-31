@@ -1,0 +1,27 @@
+#!/bin/bash
+# Test stub for ghostty terminal emulator
+# This is used by tests to avoid dependency on the actual ghostty binary
+
+# Simple help message
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "ghostty (test stub) - GPU-accelerated terminal emulator"
+    echo "Usage: ghostty [options]"
+    echo "This is a test stub and does not provide full functionality."
+    exit 0
+fi
+
+# Version info
+if [[ "$1" == "--version" || "$1" == "-V" ]]; then
+    echo "ghostty 0.1.0 (test-stub)"
+    exit 0
+fi
+
+# Config validation stub
+if [[ "$1" == "validate-config" || "$2" == "validate-config" ]]; then
+    echo "Config validation successful (stub)"
+    exit 0
+fi
+
+# Default: return success for most operations in tests
+echo "ghostty test stub executed successfully"
+exit 0

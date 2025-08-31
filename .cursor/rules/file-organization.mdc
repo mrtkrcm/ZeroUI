@@ -1,0 +1,466 @@
+---
+alwaysApply: true
+description: File organization and project structure guidelines
+---
+
+# ZeroUI File Organization
+
+## 📁 Project Structure
+
+### Root Level Organization
+```
+zeroui/
+├── .cursor/           # Cursor IDE rules and configuration
+│   └── rules/        # Development guidelines and patterns
+├── cmd/              # Main applications and CLI commands
+├── internal/         # Private application code
+├── pkg/              # Public library code (future use)
+├── raycast-extension/# Raycast extension
+├── scripts/          # Build and deployment scripts
+├── testdata/         # Test data and fixtures
+├── docs/             # Documentation (future use)
+├── .gitignore       # Git ignore patterns
+├── go.mod           # Go module definition
+├── go.sum           # Go module checksums
+├── main.go          # Application entry point
+└── README.md        # Project documentation
+```
+
+### Internal Package Structure
+```
+internal/
+├── tui/              # Terminal User Interface
+│   ├── components/   # Reusable UI components
+│   ├── styles/       # Styling and theming
+│   ├── keys/         # Keybinding definitions
+│   └── util/         # Utility functions
+├── logging/          # Logging infrastructure
+├── toggle/           # Feature toggle system
+└── cache/            # Caching mechanisms (future use)
+```
+
+## 🏗️ Component Architecture
+
+### Component Organization (`internal/tui/components/`)
+```
+components/
+├── core/             # Core interfaces and base components
+│   ├── interfaces.go # Component contracts
+│   ├── base.go      # Base component implementation
+│   ├── layout.go    # Layout utilities
+│   └── config_types.go # Configuration types
+├── display/          # Display and rendering components
+│   ├── toast.go     # Toast notifications
+│   ├── help.go      # Help systems
+│   ├── status_bar.go # Status indicators
+│   └── glamour_help.go # Enhanced help rendering
+├── forms/            # Form components
+│   ├── forms.go     # Form utilities
+│   ├── enhanced_config.go # Configuration forms
+│   ├── types.go     # Form types
+│   └── huh_config_form.go # Huh-based forms
+├── ui/               # UI integration components
+│   ├── ui_integration.go # UI manager
+│   ├── enhanced_app_list.go # Application lists
+│   └── screenshot_component.go # Screenshot functionality
+└── app/              # Application-specific components
+    ├── app_card.go  # Individual app cards
+    ├── app_grid.go  # Grid layouts
+    ├── app_scanner.go # App scanning
+    └── delightful_ui.go # Enhanced UI implementations
+```
+
+### Naming Conventions
+```go
+# Files and directories
+snake_case/          # Directory names
+snake_case.go        # Go file names
+PascalCase.go        # Test file names: ComponentName_test.go
+
+# Types and functions
+PascalCase          # Exported types, functions, constants
+camelCase           # Internal types, functions, variables
+
+# Component files
+component_name.go   # Main component file
+component_name_test.go # Test file
+```
+
+## 📋 File Content Guidelines
+
+### Package Declarations
+```go
+// Package names match directory names
+// internal/tui/components/core/ → package core
+package core
+
+// internal/tui/components/app/ → package app
+package app
+
+// internal/tui/components/ui/ → package ui
+package ui
+```
+
+### Import Organization
+```go
+import (
+    // Standard library imports (alphabetical)
+    "fmt"
+    "os"
+    "path/filepath"
+    "strings"
+
+    // Third-party imports (alphabetical)
+    "github.com/charmbracelet/bubbles"
+    "github.com/charmbracelet/bubbletea"
+    "github.com/charmbracelet/lipgloss"
+
+    // Local imports (grouped by internal/external)
+    "github.com/mrtkrcm/ZeroUI/internal/logging"
+    "github.com/mrtkrcm/ZeroUI/internal/tui/styles"
+)
+```
+
+### File Structure Template
+```go
+// Package documentation
+package componentname
+
+import (
+    // imports
+)
+
+// Type definitions
+type ComponentName struct {
+    // fields
+}
+
+// Constants
+const (
+    // constants
+)
+
+// Global variables
+var (
+    // global variables
+)
+
+// Init function (if needed)
+func init() {
+    // initialization code
+}
+
+// Constructor functions
+func NewComponentName(options ...Option) *ComponentName {
+    // constructor implementation
+}
+
+// Main type methods
+func (c *ComponentName) MethodName() ReturnType {
+    // method implementation
+}
+
+// Helper functions
+func helperFunction() {
+    // helper implementation
+}
+```
+
+## 🎯 Component File Patterns
+
+### Interface Definitions (`interfaces.go`)
+```go
+// Define component contracts
+type Component interface {
+    tea.Model
+    GetID() string
+}
+
+type Focusable interface {
+    Component
+    Focus() tea.Cmd
+    Blur() tea.Cmd
+}
+
+type Sizeable interface {
+    Component
+    SetSize(width, height int) tea.Cmd
+    GetSize() (int, int)
+}
+```
+
+### Base Implementations (`base.go`)
+```go
+// Provide base implementations
+type BaseComponent struct {
+    id     string
+    width  int
+    height int
+    focused bool
+}
+
+func (b *BaseComponent) GetID() string {
+    return b.id
+}
+
+func (b *BaseComponent) SetSize(width, height int) tea.Cmd {
+    b.width = width
+    b.height = height
+    return nil
+}
+
+func (b *BaseComponent) GetSize() (int, int) {
+    return b.width, b.height
+}
+```
+
+### Main Components
+```go
+// Specific component implementations
+type ApplicationList struct {
+    *BaseComponent
+    items    []ApplicationItem
+    cursor   int
+    selected string
+}
+
+func NewApplicationList() *ApplicationList {
+    return &ApplicationList{
+        BaseComponent: &BaseComponent{
+            id: "application-list",
+        },
+        items: make([]ApplicationItem, 0),
+    }
+}
+
+func (a *ApplicationList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    // Update logic
+    return a, nil
+}
+
+func (a *ApplicationList) View() string {
+    // Render logic
+    return ""
+}
+```
+
+## 🧪 Test File Organization
+
+### Test Structure
+```
+component/
+├── component.go
+├── component_test.go
+└── testdata/
+    ├── test1.json
+    ├── test2.json
+    └── golden/
+        ├── test1.golden
+        └── test2.golden
+```
+
+### Test File Patterns
+```go
+// component_test.go
+package component
+
+import (
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestComponent_New(t *testing.T) {
+    // Test constructor
+}
+
+func TestComponent_Update(t *testing.T) {
+    // Test update logic
+}
+
+func TestComponent_View(t *testing.T) {
+    // Test rendering
+}
+
+func TestComponent_ErrorHandling(t *testing.T) {
+    // Test error scenarios
+}
+```
+
+## 📚 Documentation Files
+
+### README Files
+```
+# Component README
+├── Overview
+├── Usage Examples
+├── Configuration
+├── API Reference
+└── Contributing
+```
+
+### Code Documentation
+```go
+// Package-level documentation
+// Package componentname provides [description of functionality].
+//
+// Usage:
+//
+//	import "github.com/mrtkrcm/ZeroUI/internal/tui/components/componentname"
+//
+//	comp := componentname.New()
+//	model, cmd := comp.Update(msg)
+package componentname
+
+// Function documentation
+// NewComponentName creates a new instance of ComponentName with default settings.
+// It initializes the component with sensible defaults and prepares it for use.
+func NewComponentName() *ComponentName {
+    // implementation
+}
+
+// Method documentation
+// Update handles incoming messages and updates the component state accordingly.
+// It implements the Bubble Tea update loop pattern.
+func (c *ComponentName) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    // implementation
+}
+```
+
+## 🔧 Configuration Files
+
+### Style Configuration
+```go
+// styles/styles.go
+package styles
+
+import "github.com/charmbracelet/lipgloss"
+
+var (
+    // Color palette
+    PrimaryColor   = lipgloss.Color("#7D56F4")
+    SecondaryColor = lipgloss.Color("#44475A")
+    SuccessColor   = lipgloss.Color("#50FA7B")
+    ErrorColor     = lipgloss.Color("#FF5555")
+
+    // Component styles
+    ButtonStyle = lipgloss.NewStyle().
+        Background(PrimaryColor).
+        Foreground(lipgloss.Color("#FFFFFF")).
+        Padding(0, 2).
+        Bold(true)
+)
+```
+
+### Keybinding Configuration
+```go
+// keys/keys.go
+package keys
+
+import "github.com/charmbracelet/bubbles/key"
+
+var (
+    // Navigation keys
+    Up = key.NewBinding(
+        key.WithKeys("up", "k"),
+        key.WithHelp("↑/k", "move up"),
+    )
+
+    Down = key.NewBinding(
+        key.WithKeys("down", "j"),
+        key.WithHelp("↓/j", "move down"),
+    )
+
+    // Action keys
+    Select = key.NewBinding(
+        key.WithKeys("enter", " "),
+        key.WithHelp("enter/space", "select"),
+    )
+
+    Quit = key.NewBinding(
+        key.WithKeys("q", "ctrl+c"),
+        key.WithHelp("q", "quit"),
+    )
+)
+```
+
+## 📁 Raycast Extension Structure
+
+### Extension Organization
+```
+raycast-extension/
+├── src/                    # Source code
+│   ├── utils.ts           # ZeroUI integration
+│   ├── list-apps.tsx      # Main app list
+│   ├── toggle-config.tsx  # Configuration toggle
+│   ├── menubar.tsx        # Menu bar integration
+│   └── cache-management.tsx # Cache management
+├── assets/                # Static assets
+│   ├── icon.svg          # Extension icon
+│   └── *.svg             # Other icons
+├── node_modules/         # Dependencies
+├── package.json          # Extension manifest
+├── tsconfig.json         # TypeScript config
+└── README.md             # Extension docs
+```
+
+### TypeScript Patterns
+```typescript
+// utils.ts - Integration layer
+export class ZeroUI {
+  private zerouiPath: string;
+  private cache: Map<string, CacheEntry>;
+
+  async executeCommand(command: string, args: string[] = []): Promise<ZeroUIResult> {
+    // Command execution with caching
+  }
+}
+
+// Component files
+export default function Component() {
+  const [state, setState] = useState(initialState);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  return (
+    <List>
+      {/* Component JSX */}
+    </List>
+  );
+}
+```
+
+## 🎯 File Organization Best Practices
+
+### 1. Single Responsibility
+- Each file should have one primary purpose
+- Split large files into logical components
+- Keep related functionality together
+
+### 2. Consistent Naming
+- Use descriptive, consistent names
+- Follow Go naming conventions
+- Use consistent file naming patterns
+
+### 3. Logical Grouping
+- Group related files in directories
+- Keep interface definitions with implementations
+- Separate concerns appropriately
+
+### 4. Import Hygiene
+- Minimize import cycles
+- Use internal packages appropriately
+- Keep imports organized and clean
+
+### 5. Documentation
+- Document package purposes
+- Include usage examples
+- Keep documentation up-to-date
+
+## 📚 Key Directories
+- [internal/tui/components/](mdc:internal/tui/components/) - Component architecture
+- [internal/tui/styles/](mdc:internal/tui/styles/) - Styling definitions
+- [raycast-extension/src/](mdc:raycast-extension/src/) - Extension source
+- [cmd/](mdc:cmd/) - CLI commands

@@ -15,11 +15,11 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                                                                                        
                                          ❌ Error: failed to load configuration                                         
                                                                                                                         
-                                          Press 'q' to quit or 'Esc' to go back                                         
-                                                                                                                        
+                                       ╭───────────────────────────────────────╮                                        
+                                       │ Press 'q' to quit or 'Esc' to go back │                                        
+                                       ╰───────────────────────────────────────╯                                        
                                                                                                                         
                                                                                                                         
                                                                                                                         

@@ -10,8 +10,8 @@ import (
 
 	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	core "github.com/mrtkrcm/ZeroUI/internal/tui/components/core"
-	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
 )
 
@@ -34,8 +34,8 @@ func NewEventBatcher() *EventBatcher {
 	return &EventBatcher{
 		events:      make(chan tea.Msg, 100), // Buffer for 100 events
 		batchSize:   10,                      // Process in batches of 10
-		timeout:     50 * time.Millisecond,    // 50ms batching window
-		maxWaitTime: 200 * time.Millisecond,   // Max wait time
+		timeout:     50 * time.Millisecond,   // 50ms batching window
+		maxWaitTime: 200 * time.Millisecond,  // Max wait time
 	}
 }
 
@@ -129,10 +129,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case core.PresetAppliedMsg:
 		return m.handlePresetApplied(msg)
-	
+
 	case app.ScanProgressMsg:
 		return m.handleScanProgress(msg)
-	
+
 	case app.ScanCompleteMsg:
 		return m.handleScanComplete(msg)
 
@@ -160,7 +160,7 @@ func (m *Model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	if msg.Width <= 0 || msg.Height <= 0 {
 		return m, nil
 	}
-	
+
 	m.logger.Debug("Window resized", "width", msg.Width, "height", msg.Height)
 
 	// Track significant size changes
@@ -179,7 +179,7 @@ func (m *Model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 		// Update component sizes
 		return m, m.updateComponentSizes()
 	}
-	
+
 	return m, nil
 }
 
@@ -213,7 +213,7 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 				hasUnsavedChanges = true
 			}
 		}
-		
+
 		if hasUnsavedChanges {
 			m.logger.Info("Quit requested with unsaved changes")
 			// NOTE: Confirmation dialog for unsaved changes not yet implemented
@@ -559,24 +559,24 @@ func (m *Model) handleScanProgress(msg app.ScanProgressMsg) (tea.Model, tea.Cmd)
 // handleScanComplete handles scan completion
 func (m *Model) handleScanComplete(msg app.ScanCompleteMsg) (tea.Model, tea.Cmd) {
 	m.logger.Info("Application scan complete", "apps", len(msg.Apps))
-	
+
 	// Update scanner
 	if m.appScanner != nil {
 		updated, _ := m.appScanner.Update(msg)
 		m.appScanner = updated
 	}
-	
+
 	// Update app list with scan results
 	if m.appList != nil {
 		// NOTE: App list status updates not yet implemented - scan completion is handled via ScanCompleteMsg
 		// For now, just mark loading as complete
 	}
-	
+
 	// Transition to list view
 	m.state = ListView
 	m.isLoading = false
 	m.invalidateCache()
-	
+
 	return m, nil
 }
 

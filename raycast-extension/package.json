@@ -1,0 +1,175 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "zeroui",
+  "title": "ZeroUI",
+  "description": "Zero-configuration UI toolkit manager with delightful UX",
+  "icon": "icon.png",
+  "author": "mrtkrcm",
+  "categories": [
+    "Developer Tools",
+    "Productivity"
+  ],
+  "license": "MIT",
+  "preferences": [
+    {
+      "name": "zerouiPath",
+      "type": "textfield",
+      "required": false,
+      "title": "ZeroUI Binary Path",
+      "description": "Path to the ZeroUI binary. Leave empty to use default location.",
+      "placeholder": "/path/to/zeroui"
+    },
+    {
+      "name": "timeout",
+      "type": "textfield",
+      "required": false,
+      "title": "Command Timeout",
+      "description": "Timeout for ZeroUI commands in milliseconds.",
+      "default": "30000",
+      "placeholder": "30000"
+    },
+    {
+      "name": "enableCache",
+      "type": "checkbox",
+      "required": false,
+      "title": "Enable Caching",
+      "description": "Cache results to improve performance. Disable if you need real-time data.",
+      "default": true,
+      "label": "Enable caching for better performance"
+    },
+    {
+      "name": "cacheDuration",
+      "type": "textfield",
+      "required": false,
+      "title": "Cache Duration",
+      "description": "How long to cache results in milliseconds.",
+      "default": "300000",
+      "placeholder": "300000"
+    }
+  ],
+  "commands": [
+    {
+      "name": "list-apps",
+      "title": "List Applications",
+      "description": "Show all available applications",
+      "mode": "view",
+      "keywords": [
+        "apps",
+        "applications",
+        "list",
+        "show"
+      ]
+    },
+    {
+      "name": "toggle-config",
+      "title": "Toggle Configuration",
+      "description": "Select an app and toggle a configuration value",
+      "mode": "view",
+      "keywords": [
+        "config",
+        "toggle",
+        "setting",
+        "configure"
+      ]
+    },
+    {
+      "name": "list-values",
+      "title": "Configuration Values",
+      "description": "Select an app to view its configuration values",
+      "mode": "view",
+      "keywords": [
+        "values",
+        "config",
+        "settings",
+        "view"
+      ]
+    },
+    {
+      "name": "list-changed",
+      "title": "Changed Values",
+      "description": "Select an app to view configuration values that differ from defaults",
+      "mode": "view",
+      "keywords": [
+        "changed",
+        "modified",
+        "defaults",
+        "diff"
+      ]
+    },
+    {
+      "name": "keymap-list",
+      "title": "Keymaps",
+      "description": "Select an app to view its keyboard shortcuts",
+      "mode": "view",
+      "keywords": [
+        "keymap",
+        "shortcuts",
+        "keys",
+        "keyboard"
+      ]
+    },
+    {
+      "name": "manage-presets",
+      "title": "Manage Presets",
+      "description": "Apply or manage configuration presets",
+      "mode": "view",
+      "keywords": [
+        "presets",
+        "templates",
+        "manage",
+        "apply"
+      ]
+    },
+    {
+      "name": "cache-management",
+      "title": "Cache Management",
+      "description": "View and manage extension cache",
+      "mode": "view",
+      "keywords": [
+        "cache",
+        "performance",
+        "clear",
+        "manage"
+      ]
+    },
+    {
+      "name": "menubar",
+      "title": "ZeroUI Menu Bar",
+      "description": "Quick access to ZeroUI from the menu bar",
+      "mode": "menu-bar",
+      "interval": "10m",
+      "keywords": [
+        "menu",
+        "bar",
+        "quick",
+        "access"
+      ]
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.93.0",
+    "@raycast/utils": "^1.19.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.8",
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.12",
+    "eslint": "^8.57.0",
+    "eslint-plugin-import": "^2.31.0",
+    "prettier": "3.3.3",
+    "react": "^18.3.1",
+    "typescript": "^5.6.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrtkrcm/zeroui.git",
+    "directory": "raycast-extension"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "ray publish"
+  }
+}

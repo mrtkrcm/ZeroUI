@@ -220,63 +220,63 @@ func GetValidationDemo() string {
 
 // GetValidationExample renders a complete validation examples section
 func GetValidationExample() string {
-        return lipgloss.JoinVertical(
-                lipgloss.Left,
-                lipgloss.NewStyle().
-                        Foreground(lipgloss.Color("#FF79C6")).
-                        Bold(true).
-                        Render("🔍 Validation"),
-                "",
-                GetValidationDemo(),
-        )
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF79C6")).
+			Bold(true).
+			Render("🔍 Validation"),
+		"",
+		GetValidationDemo(),
+	)
 }
 
 // GetButtonsDemo renders various button examples
 func GetButtonsDemo() string {
-        primaryBtn := lipgloss.NewStyle().
-                Background(lipgloss.Color("#7D56F4")).
-                Foreground(lipgloss.Color("#FFFFFF")).
-                Padding(0, 2).
-                Bold(true).
-                Render("[ Primary ]")
+	primaryBtn := lipgloss.NewStyle().
+		Background(lipgloss.Color("#7D56F4")).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Padding(0, 2).
+		Bold(true).
+		Render("[ Primary ]")
 
-        secondaryBtn := lipgloss.NewStyle().
-                Background(lipgloss.Color("#44475A")).
-                Foreground(lipgloss.Color("#FFFFFF")).
-                Padding(0, 2).
-                Render("[ Secondary ]")
+	secondaryBtn := lipgloss.NewStyle().
+		Background(lipgloss.Color("#44475A")).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Padding(0, 2).
+		Render("[ Secondary ]")
 
-        successBtn := lipgloss.NewStyle().
-                Background(lipgloss.Color("#50FA7B")).
-                Foreground(lipgloss.Color("#282A36")).
-                Padding(0, 2).
-                Bold(true).
-                Render("[ Success ]")
+	successBtn := lipgloss.NewStyle().
+		Background(lipgloss.Color("#50FA7B")).
+		Foreground(lipgloss.Color("#282A36")).
+		Padding(0, 2).
+		Bold(true).
+		Render("[ Success ]")
 
-        dangerBtn := lipgloss.NewStyle().
-                Background(lipgloss.Color("#FF5555")).
-                Foreground(lipgloss.Color("#FFFFFF")).
-                Padding(0, 2).
-                Render("[ Danger ]")
+	dangerBtn := lipgloss.NewStyle().
+		Background(lipgloss.Color("#FF5555")).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Padding(0, 2).
+		Render("[ Danger ]")
 
-        return lipgloss.JoinVertical(
-                lipgloss.Left,
-                primaryBtn,
-                secondaryBtn,
-                successBtn,
-                dangerBtn,
-        )
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		primaryBtn,
+		secondaryBtn,
+		successBtn,
+		dangerBtn,
+	)
 }
 
 // GetButtonsExample renders a complete buttons examples section
 func GetButtonsExample() string {
-        return lipgloss.JoinVertical(
-                lipgloss.Left,
-                lipgloss.NewStyle().
-                        Foreground(lipgloss.Color("#50FA7B")).
-                        Bold(true).
-                        Render("🔘 Buttons"),
-                "",
-                GetButtonsDemo(),
-        )
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#50FA7B")).
+			Bold(true).
+			Render("🔘 Buttons"),
+		"",
+		GetButtonsDemo(),
+	)
 }

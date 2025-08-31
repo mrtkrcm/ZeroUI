@@ -72,4 +72,3 @@ func CreateEnhancedStyles() map[string]lipgloss.Style {
 			Background(lipgloss.Color("235")),
 	}
 }
-

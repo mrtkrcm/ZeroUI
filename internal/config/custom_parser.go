@@ -451,7 +451,7 @@ func sanitizeThemeValue(value string) (bool, string) {
 	// Allow alphanumeric, hyphens, underscores, and spaces
 	for _, r := range v {
 		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
-			 r == '-' || r == '_' || r == ' ') {
+			r == '-' || r == '_' || r == ' ') {
 			return false, ""
 		}
 	}
@@ -510,17 +510,17 @@ func sanitizeGenericValue(value string) (bool, string) {
 // ConfigSection represents a section of the configuration with its comments and settings
 type ConfigSection struct {
 	HeaderComments []string // Comments at the start of the section
-	Settings      map[string]ConfigSetting
-	Order         []string // Maintain order of settings
+	Settings       map[string]ConfigSetting
+	Order          []string // Maintain order of settings
 }
 
 // ConfigSetting represents a single configuration setting with its comments
 type ConfigSetting struct {
-	Key            string
-	Value          string
-	InlineComment  string
-	PreComments    []string // Comments before this setting
-	PostComments   []string // Comments after this setting
+	Key           string
+	Value         string
+	InlineComment string
+	PreComments   []string // Comments before this setting
+	PostComments  []string // Comments after this setting
 }
 
 // readGhosttyConfigWithComments reads config preserving comments and structure

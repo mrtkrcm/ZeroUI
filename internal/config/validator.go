@@ -22,8 +22,8 @@ type ValidationRule struct {
 
 // ValidationResult contains validation results
 type ValidationResult struct {
-	Valid   bool
-	Errors  []ValidationError
+	Valid    bool
+	Errors   []ValidationError
 	Warnings []string
 }
 
@@ -39,10 +39,10 @@ func NewValidator() *Validator {
 	v := &Validator{
 		rules: []ValidationRule{},
 	}
-	
+
 	// Add default rules
 	v.addDefaultRules()
-	
+
 	return v
 }
 
@@ -54,54 +54,54 @@ func (v *Validator) addDefaultRules() {
 		if !ok {
 			return fmt.Errorf("value must be a string")
 		}
-		
+
 		// Expand home directory
 		if strings.HasPrefix(path, "~") {
 			home, _ := os.UserHomeDir()
 			path = strings.Replace(path, "~", home, 1)
 		}
-		
+
 		if _, err := os.Stat(path); err != nil {
 			return fmt.Errorf("path does not exist: %s", path)
 		}
-		
+
 		return nil
 	}, false)
-	
+
 	// Format validation
 	v.AddRule("valid_format", func(val interface{}) error {
 		format, ok := val.(string)
 		if !ok {
 			return fmt.Errorf("format must be a string")
 		}
-		
+
 		validFormats := []string{"yaml", "json", "toml", "ini", "custom", "lua", "shell"}
 		for _, valid := range validFormats {
 			if format == valid {
 				return nil
 			}
 		}
-		
+
 		return fmt.Errorf("invalid format: %s", format)
 	}, false)
-	
+
 	// Name validation
 	v.AddRule("valid_name", func(val interface{}) error {
 		name, ok := val.(string)
 		if !ok {
 			return fmt.Errorf("name must be a string")
 		}
-		
+
 		if len(name) == 0 {
 			return fmt.Errorf("name cannot be empty")
 		}
-		
+
 		// Check for valid characters (alphanumeric, dash, underscore)
 		validName := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 		if !validName.MatchString(name) {
 			return fmt.Errorf("name contains invalid characters: %s", name)
 		}
-		
+
 		return nil
 	}, true)
 }
@@ -118,11 +118,11 @@ func (v *Validator) AddRule(name string, check func(interface{}) error, required
 // ValidateAppDefinition validates an app definition
 func (v *Validator) ValidateAppDefinition(app *AppDefinition) ValidationResult {
 	result := ValidationResult{
-		Valid:  true,
-		Errors: []ValidationError{},
+		Valid:    true,
+		Errors:   []ValidationError{},
 		Warnings: []string{},
 	}
-	
+
 	// Validate name
 	if err := v.validateField("name", app.Name, "valid_name"); err != nil {
 		result.Valid = false
@@ -132,19 +132,19 @@ func (v *Validator) ValidateAppDefinition(app *AppDefinition) ValidationResult {
 			Rule:    "valid_name",
 		})
 	}
-	
+
 	// Validate display name
 	if app.DisplayName == "" {
 		result.Warnings = append(result.Warnings, "display_name is empty, using name")
 		app.DisplayName = app.Name
 	}
-	
+
 	// Validate icon
 	if app.Icon == "" {
 		app.Icon = "○" // Default icon
 		result.Warnings = append(result.Warnings, "icon is empty, using default ○")
 	}
-	
+
 	// Validate config paths
 	if len(app.ConfigPaths) == 0 {
 		result.Valid = false
@@ -156,20 +156,20 @@ func (v *Validator) ValidateAppDefinition(app *AppDefinition) ValidationResult {
 	} else {
 		for i, path := range app.ConfigPaths {
 			if err := v.validatePath(path); err != nil {
-				result.Warnings = append(result.Warnings, 
+				result.Warnings = append(result.Warnings,
 					fmt.Sprintf("config_paths[%d]: %v", i, err))
 			}
 		}
 	}
-	
+
 	// Validate format
 	if app.ConfigFormat != "" {
 		if err := v.validateField("config_format", app.ConfigFormat, "valid_format"); err != nil {
-			result.Warnings = append(result.Warnings, 
+			result.Warnings = append(result.Warnings,
 				fmt.Sprintf("config_format: %v", err))
 		}
 	}
-	
+
 	return result
 }
 
@@ -180,7 +180,7 @@ func (v *Validator) ValidateRegistry(registry *AppsRegistry) ValidationResult {
 		Errors:   []ValidationError{},
 		Warnings: []string{},
 	}
-	
+
 	// Check for duplicate app names
 	seen := make(map[string]bool)
 	for _, app := range registry.Applications {
@@ -193,7 +193,7 @@ func (v *Validator) ValidateRegistry(registry *AppsRegistry) ValidationResult {
 			})
 		}
 		seen[app.Name] = true
-		
+
 		// Validate each app
 		appResult := v.ValidateAppDefinition(&app)
 		if !appResult.Valid {
@@ -202,7 +202,7 @@ func (v *Validator) ValidateRegistry(registry *AppsRegistry) ValidationResult {
 		}
 		result.Warnings = append(result.Warnings, appResult.Warnings...)
 	}
-	
+
 	// Validate categories
 	seenCat := make(map[string]bool)
 	for _, cat := range registry.Categories {
@@ -216,16 +216,16 @@ func (v *Validator) ValidateRegistry(registry *AppsRegistry) ValidationResult {
 		}
 		seenCat[cat.Name] = true
 	}
-	
+
 	// Check that all app categories exist
 	for _, app := range registry.Applications {
 		if app.Category != "" && !seenCat[app.Category] {
 			result.Warnings = append(result.Warnings,
-				fmt.Sprintf("app %s references undefined category: %s", 
+				fmt.Sprintf("app %s references undefined category: %s",
 					app.Name, app.Category))
 		}
 	}
-	
+
 	return result
 }
 
@@ -236,24 +236,24 @@ func (v *Validator) ValidateConfigFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("cannot access file: %w", err)
 	}
-	
+
 	// Check it's not a directory
 	if info.IsDir() {
 		return fmt.Errorf("path is a directory, not a file")
 	}
-	
+
 	// Check file is readable
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("cannot read file: %w", err)
 	}
 	file.Close()
-	
+
 	// Check file size (warn if too large)
 	if info.Size() > 10*1024*1024 { // 10MB
 		return fmt.Errorf("file is too large: %d bytes", info.Size())
 	}
-	
+
 	// Validate format based on extension
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
@@ -285,12 +285,12 @@ func (v *Validator) validatePath(path string) error {
 	if path == "" {
 		return fmt.Errorf("path is empty")
 	}
-	
+
 	// Check for common issues
 	if strings.Contains(path, "..") {
 		return fmt.Errorf("path contains relative parent reference")
 	}
-	
+
 	return nil
 }
 
@@ -318,13 +318,13 @@ func (v *Validator) validateTextFile(path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Check for null bytes
 	for i, b := range data {
 		if b == 0 {
 			return fmt.Errorf("binary content detected at byte %d", i)
 		}
 	}
-	
+
 	return nil
 }

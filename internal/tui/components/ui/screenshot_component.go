@@ -265,7 +265,10 @@ func (s *ScreenshotComponent) CaptureWithContext(model tea.Model, description, t
 	// Get size from component or model
 	width, height := s.GetSize()
 	if width == 0 || height == 0 {
-		if sizeModel, ok := model.(interface{ GetWidth() int; GetHeight() int }); ok {
+		if sizeModel, ok := model.(interface {
+			GetWidth() int
+			GetHeight() int
+		}); ok {
 			width = sizeModel.GetWidth()
 			height = sizeModel.GetHeight()
 		} else {

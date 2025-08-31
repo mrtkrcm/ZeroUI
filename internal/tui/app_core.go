@@ -102,13 +102,13 @@ func (app *App) RunWithContext(ctx context.Context) error {
 
 	// Run the program
 	finalModel, err := app.program.Run()
-	
+
 	// Ensure proper terminal cleanup regardless of how we exit
 	defer func() {
 		// Give terminal time to restore
 		time.Sleep(50 * time.Millisecond)
 	}()
-	
+
 	if err != nil {
 		app.logger.LogError(err, "program_run")
 		return fmt.Errorf("failed to run program: %w", err)

@@ -208,7 +208,7 @@ type SafeOperation struct {
 	appName          string
 	validator        ConfigValidator
 	preSaveConfig    map[string]interface{} // Store config before changes
-	validationPassed bool                  // Track if validation succeeded
+	validationPassed bool                   // Track if validation succeeded
 }
 
 // NewSafeOperation creates a new safe operation with automatic backup

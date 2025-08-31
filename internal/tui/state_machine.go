@@ -2,7 +2,7 @@ package tui
 
 import (
 	"fmt"
-	
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -33,10 +33,10 @@ func NewStateMachine(initial ViewState) *StateMachine {
 		history:     []ViewState{initial},
 		maxHistory:  10,
 	}
-	
+
 	// Define valid transitions
 	sm.defineTransitions()
-	
+
 	return sm
 }
 
@@ -46,20 +46,20 @@ func (sm *StateMachine) defineTransitions() {
 	sm.addTransition(ListView, FormView, nil)
 	sm.addTransition(ListView, HelpView, nil)
 	sm.addTransition(ListView, ProgressView, nil)
-	
+
 	// From FormView
 	sm.addTransition(FormView, ListView, nil)
 	sm.addTransition(FormView, HelpView, nil)
 	sm.addTransition(FormView, ProgressView, nil)
-	
+
 	// From HelpView
 	sm.addTransition(HelpView, ListView, nil)
 	sm.addTransition(HelpView, FormView, nil)
-	
+
 	// From ProgressView
 	sm.addTransition(ProgressView, ListView, nil)
 	sm.addTransition(ProgressView, FormView, nil)
-	
+
 	// Self-transitions (refresh)
 	sm.addTransition(ListView, ListView, nil)
 	sm.addTransition(FormView, FormView, nil)
@@ -78,27 +78,27 @@ func (sm *StateMachine) Transition(to ViewState) error {
 	// Check if transition is valid
 	key := stateTransition{from: sm.current, to: to}
 	handler, valid := sm.transitions[key]
-	
+
 	if !valid {
-		return fmt.Errorf("invalid transition from %s to %s", 
-			sm.getStateName(sm.current), 
+		return fmt.Errorf("invalid transition from %s to %s",
+			sm.getStateName(sm.current),
 			sm.getStateName(to))
 	}
-	
+
 	// Execute transition handler if present
 	if handler != nil {
 		if err := handler(); err != nil {
 			return fmt.Errorf("transition handler failed: %w", err)
 		}
 	}
-	
+
 	// Update state
 	sm.previous = sm.current
 	sm.current = to
-	
+
 	// Update history
 	sm.addToHistory(to)
-	
+
 	return nil
 }
 
@@ -124,13 +124,13 @@ func (sm *StateMachine) Back() error {
 	if len(sm.history) <= 1 {
 		return fmt.Errorf("no previous state in history")
 	}
-	
+
 	// Remove current from history
 	sm.history = sm.history[:len(sm.history)-1]
-	
+
 	// Get previous state
 	prev := sm.history[len(sm.history)-1]
-	
+
 	// Transition to previous
 	return sm.Transition(prev)
 }
@@ -150,13 +150,13 @@ func (sm *StateMachine) GetHistory() []ViewState {
 // GetValidTransitions returns valid transitions from current state
 func (sm *StateMachine) GetValidTransitions() []ViewState {
 	var valid []ViewState
-	
+
 	for key := range sm.transitions {
 		if key.from == sm.current {
 			valid = append(valid, key.to)
 		}
 	}
-	
+
 	return valid
 }
 
@@ -171,7 +171,7 @@ func (sm *StateMachine) HandleStateChange(to ViewState) tea.Cmd {
 			}
 		}
 	}
-	
+
 	return func() tea.Msg {
 		return StateChangedMsg{
 			From: sm.previous,
@@ -184,7 +184,7 @@ func (sm *StateMachine) HandleStateChange(to ViewState) tea.Cmd {
 
 func (sm *StateMachine) addToHistory(state ViewState) {
 	sm.history = append(sm.history, state)
-	
+
 	// Limit history size
 	if len(sm.history) > sm.maxHistory {
 		sm.history = sm.history[1:]
@@ -198,7 +198,7 @@ func (sm *StateMachine) getStateName(state ViewState) string {
 		HelpView:     "HelpView",
 		ProgressView: "ProgressView",
 	}
-	
+
 	if name, ok := names[state]; ok {
 		return name
 	}

@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/mrtkrcm/ZeroUI/test/helpers"
 	"github.com/mrtkrcm/ZeroUI/internal/performance"
+	"github.com/mrtkrcm/ZeroUI/test/helpers"
 )
 
 // TestMain configures a deterministic environment for the package tests.
@@ -16,5 +16,3 @@ import (
 func TestMain(m *testing.M) {
 	helpers.RunTestMainWithCleanup(m, "internal/config", "zeroui-internal-config-test-home-", performance.ClearHomeDirCache)
 }
-
-

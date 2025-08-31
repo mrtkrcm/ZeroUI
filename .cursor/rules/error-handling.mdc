@@ -1,0 +1,465 @@
+---
+alwaysApply: true
+description: Error handling patterns and best practices used in ZeroUI
+globs: *.go
+---
+
+# ZeroUI Error Handling Patterns
+
+## 🚨 Error Types and Classification
+
+### Structured Error Types
+```go
+// Custom error types for different categories
+type ValidationError struct {
+    Field   string
+    Value   interface{}
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("validation error for field '%s': %s", e.Field, e.Message)
+}
+
+// Constructor for validation errors
+func NewValidationError(field string, value interface{}, message string) *ValidationError {
+    return &ValidationError{
+        Field:   field,
+        Value:   value,
+        Message: message,
+    }
+}
+
+// Command execution errors
+type CommandError struct {
+    Command string
+    Args    []string
+    Output  string
+    Err     error
+}
+
+func (e CommandError) Error() string {
+    return fmt.Sprintf("command '%s %s' failed: %v\nOutput: %s",
+        e.Command, strings.Join(e.Args, " "), e.Err, e.Output)
+}
+
+func (e CommandError) Unwrap() error {
+    return e.Err
+}
+```
+
+### Error Categories
+```go
+// Error type constants for consistent error handling
+const (
+    ErrTypeValidation = "validation"
+    ErrTypeNetwork    = "network"
+    ErrTypeFileSystem = "filesystem"
+    ErrTypeCommand    = "command"
+    ErrTypeConfig     = "config"
+    ErrTypeUI         = "ui"
+)
+
+// Enhanced error with type and context
+type TypedError struct {
+    Type    string
+    Context string
+    Err     error
+}
+
+func (e TypedError) Error() string {
+    return fmt.Sprintf("[%s] %s: %v", e.Type, e.Context, e.Err)
+}
+
+func (e TypedError) Unwrap() error {
+    return e.Err
+}
+
+// Error constructors
+func NewValidationError(context string, err error) *TypedError {
+    return &TypedError{
+        Type:    ErrTypeValidation,
+        Context: context,
+        Err:     err,
+    }
+}
+
+func NewCommandError(cmd string, args []string, output string, err error) *TypedError {
+    return &TypedError{
+        Type:    ErrTypeCommand,
+        Context: fmt.Sprintf("command: %s %s", cmd, strings.Join(args, " ")),
+        Err:     &CommandError{
+            Command: cmd,
+            Args:    args,
+            Output:  output,
+            Err:     err,
+        },
+    }
+}
+```
+
+## 🛡️ Error Handling Patterns
+
+### Bubble Tea Error Handling
+```go
+// Error message type for Bubble Tea
+type errMsg struct {
+    err     error
+    context string
+}
+
+// Error command constructor
+func errorOccurred(err error, context string) tea.Cmd {
+    return func() tea.Msg {
+        return errMsg{
+            err:     err,
+            context: context,
+        }
+    }
+}
+
+// Model error handling
+type Model struct {
+    err      error
+    errType  string
+    errCount int
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    switch msg := msg.(type) {
+    case errMsg:
+        m.err = msg.err
+        m.errType = msg.context
+        m.errCount++
+
+        // Log error with context
+        log.Printf("Error in %s: %v", msg.context, msg.err)
+
+        // Handle specific error types
+        if typedErr, ok := msg.err.(*TypedError); ok {
+            return m.handleTypedError(typedErr)
+        }
+
+        return m, nil
+
+    case tea.KeyMsg:
+        // Clear error on user interaction
+        if m.err != nil {
+            m.err = nil
+            m.errType = ""
+        }
+    }
+
+    return m, nil
+}
+
+func (m Model) handleTypedError(err *TypedError) (Model, tea.Cmd) {
+    switch err.Type {
+    case ErrTypeValidation:
+        // Handle validation errors (usually user input)
+        return m, nil
+    case ErrTypeCommand:
+        // Handle command execution errors
+        return m, m.retryCommand(err)
+    case ErrTypeNetwork:
+        // Handle network errors with retry
+        return m, tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
+            return retryMsg{originalErr: err}
+        })
+    default:
+        // Handle other error types
+        return m, nil
+    }
+}
+```
+
+### Retry Logic
+```go
+type retryMsg struct {
+    originalErr *TypedError
+    attempt     int
+}
+
+const MaxRetries = 3
+
+func (m Model) retryCommand(err *TypedError) tea.Cmd {
+    if m.errCount >= MaxRetries {
+        return errorOccurred(
+            fmt.Errorf("max retries exceeded: %w", err),
+            "retryCommand",
+        )
+    }
+
+    return tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+        return retryMsg{
+            originalErr: err,
+            attempt:     m.errCount,
+        }
+    })
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    switch msg := msg.(type) {
+    case retryMsg:
+        // Retry the original command
+        cmd, err := m.reconstructCommand(msg.originalErr)
+        if err != nil {
+            return m, errorOccurred(err, "retryReconstruction")
+        }
+
+        m.errCount = msg.attempt + 1
+        return m, cmd
+    }
+
+    return m, nil
+}
+```
+
+### Error Recovery
+```go
+func (m Model) recoverFromError() (Model, tea.Cmd) {
+    // Clear error state
+    m.err = nil
+    m.errType = ""
+    m.errCount = 0
+
+    // Reset to safe state
+    m.cursor = 0
+    m.selected = ""
+    m.loading = false
+
+    // Reload data
+    return m, m.loadData()
+}
+
+func (m Model) renderError() string {
+    if m.err == nil {
+        return ""
+    }
+
+    // Different error displays based on type
+    errorStyle := lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#FF5555")).
+        Bold(true)
+
+    recoveryStyle := lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#FFB86C"))
+
+    var errorDisplay string
+    if typedErr, ok := m.err.(*TypedError); ok {
+        errorDisplay = fmt.Sprintf("[%s] %s", typedErr.Type, typedErr.Err.Error())
+    } else {
+        errorDisplay = m.err.Error()
+    }
+
+    recovery := "Press 'r' to retry or 'esc' to continue"
+    if m.errCount >= MaxRetries {
+        recovery = "Max retries exceeded. Press 'esc' to continue"
+    }
+
+    return lipgloss.JoinVertical(
+        lipgloss.Left,
+        errorStyle.Render("Error: "+errorDisplay),
+        "",
+        recoveryStyle.Render(recovery),
+    )
+}
+```
+
+## 🔍 Error Logging and Monitoring
+
+### Structured Logging
+```go
+type ErrorLogger struct {
+    writer io.Writer
+    level  LogLevel
+}
+
+type LogLevel int
+
+const (
+    DebugLevel LogLevel = iota
+    InfoLevel
+    WarnLevel
+    ErrorLevel
+)
+
+func (l *ErrorLogger) LogError(err error, context string, metadata map[string]interface{}) {
+    if l.level > ErrorLevel {
+        return
+    }
+
+    logEntry := map[string]interface{}{
+        "timestamp": time.Now().Format(time.RFC3339),
+        "level":     "ERROR",
+        "context":   context,
+        "error":     err.Error(),
+        "metadata":  metadata,
+    }
+
+    // Add error type if available
+    if typedErr, ok := err.(*TypedError); ok {
+        logEntry["error_type"] = typedErr.Type
+    }
+
+    // Log to configured writer
+    jsonData, _ := json.Marshal(logEntry)
+    fmt.Fprintln(l.writer, string(jsonData))
+}
+```
+
+### Error Metrics
+```go
+type ErrorMetrics struct {
+    mu         sync.RWMutex
+    errors     map[string]int
+    lastErrors map[string]time.Time
+}
+
+func (em *ErrorMetrics) RecordError(err error, context string) {
+    em.mu.Lock()
+    defer em.mu.Unlock()
+
+    errorKey := fmt.Sprintf("%s:%T", context, err)
+    em.errors[errorKey]++
+    em.lastErrors[errorKey] = time.Now()
+}
+
+func (em *ErrorMetrics) GetStats() map[string]interface{} {
+    em.mu.RLock()
+    defer em.mu.RUnlock()
+
+    return map[string]interface{}{
+        "total_errors": len(em.errors),
+        "error_counts": em.errors,
+        "last_errors":  em.lastErrors,
+    }
+}
+```
+
+## 🧪 Error Testing Patterns
+
+### Error Testing
+```go
+func TestModel_ErrorHandling(t *testing.T) {
+    tests := []struct {
+        name         string
+        inputErr     error
+        expectedView string
+        shouldRetry  bool
+    }{
+        {
+            name:         "validation error",
+            inputErr:     NewValidationError("username", "empty", "cannot be empty"),
+            expectedView: "validation error",
+            shouldRetry:  false,
+        },
+        {
+            name:         "command error",
+            inputErr:     NewCommandError("list", []string{"apps"}, "command failed", errors.New("timeout")),
+            expectedView: "command error",
+            shouldRetry:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            m := NewModel()
+            updatedModel, cmd := m.Update(errMsg{err: tt.inputErr, context: "test"})
+
+            // Check if error is properly handled
+            assert.NotNil(t, updatedModel.GetError())
+
+            // Check if retry is triggered for retryable errors
+            if tt.shouldRetry {
+                assert.NotNil(t, cmd)
+            }
+        })
+    }
+}
+```
+
+### Error Boundary Testing
+```go
+func TestModel_ErrorRecovery(t *testing.T) {
+    m := NewModel()
+
+    // Simulate error state
+    m, _ = m.Update(errMsg{
+        err:     errors.New("simulated error"),
+        context: "test",
+    })
+
+    // Verify error state
+    assert.NotNil(t, m.GetError())
+
+    // Test recovery
+    m, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+
+    // Verify error is cleared
+    assert.Nil(t, m.GetError())
+    assert.NotNil(t, cmd) // Should trigger reload
+}
+```
+
+## 📚 Error Handling Best Practices
+
+### 1. Always Handle Errors
+```go
+// ❌ Bad: Ignoring errors
+result := someFunction()
+
+// ✅ Good: Handle errors properly
+result, err := someFunction()
+if err != nil {
+    return handleError(err)
+}
+```
+
+### 2. Provide Context
+```go
+// ❌ Bad: Generic error
+return errors.New("something failed")
+
+// ✅ Good: Contextual error
+return fmt.Errorf("failed to load configuration from %s: %w", path, err)
+```
+
+### 3. Use Error Types
+```go
+// ❌ Bad: String comparison
+if err.Error() == "not found" {
+    // handle not found
+}
+
+// ✅ Good: Type assertion
+if errors.Is(err, ErrNotFound) {
+    // handle not found
+}
+```
+
+### 4. Wrap Errors
+```go
+// ❌ Bad: Losing context
+return err
+
+// ✅ Good: Preserving context
+return fmt.Errorf("failed to process request: %w", err)
+```
+
+### 5. Log Errors Appropriately
+```go
+// Log errors with appropriate levels
+if err != nil {
+    if isRetryable(err) {
+        log.Warn("Temporary error, will retry", "error", err)
+    } else {
+        log.Error("Permanent error", "error", err)
+    }
+}
+```
+
+## 📚 Key Files
+- [internal/tui/components/core/interfaces.go](mdc:internal/tui/components/core/interfaces.go) - Error-related interfaces
+- [internal/tui/app_state.go](mdc:internal/tui/app_state.go) - Main error handling
+- [internal/logging/logger.go](mdc:internal/logging/logger.go) - Logging utilities

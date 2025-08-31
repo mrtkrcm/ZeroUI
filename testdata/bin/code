@@ -1,0 +1,18 @@
+#!/bin/bash
+# Test stub for Visual Studio Code
+# This is used by tests to avoid dependency on the actual code binary
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "code (test stub) - Visual Studio Code"
+    echo "Usage: code [files...]"
+    echo "This is a test stub and does not provide full functionality."
+    exit 0
+fi
+
+if [[ "$1" == "--version" || "$1" == "-V" ]]; then
+    echo "1.85.0 (test-stub)"
+    exit 0
+fi
+
+echo "code test stub executed successfully"
+exit 0

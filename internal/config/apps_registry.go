@@ -30,9 +30,9 @@ type CategoryDefinition struct {
 
 // AppsRegistry contains all known applications and categories
 type AppsRegistry struct {
-	Applications []AppDefinition     `yaml:"applications"`
+	Applications []AppDefinition      `yaml:"applications"`
 	Categories   []CategoryDefinition `yaml:"categories"`
-	
+
 	// Internal maps for quick lookup
 	appsByName     map[string]*AppDefinition
 	appsByCategory map[string][]*AppDefinition
@@ -48,7 +48,7 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load embedded registry: %w", err)
 	}
-	
+
 	// Try to load custom apps from user config
 	home, err := os.UserHomeDir()
 	if err == nil {
@@ -60,7 +60,7 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 				fmt.Fprintf(os.Stderr, "Warning: failed to load custom apps: %v\n", err)
 			}
 		}
-		
+
 		// Also check for full registry override (advanced users)
 		customRegistryPath := filepath.Join(home, ".config", "zeroui", "apps_registry.yaml")
 		if _, err := os.Stat(customRegistryPath); err == nil {
@@ -68,7 +68,7 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 			return loadRegistryFromFile(customRegistryPath)
 		}
 	}
-	
+
 	return registry, nil
 }
 
@@ -83,7 +83,7 @@ func loadRegistryFromFile(path string) (*AppsRegistry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read registry file: %w", err)
 	}
-	
+
 	return loadRegistryFromBytes(data)
 }
 
@@ -98,23 +98,23 @@ func loadRegistryFromBytes(data []byte) (*AppsRegistry, error) {
 	if err := yaml.Unmarshal(data, &registry); err != nil {
 		return nil, fmt.Errorf("failed to parse registry: %w", err)
 	}
-	
+
 	// Build internal maps
 	registry.appsByName = make(map[string]*AppDefinition)
 	registry.appsByCategory = make(map[string][]*AppDefinition)
-	
+
 	for i := range registry.Applications {
 		app := &registry.Applications[i]
 		registry.appsByName[app.Name] = app
-		
+
 		if app.Category != "" {
 			registry.appsByCategory[app.Category] = append(
-				registry.appsByCategory[app.Category], 
+				registry.appsByCategory[app.Category],
 				app,
 			)
 		}
 	}
-	
+
 	return &registry, nil
 }
 
@@ -145,19 +145,19 @@ func (r *AppsRegistry) FindConfigPath(appName string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", false
 	}
-	
+
 	for _, path := range app.ConfigPaths {
 		expandedPath := strings.ReplaceAll(path, "~", home)
 		if _, err := os.Stat(expandedPath); err == nil {
 			return expandedPath, true
 		}
 	}
-	
+
 	return "", false
 }
 
@@ -173,14 +173,14 @@ func (r *AppsRegistry) GetConfigPaths(appName string) []string {
 	if !ok {
 		return nil
 	}
-	
+
 	home, _ := os.UserHomeDir()
 	paths := make([]string, len(app.ConfigPaths))
-	
+
 	for i, path := range app.ConfigPaths {
 		paths[i] = strings.ReplaceAll(path, "~", home)
 	}
-	
+
 	return paths
 }
 
@@ -190,17 +190,17 @@ func (r *AppsRegistry) MergeFromFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read custom apps file: %w", err)
 	}
-	
+
 	// Parse custom apps
 	var custom struct {
 		Applications []AppDefinition      `yaml:"applications"`
 		Categories   []CategoryDefinition `yaml:"categories,omitempty"`
 	}
-	
+
 	if err := yaml.Unmarshal(data, &custom); err != nil {
 		return fmt.Errorf("failed to parse custom apps: %w", err)
 	}
-	
+
 	// Merge or override applications
 	for _, app := range custom.Applications {
 		// Check if app already exists
@@ -212,7 +212,7 @@ func (r *AppsRegistry) MergeFromFile(path string) error {
 			r.Applications = append(r.Applications, app)
 			r.appsByName[app.Name] = &r.Applications[len(r.Applications)-1]
 		}
-		
+
 		// Update category mapping
 		if app.Category != "" {
 			// Remove from old category if it exists elsewhere
@@ -240,7 +240,7 @@ func (r *AppsRegistry) MergeFromFile(path string) error {
 			}
 		}
 	}
-	
+
 	// Merge categories if provided
 	for _, cat := range custom.Categories {
 		found := false
@@ -255,7 +255,7 @@ func (r *AppsRegistry) MergeFromFile(path string) error {
 			r.Categories = append(r.Categories, cat)
 		}
 	}
-	
+
 	return nil
 }
 

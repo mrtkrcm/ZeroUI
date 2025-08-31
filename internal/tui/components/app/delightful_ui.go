@@ -459,11 +459,11 @@ func (m *DelightfulUIModel) activateApp() tea.Cmd {
 }
 
 func (m *DelightfulUIModel) cycleTheme() {
-	newTheme := styles.CycleTheme()
+	styles.CycleTheme()
 	m.styles = styles.GetStyles()
 
 	// Create theme change particles for visual feedback
-	m.createThemeChangeParticles(newTheme.Name)
+	m.createThemeChangeParticles(styles.GetCurrentThemeName())
 }
 
 func (m *DelightfulUIModel) createThemeChangeParticles(themeName string) {

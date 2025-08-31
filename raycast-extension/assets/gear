@@ -1,0 +1,20 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <style>
+            .dark-mode { stroke: #FFFFFF; }
+            .light-mode { stroke: #000000; }
+            .accent { stroke: #007ACC; fill: #007ACC; }
+        </style>
+    </defs>
+    <!-- Background circle for better visibility -->
+    <circle cx="32" cy="32" r="30" fill="#F8F9FA" stroke="none"/>
+    <!-- Zero Symbol -->
+    <g transform="translate(32, 32)">
+        <!-- Outer circle -->
+        <circle cx="0" cy="0" r="24" fill="none" stroke="#1A1A1A" stroke-width="2.5"/>
+        <!-- Inner circle -->
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#007ACC" stroke-width="1.8"/>
+        <!-- Center dot -->
+        <circle cx="0" cy="0" r="2" fill="#007ACC"/>
+    </g>
+</svg>

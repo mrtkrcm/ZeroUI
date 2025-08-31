@@ -150,5 +150,3 @@ set -g window-status-current-style 'bg=#5eacd3,fg=#1e1e1e'
 `
 	os.WriteFile(filepath.Join(homeDir, ".tmux.conf"), []byte(tmuxConfig), 0644)
 }
-
-

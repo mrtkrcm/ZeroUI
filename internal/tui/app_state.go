@@ -11,10 +11,10 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
-	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
-	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
-	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
 	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
+	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
+	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
+	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/keybindings"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
@@ -35,20 +35,20 @@ type Model struct {
 
 	// Modern components using unified component system
 	appList        *app.ApplicationListModel
-	appScanner     *app.AppScannerV2        // Improved scanner
+	appScanner     *app.AppScannerV2          // Improved scanner
 	tabbedConfig   *forms.TabbedConfigModel   // Basic tabbed interface
-	enhancedConfig *forms.EnhancedConfigModel  // Enhanced config editor
+	enhancedConfig *forms.EnhancedConfigModel // Enhanced config editor
 	helpSystem     *display.GlamourHelpModel
 	presetSel      *app.PresetsSelector
 
 	// Unified component system
-	componentManager   *ui.ComponentManager
-	screenshotComp     *ui.ScreenshotComponent
-	uiManager          *ui.UIIntegrationManager
-	enhancedAppList    *ui.EnhancedApplicationList
+	componentManager *ui.ComponentManager
+	screenshotComp   *ui.ScreenshotComponent
+	uiManager        *ui.UIIntegrationManager
+	enhancedAppList  *ui.EnhancedApplicationList
 
 	// UI implementation selection
-	uiSelector         *UISelector
+	uiSelector *UISelector
 
 	// UI state
 	keyMap      keybindings.AppKeyMap
@@ -85,7 +85,7 @@ type RefreshAppsMsg = app.RefreshAppsMsg
 // NewModel creates a new model for the application
 func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLogger) (*Model, error) {
 	// Initialize theme
-	theme := styles.DefaultTheme()
+	theme := &styles.DefaultTheme
 	appStyles := theme.BuildStyles()
 
 	// Initialize modern components
@@ -167,7 +167,7 @@ func (m *Model) Init() tea.Cmd {
 	m.state = ProgressView
 	m.isLoading = true
 	m.loadingText = "Scanning applications..."
-	
+
 	// Initialize with screen detection
 	return tea.Batch(
 		// Start application scanning
@@ -242,7 +242,7 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 	// Create configuration interfaces
 	m.tabbedConfig = forms.NewTabbedConfig(appName)
 	m.enhancedConfig = forms.NewEnhancedConfig(appName)
-	
+
 	// Set initial size to prevent flicker when switching views
 	if m.width > 0 && m.height > 0 {
 		m.enhancedConfig.SetSize(m.width, m.height)
@@ -253,7 +253,7 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 			}
 		}
 	}
-	
+
 	// Load the actual config file content for viewing
 	if targetPath != "" {
 		content, err := os.ReadFile(targetPath)

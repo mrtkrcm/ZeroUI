@@ -19,25 +19,25 @@ type TempFileManager struct {
 	tempDir   string
 	tempFiles map[string]*TempFile
 	mu        sync.RWMutex
-	
+
 	// Metrics
 	operations uint64
 	errors     uint64
-	
+
 	// Configuration
-	maxBackups  int
-	maxTempAge  time.Duration
-	bufferSize  int
+	maxBackups int
+	maxTempAge time.Duration
+	bufferSize int
 }
 
 // TempFile represents a temporary file with integrity tracking
 type TempFile struct {
-	OriginalPath   string
-	TempPath       string
-	BackupPath     string
-	OriginalHash   string
-	CreatedAt      time.Time
-	LockFile       string
+	OriginalPath string
+	TempPath     string
+	BackupPath   string
+	OriginalHash string
+	CreatedAt    time.Time
+	LockFile     string
 }
 
 // TempFileOptions configures the temporary file manager
@@ -68,12 +68,12 @@ func NewTempFileManagerWithOptions(opts *TempFileOptions) (*TempFileManager, err
 	if opts == nil {
 		opts = DefaultTempFileOptions()
 	}
-	
+
 	// Ensure temp directory exists with proper permissions
 	if err := os.MkdirAll(opts.TempDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create temp directory %q: %w", opts.TempDir, err)
 	}
-	
+
 	// Test write permissions
 	testFile := filepath.Join(opts.TempDir, ".test")
 	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
@@ -88,10 +88,10 @@ func NewTempFileManagerWithOptions(opts *TempFileOptions) (*TempFileManager, err
 		maxTempAge: opts.MaxTempAge,
 		bufferSize: opts.BufferSize,
 	}
-	
+
 	// Don't start periodic cleanup in tests or for short-lived instances
 	// Users can call StartPeriodicCleanup() if needed
-	
+
 	return manager, nil
 }
 
@@ -103,13 +103,13 @@ func (m *TempFileManager) CreateTempCopy(originalPath string) (*TempFile, error)
 // CreateTempCopyWithContext creates a temporary copy with context support
 func (m *TempFileManager) CreateTempCopyWithContext(ctx context.Context, originalPath string) (*TempFile, error) {
 	atomic.AddUint64(&m.operations, 1)
-	
+
 	// Normalize path for consistency
 	originalPath = filepath.Clean(originalPath)
-	
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	// Check context before proceeding
 	select {
 	case <-ctx.Done():
@@ -202,12 +202,12 @@ func (m *TempFileManager) CommitTempWithContext(ctx context.Context, tempFile *T
 	if tempFile == nil {
 		return fmt.Errorf("tempFile cannot be nil")
 	}
-	
+
 	atomic.AddUint64(&m.operations, 1)
-	
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	// Check context
 	select {
 	case <-ctx.Done():
@@ -231,7 +231,7 @@ func (m *TempFileManager) CommitTempWithContext(ctx context.Context, tempFile *T
 			atomic.AddUint64(&m.errors, 1)
 			return fmt.Errorf("cannot overwrite directory %q", tempFile.OriginalPath)
 		}
-		
+
 		if err := m.createBackupWithRotation(tempFile.OriginalPath, tempFile.BackupPath); err != nil {
 			atomic.AddUint64(&m.errors, 1)
 			return fmt.Errorf("failed to create backup: %w", err)
@@ -300,7 +300,7 @@ func (m *TempFileManager) Rollback(tempFile *TempFile) error {
 func (m *TempFileManager) GetTempFile(originalPath string) (*TempFile, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	tempFile, exists := m.tempFiles[originalPath]
 	return tempFile, exists
 }
@@ -357,7 +357,7 @@ func (m *TempFileManager) calculateFileHashWithContext(ctx context.Context, path
 	defer file.Close()
 
 	hash := sha256.New()
-	
+
 	// Use buffered copy with context checking
 	buf := make([]byte, m.bufferSize)
 	for {
@@ -367,7 +367,7 @@ func (m *TempFileManager) calculateFileHashWithContext(ctx context.Context, path
 			return "", ctx.Err()
 		default:
 		}
-		
+
 		n, err := file.Read(buf)
 		if n > 0 {
 			hash.Write(buf[:n])
@@ -398,7 +398,7 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 	if err != nil {
 		return fmt.Errorf("failed to stat source file: %w", err)
 	}
-	
+
 	// Don't copy directories
 	if srcInfo.IsDir() {
 		return fmt.Errorf("cannot copy directory %q", src)
@@ -415,7 +415,7 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}
-	
+
 	// Ensure cleanup on error
 	success := false
 	defer func() {
@@ -434,7 +434,7 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 			return ctx.Err()
 		default:
 		}
-		
+
 		n, readErr := source.Read(buf)
 		if n > 0 {
 			if _, writeErr := destination.Write(buf[:n]); writeErr != nil {
@@ -448,12 +448,12 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 			return fmt.Errorf("read error: %w", readErr)
 		}
 	}
-	
+
 	// Ensure all data is written to disk
 	if err := destination.Sync(); err != nil {
 		return fmt.Errorf("failed to sync destination: %w", err)
 	}
-	
+
 	success = true
 	return nil
 }
@@ -501,7 +501,7 @@ func (m *TempFileManager) atomicRename(src, dst string) error {
 			}
 		}
 	}
-	
+
 	// Perform the rename
 	if err := os.Rename(src, dst); err != nil {
 		// If rename fails, try copy and delete
@@ -512,7 +512,7 @@ func (m *TempFileManager) atomicRename(src, dst string) error {
 		os.Remove(src)
 		return nil
 	}
-	
+
 	return nil
 }
 
@@ -526,10 +526,10 @@ func (m *TempFileManager) periodicCleanup(ctx context.Context, interval time.Dur
 	if interval <= 0 {
 		interval = 1 * time.Hour
 	}
-	
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -561,12 +561,12 @@ func (m *TempFileManager) isLocked(lockFile string) bool {
 	var osName string
 	var timestamp int64
 	fmt.Sscanf(string(data), "%d:%s:%d", &pid, &osName, &timestamp)
-	
+
 	// Check if it's our own process
 	if pid == os.Getpid() {
 		return true // We own the lock
 	}
-	
+
 	// Check if lock is too old (stale)
 	if timestamp > 0 {
 		lockTime := time.Unix(timestamp, 0)
@@ -574,7 +574,7 @@ func (m *TempFileManager) isLocked(lockFile string) bool {
 			return false // Lock is stale
 		}
 	}
-	
+
 	// For other processes, we consider the lock valid if it has a valid PID
 	return pid > 0
 }
@@ -584,15 +584,15 @@ func (m *TempFileManager) GetMetrics() map[string]interface{} {
 	m.mu.RLock()
 	tempFileCount := len(m.tempFiles)
 	m.mu.RUnlock()
-	
+
 	return map[string]interface{}{
-		"operations":       atomic.LoadUint64(&m.operations),
-		"errors":          atomic.LoadUint64(&m.errors),
-		"temp_files":      tempFileCount,
-		"temp_dir":        m.tempDir,
-		"max_backups":     m.maxBackups,
-		"max_temp_age":    m.maxTempAge.String(),
-		"buffer_size":     m.bufferSize,
+		"operations":   atomic.LoadUint64(&m.operations),
+		"errors":       atomic.LoadUint64(&m.errors),
+		"temp_files":   tempFileCount,
+		"temp_dir":     m.tempDir,
+		"max_backups":  m.maxBackups,
+		"max_temp_age": m.maxTempAge.String(),
+		"buffer_size":  m.bufferSize,
 	}
 }
 

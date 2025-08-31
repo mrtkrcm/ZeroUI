@@ -15,6 +15,8 @@ Welcome to the ZeroUI documentation! This index helps you navigate through our c
 ### Core Features
 | Document | Description |
 |----------|-------------|
+| [DELIGHTFUL_UX.md](DELIGHTFUL_UX.md) | 🎉 **Enhanced UX Features** |
+| [TESTING_VALIDATION.md](TESTING_VALIDATION.md) | 🧪 **Quality Assurance Report** |
 | [COMMANDS.md](COMMANDS.md) | CLI commands and usage |
 | [REFERENCE_SYSTEM.md](REFERENCE_SYSTEM.md) | Configuration reference system |
 | [ui/UI_FULLSCREEN_DESIGN.md](ui/UI_FULLSCREEN_DESIGN.md) | TUI interface design |
@@ -114,8 +116,10 @@ docs/
 │   └── ADVANCED_OPTIMIZATION_REPORT.md
 ├── 
 ├── ui/                                # UI/UX documentation
-│   └── UI_FULLSCREEN_DESIGN.md
+│   ├── UI_FULLSCREEN_DESIGN.md
 │   └── UX_ENHANCEMENT_DEMO.md
+├── DELIGHTFUL_UX.md                 # 🎉 Enhanced UX features
+├── TESTING_VALIDATION.md            # 🧪 Quality assurance report
 ├── 
 ├── architecture/                      # Architecture documentation
 │   └── PLUGIN_ARCHITECTURE_ANALYSIS.md

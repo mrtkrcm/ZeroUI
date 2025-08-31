@@ -11,7 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 )
 
@@ -49,16 +49,16 @@ type ScanCompleteMsg struct {
 
 // AppScanner handles application scanning and status checking
 type AppScanner struct {
-	apps        []AppInfo
-	scanning    bool
-	currentApp  int
-	totalApps   int
-	progress    progress.Model
-	spinner     spinner.Model
-	width       int
-	height      int
-	startTime   time.Time
-	
+	apps       []AppInfo
+	scanning   bool
+	currentApp int
+	totalApps  int
+	progress   progress.Model
+	spinner    spinner.Model
+	width      int
+	height     int
+	startTime  time.Time
+
 	// Styles
 	titleStyle    lipgloss.Style
 	statusStyle   lipgloss.Style
@@ -73,7 +73,7 @@ func NewAppScanner() *AppScanner {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	
+
 	return &AppScanner{
 		apps:     []AppInfo{},
 		progress: p,
@@ -108,17 +108,17 @@ func (s *AppScanner) Update(msg tea.Msg) (*AppScanner, tea.Cmd) {
 		s.width = msg.Width
 		s.height = msg.Height
 		s.progress.Width = msg.Width - 4
-		
+
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		s.spinner, cmd = s.spinner.Update(msg)
 		return s, cmd
-		
+
 	case progress.FrameMsg:
 		progressModel, cmd := s.progress.Update(msg)
 		s.progress = progressModel.(progress.Model)
 		return s, cmd
-		
+
 	case ScanProgressMsg:
 		// Update progress
 		cmds := []tea.Cmd{}
@@ -126,13 +126,13 @@ func (s *AppScanner) Update(msg tea.Msg) (*AppScanner, tea.Cmd) {
 			cmds = append(cmds, s.progress.SetPercent(msg.Progress))
 		}
 		return s, tea.Batch(cmds...)
-		
+
 	case ScanCompleteMsg:
 		s.scanning = false
 		s.apps = msg.Apps
 		return s, nil
 	}
-	
+
 	return s, nil
 }
 
@@ -147,41 +147,41 @@ func (s *AppScanner) View() string {
 // renderScanning shows the scanning progress
 func (s *AppScanner) renderScanning() string {
 	var b strings.Builder
-	
+
 	title := s.titleStyle.Render("🔍 Scanning Applications")
 	b.WriteString(title + "\n\n")
-	
+
 	// Show spinner and current app
 	if s.currentApp < s.totalApps {
-		status := fmt.Sprintf("%s Checking app %d of %d", 
-			s.spinner.View(), 
-			s.currentApp+1, 
+		status := fmt.Sprintf("%s Checking app %d of %d",
+			s.spinner.View(),
+			s.currentApp+1,
 			s.totalApps)
 		b.WriteString(s.statusStyle.Render(status) + "\n\n")
 	}
-	
+
 	// Show progress bar
 	b.WriteString(s.progress.View() + "\n\n")
-	
+
 	// Show elapsed time
 	elapsed := time.Since(s.startTime).Round(time.Second)
 	b.WriteString(s.statusStyle.Render(fmt.Sprintf("Elapsed: %s", elapsed)))
-	
+
 	return b.String()
 }
 
 // renderResults shows the scan results
 func (s *AppScanner) renderResults() string {
 	var b strings.Builder
-	
+
 	title := s.titleStyle.Render("📦 Applications")
 	b.WriteString(title + "\n\n")
-	
+
 	// Group apps by status
 	ready := []AppInfo{}
 	notConfigured := []AppInfo{}
 	errors := []AppInfo{}
-	
+
 	for _, app := range s.apps {
 		switch app.Status {
 		case StatusReady:
@@ -192,7 +192,7 @@ func (s *AppScanner) renderResults() string {
 			errors = append(errors, app)
 		}
 	}
-	
+
 	// Show ready apps
 	if len(ready) > 0 {
 		b.WriteString(s.readyStyle.Render("✓ Ready") + "\n")
@@ -201,7 +201,7 @@ func (s *AppScanner) renderResults() string {
 		}
 		b.WriteString("\n")
 	}
-	
+
 	// Show not configured apps
 	if len(notConfigured) > 0 {
 		b.WriteString(s.notFoundStyle.Render("⚠ Not Configured") + "\n")
@@ -210,7 +210,7 @@ func (s *AppScanner) renderResults() string {
 		}
 		b.WriteString("\n")
 	}
-	
+
 	// Show errors
 	if len(errors) > 0 {
 		b.WriteString(s.errorStyle.Render("✗ Errors") + "\n")
@@ -218,7 +218,7 @@ func (s *AppScanner) renderResults() string {
 			b.WriteString(fmt.Sprintf("  %s %s: %v\n", app.Icon, app.Name, app.Error))
 		}
 	}
-	
+
 	return b.String()
 }
 
@@ -226,7 +226,7 @@ func (s *AppScanner) renderResults() string {
 func (s *AppScanner) startScan() tea.Cmd {
 	s.scanning = true
 	s.startTime = time.Now()
-	
+
 	// Return the scan command
 	return s.performScan()
 }
@@ -240,25 +240,25 @@ func (s *AppScanner) performScan() tea.Cmd {
 			// Fall back to a minimal set if registry fails
 			return s.performFallbackScanMsg()
 		}
-		
+
 		knownApps := registry.GetAllApps()
 		s.totalApps = len(knownApps)
 		results := []AppInfo{}
-		
+
 		for i, app := range knownApps {
 			s.currentApp = i
-			
+
 			// Progress will be shown via the spinner/progress bar
 			progress := float64(i) / float64(s.totalApps)
 			_ = progress // We'll handle progress differently
-			
+
 			// Check for config file
 			info := AppInfo{
 				Name:   app.Name,
 				Icon:   app.Icon,
 				Status: StatusNotConfigured,
 			}
-			
+
 			// Check if config exists
 			configExists, configPath := registry.CheckAppStatus(app.Name)
 			if configExists {
@@ -266,13 +266,13 @@ func (s *AppScanner) performScan() tea.Cmd {
 				info.ConfigPath = configPath
 				info.ConfigExists = true
 			}
-			
+
 			results = append(results, info)
-			
+
 			// Small delay for smooth UI updates
 			time.Sleep(50 * time.Millisecond)
 		}
-		
+
 		// Return completion message
 		return ScanCompleteMsg{
 			Apps: results,
@@ -284,8 +284,8 @@ func (s *AppScanner) performScan() tea.Cmd {
 func (s *AppScanner) performFallbackScanMsg() tea.Msg {
 	// Minimal fallback set
 	knownApps := []struct {
-		name string
-		icon string
+		name        string
+		icon        string
 		configPaths []string
 	}{
 		{
@@ -305,21 +305,21 @@ func (s *AppScanner) performFallbackScanMsg() tea.Msg {
 			},
 		},
 	}
-	
+
 	s.totalApps = len(knownApps)
 	results := []AppInfo{}
 	home, _ := os.UserHomeDir()
-	
+
 	for i, app := range knownApps {
 		s.currentApp = i
-		
+
 		// Check for config file
 		info := AppInfo{
 			Name:   app.name,
 			Icon:   app.icon,
 			Status: StatusNotConfigured,
 		}
-		
+
 		for _, path := range app.configPaths {
 			expandedPath := strings.ReplaceAll(path, "~", home)
 			if _, err := os.Stat(expandedPath); err == nil {
@@ -329,11 +329,11 @@ func (s *AppScanner) performFallbackScanMsg() tea.Msg {
 				break
 			}
 		}
-		
+
 		results = append(results, info)
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Return completion message
 	return ScanCompleteMsg{
 		Apps: results,
@@ -370,7 +370,7 @@ func (s *AppScanner) RescanApp(name string) tea.Cmd {
 	return func() tea.Msg {
 		// Check config for specific app
 		home, _ := os.UserHomeDir()
-		
+
 		// Update the app info
 		for i, app := range s.apps {
 			if app.Name == name {
@@ -386,7 +386,7 @@ func (s *AppScanner) RescanApp(name string) tea.Cmd {
 				}
 			}
 		}
-		
+
 		return ScanCompleteMsg{Apps: s.apps}
 	}
 }

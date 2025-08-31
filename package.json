@@ -1,0 +1,36 @@
+{
+  "name": "zeroui-monorepo",
+  "version": "1.0.0",
+  "description": "Zero-configuration UI toolkit manager monorepo",
+  "private": true,
+  "workspaces": [
+    "raycast-extension"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:main": "cd . && make build",
+    "build:raycast": "npm run build --workspace=raycast-extension",
+    "build:plugins": "cd plugins/ghostty-rpc && go build -o zeroui-plugin-ghostty-rpc .",
+    "test": "npm run test --workspaces",
+    "test:main": "cd . && make test-fast",
+    "lint": "npm run lint --workspaces",
+    "lint:raycast": "npm run lint --workspace=raycast-extension",
+    "clean": "npm run clean --workspaces && make clean",
+    "install:all": "npm install && make install-deps",
+    "dev:raycast": "npm run dev --workspace=raycast-extension",
+    "publish:raycast": "npm run publish --workspace=raycast-extension"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrtkrcm/zeroui.git"
+  },
+  "author": "mrtkrcm",
+  "license": "MIT"
+}

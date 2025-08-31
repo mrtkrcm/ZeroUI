@@ -1,0 +1,151 @@
+============================================================
+🔍 ZeroUI Raycast Extension Comprehensive Diagnostic
+============================================================
+Generated: 2025-08-31T12:30:29.059Z
+
+📊 SYSTEM INFORMATION:
+✅ System info:
+Darwin MUKA's Mac 24.6.0 Darwin Kernel Version 24.6.0: Mon Jul 14 11:30:40 PDT 2025; root:xnu-11417.140.69~1/RELEASE_ARM64_T6041 x86_64
+
+✅ Node.js version:
+v24.6.0
+
+✅ NPM version:
+11.5.1
+
+📁 DIRECTORY STRUCTURE:
+Current directory: /Users/m/code/muka-hq/zeroui/raycast-extension
+__dirname: /Users/m/code/muka-hq/zeroui/raycast-extension
+process.cwd(): /Users/m/code/muka-hq/zeroui/raycast-extension
+
+📄 EXTENSION FILES:
+✅ Package manifest:
+  Path: package.json
+  Size: 4109 bytes
+  Executable: false
+  Modified: 2025-08-31T11:28:29.383Z
+
+✅ TypeScript config:
+  Path: tsconfig.json
+  Size: 516 bytes
+  Executable: false
+  Modified: 2025-08-29T20:52:54.153Z
+
+✅ Main utilities:
+  Path: src/utils.ts
+  Size: 19781 bytes
+  Executable: false
+  Modified: 2025-08-31T12:24:28.852Z
+
+✅ List apps component:
+  Path: src/list-apps.tsx
+  Size: 15302 bytes
+  Executable: false
+  Modified: 2025-08-31T12:22:33.767Z
+
+🔧 ZeroUI BINARY:
+✅ ZeroUI executable:
+  Path: zeroui
+  Size: 19925440 bytes
+  Executable: true
+  Modified: 2025-08-31T11:22:49.830Z
+
+🧪 ZeroUI FUNCTIONALITY TESTS:
+✅ ZeroUI version/help:
+ZeroUI is a zero-configuration UI toolkit manager that simplifies managing
+UI configurations, themes, and settings across development tools and applications.
+Built for speed and simplicity with both CLI and interactive TUI interfaces.
+
+✅ List applications:
+Available Applications (3)
+
+  • ghostty
+  • mise
+  • zed
+
+✅ Test ghostty config:
+Current Configuration Values for ghostty (55)
+
+  adjust-cell-height: 2
+  adjust-cell-width: 0
+  auto-update: check
+
+🔨 BUILD STATUS:
+Built JS files: demo.js, diagnose-extension.js, test-paths.js, validate.js
+
+📦 NODE MODULES:
+Modules count: 274
+❌ @raycast/api: Missing
+❌ @raycast/utils: Missing
+✅ react: Installed
+
+🎯 RAYCAST BUILD CHECK:
+✅ Raycast CLI version:
+@raycast/api/1.102.6 darwin-x64 node-v24.6.0
+
+✅ Raycast build artifacts:
+./node_modules/tinyglobby/dist
+./node_modules/tinyglobby/node_modules/fdir/dist
+./node_modules/@eslint/eslintrc/dist
+./node_modules/object-hash/dist
+./node_modules/acorn/dist
+./node_modules/signal-exit/dist
+./node_modules/async/dist
+./node_modules/@typescript-eslint/types/dist
+./node_modules/@typescript-eslint/typescript-estree/dist
+./node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch/dist
+./node_modules/@typescript-eslint/utils/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/types/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/types/_ts3.4/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/typescript-estree/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/typescript-estree/_ts3.4/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/scope-manager/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/visitor-keys/dist
+./node_modules/@typescript-eslint/utils/node_modules/@typescript-eslint/visitor-keys/_ts3.4/dist
+./node_modules/@typescript-eslint/utils/_ts3.4/dist
+./node_modules/@typescript-eslint/parser/dist
+./node_modules/@typescript-eslint/type-utils/dist
+./node_modules/@typescript-eslint/type-utils/node_modules/@typescript-eslint/utils/dist
+./node_modules/@typescript-eslint/scope-manager/dist
+./node_modules/@typescript-eslint/eslint-plugin/dist
+./node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/utils/dist
+./node_modules/@typescript-eslint/visitor-keys/dist
+./node_modules/js-yaml/dist
+./node_modules/eslint-visitor-keys/dist
+./node_modules/@humanwhocodes/module-importer/dist
+./node_modules/@raycast/utils/dist
+./node_modules/@raycast/api/dist
+./node_modules/@raycast/eslint-plugin/dist
+./node_modules/minimatch/dist
+./node_modules/json5/dist
+./node_modules/uri-js/dist
+./node_modules/espree/dist
+./node_modules/eslint/node_modules/eslint-scope/dist
+./node_modules/esquery/dist
+./node_modules/cross-fetch/dist
+./node_modules/dequal/dist
+./node_modules/ajv/dist
+./node_modules/object.assign/dist
+./node_modules/@inquirer/expand/dist
+./node_modules/@inquirer/password/dist
+./node_modules/@inquirer/core/dist
+./node_modules/@inquirer/input/dist
+./node_modules/@inquirer/confirm/dist
+./node_modules/@inquirer/checkbox/dist
+./node_modules/@inquirer/search/dist
+./node_modules/@inquirer/number/dist
+./node_modules/@inquirer/type/dist
+./node_modules/@inquirer/figures/dist
+./node_modules/@inquirer/rawlist/dist
+./node_modules/@inquirer/prompts/dist
+./node_modules/@inquirer/select/dist
+./node_modules/@inquirer/external-editor/dist
+./node_modules/@inquirer/editor/dist
+
+📝 RECENT CHANGES:
+✅ Source files timestamps:
+-rw-r--r--@ 1 m3  staff  15302 Aug 31 19:22 src/list-apps.tsx
+-rw-r--r--@ 1 m3  staff   3536 Aug 31 17:49 src/list-changed.tsx
+-rw-r--r--@ 1 m3  staff   3383 Aug 31 17:49 src/list-values.tsx
+-rw-r--r--@ 1 m3  staff   4049 Aug 31 18:10 src/manage-presets.tsx
+-rw-r--r--@ 1 m3  staff   6051 Aug 31 18:14 src/toggle-config.tsx

@@ -1,0 +1,302 @@
+---
+alwaysApply: true
+description: Go development patterns and conventions used in ZeroUI
+globs: *.go
+---
+
+# ZeroUI Go Development Practices
+
+## 🏗️ Project Structure
+
+### Standard Go Layout
+```
+zeroui/
+├── cmd/                    # Main applications
+│   ├── enhanced_ui.go     # Enhanced UI command
+│   └── root.go            # Root command (CLI entry)
+├── internal/              # Private application code
+│   ├── tui/              # Terminal UI package
+│   ├── logging/          # Logging utilities
+│   └── toggle/           # Feature toggle system
+├── pkg/                  # Public library code (if any)
+├── testdata/             # Test data files
+├── scripts/              # Build/deployment scripts
+└── docs/                 # Documentation
+```
+
+### TUI-Specific Structure
+```
+internal/tui/
+├── components/           # Reusable UI components
+│   ├── core/            # Core interfaces and types
+│   ├── display/         # Display/rendering components
+│   ├── forms/           # Form components
+│   ├── ui/              # UI integration components
+│   └── app/             # App-specific components
+├── styles/              # Styling and themes
+├── keys/                # Keybinding definitions
+├── registry/            # Component registration
+└── util/                # Utility functions
+```
+
+## 📝 Code Conventions
+
+### Naming Conventions
+```go
+// Types and interfaces
+type ApplicationList struct{}    // PascalCase for exported types
+type component interface{}       // camelCase for internal types
+
+// Methods
+func (a *ApplicationList) Render() string  // PascalCase for exported methods
+func (a *ApplicationList) init()           // camelCase for internal methods
+
+// Variables
+var globalConfig *Config        // PascalCase for exported variables
+var internalState state         // camelCase for internal variables
+
+// Constants
+const MaxRetries = 3           // PascalCase for exported constants
+const defaultTimeout = 30      // camelCase for internal constants
+```
+
+### Error Handling
+```go
+// Always return errors, don't panic in library code
+func (c *Component) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    switch msg := msg.(type) {
+    case error:
+        // Handle error gracefully
+        c.err = msg
+        return c, nil
+    default:
+        // Normal processing
+    }
+    return c, nil
+}
+
+// Use structured error types
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("validation error for %s: %s", e.Field, e.Message)
+}
+```
+
+### Bubble Tea Patterns
+```go
+// Model definition
+type Model struct {
+    width   int
+    height  int
+    focused bool
+    err     error
+}
+
+// Required Bubble Tea methods
+func (m Model) Init() tea.Cmd {
+    return tea.Batch(
+        // Initialization commands
+        tea.EnterAltScreen,
+        m.loadData(),
+    )
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    switch msg := msg.(type) {
+    case tea.WindowSizeMsg:
+        m.width = msg.Width
+        m.height = msg.Height
+        return m, nil
+
+    case tea.KeyMsg:
+        switch msg.String() {
+        case "q", "esc":
+            return m, tea.Quit
+        case "tab":
+            m.focused = !m.focused
+            return m, nil
+        }
+    }
+
+    return m, nil
+}
+
+func (m Model) View() string {
+    if m.err != nil {
+        return m.renderError()
+    }
+
+    return m.renderMain()
+}
+```
+
+## 🎨 Styling Patterns
+
+### Lipgloss Usage
+```go
+// Define styles at package level
+var (
+    titleStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("#7D56F4")).
+        MarginBottom(1)
+
+    errorStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#FF5555")).
+        Bold(true)
+
+    successStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#50FA7B"))
+)
+
+// Apply styles in View method
+func (m Model) renderHeader() string {
+    title := titleStyle.Render("ZeroUI Configuration")
+    return lipgloss.JoinVertical(
+        lipgloss.Left,
+        title,
+        "",
+        m.renderStatus(),
+    )
+}
+```
+
+### Layout Patterns
+```go
+func (m Model) renderMain() string {
+    // Use lipgloss.JoinVertical/Horizontal for layout
+    leftPanel := m.renderLeftPanel()
+    rightPanel := m.renderRightPanel()
+
+    return lipgloss.JoinHorizontal(
+        lipgloss.Top,
+        leftPanel,
+        lipgloss.NewStyle().Padding(0, 2).Render(""), // Gap
+        rightPanel,
+    )
+}
+```
+
+## 🔧 Utility Patterns
+
+### Configuration Management
+```go
+// Use functional options pattern for configuration
+type Config struct {
+    timeout time.Duration
+    retries int
+    debug   bool
+}
+
+type Option func(*Config)
+
+func WithTimeout(timeout time.Duration) Option {
+    return func(c *Config) {
+        c.timeout = timeout
+    }
+}
+
+func WithRetries(retries int) Option {
+    return func(c *Config) {
+        c.retries = retries
+    }
+}
+
+func NewConfig(options ...Option) *Config {
+    config := &Config{
+        timeout: 30 * time.Second,
+        retries: 3,
+        debug:   false,
+    }
+
+    for _, option := range options {
+        option(config)
+    }
+
+    return config
+}
+```
+
+### Logging
+```go
+// Use structured logging
+type Logger interface {
+    Debug(msg string, args ...interface{})
+    Info(msg string, args ...interface{})
+    Warn(msg string, args ...interface{})
+    Error(msg string, args ...interface{})
+}
+
+// Implementation
+func (l *CharmLogger) Info(msg string, args ...interface{}) {
+    if l.level <= InfoLevel {
+        fmt.Fprintf(l.writer, "[INFO] %s\n", fmt.Sprintf(msg, args...))
+    }
+}
+```
+
+## 🧪 Testing Patterns
+
+### Table-Driven Tests
+```go
+func TestComponent_Update(t *testing.T) {
+    tests := []struct {
+        name     string
+        msg      tea.Msg
+        expected string
+    }{
+        {
+            name:     "quit on q key",
+            msg:      tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
+            expected: "quit",
+        },
+        {
+            name:     "toggle focus on tab",
+            msg:      tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'\t'}},
+            expected: "focus",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            m := NewModel()
+            updatedModel, cmd := m.Update(tt.msg)
+
+            // Assertions
+            assert.Equal(t, tt.expected, updatedModel.GetState())
+        })
+    }
+}
+```
+
+### Component Testing
+```go
+func TestApplicationList_Render(t *testing.T) {
+    apps := []Application{
+        {Name: "ghostty", Status: StatusReady},
+        {Name: "alacritty", Status: StatusNotInstalled},
+    }
+
+    list := NewApplicationList(apps)
+
+    // Test rendering
+    view := list.View()
+    assert.Contains(t, view, "ghostty")
+    assert.Contains(t, view, "alacritty")
+
+    // Test with specific width
+    list.SetSize(80, 24)
+    view = list.View()
+    // Verify layout fits within bounds
+}
+```
+
+## 📚 Key Files
+- [internal/tui/components/core/interfaces.go](mdc:internal/tui/components/core/interfaces.go) - Core interfaces
+- [internal/tui/app_state.go](mdc:internal/tui/app_state.go) - Main application state
+- [internal/tui/styles/styles.go](mdc:internal/tui/styles/styles.go) - Styling definitions
+- [main.go](mdc:main.go) - Application entry point

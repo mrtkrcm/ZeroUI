@@ -58,7 +58,7 @@ func (ic *IntegrityChecker) VerifyChecksum(path string, expectedChecksum string)
 // ValidateFormat validates the format of a configuration file
 func (ic *IntegrityChecker) ValidateFormat(path string) error {
 	ext := strings.ToLower(filepath.Ext(path))
-	
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -206,4 +206,3 @@ type IntegrityReport struct {
 	Error       string `json:"error,omitempty"`
 	Timestamp   string `json:"timestamp"`
 }
-

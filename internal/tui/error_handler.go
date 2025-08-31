@@ -8,18 +8,18 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
 )
 
 // ErrorHandler provides centralized error handling for the TUI
 type ErrorHandler struct {
-	logger      *logging.CharmLogger
-	errors      []ErrorInfo
-	maxErrors   int
-	errorStyle  lipgloss.Style
-	warnStyle   lipgloss.Style
-	infoStyle   lipgloss.Style
+	logger     *logging.CharmLogger
+	errors     []ErrorInfo
+	maxErrors  int
+	errorStyle lipgloss.Style
+	warnStyle  lipgloss.Style
+	infoStyle  lipgloss.Style
 }
 
 // ErrorInfo contains error details
@@ -62,7 +62,7 @@ func (h *ErrorHandler) Handle(err error, context string) tea.Cmd {
 	if err == nil {
 		return nil
 	}
-	
+
 	info := ErrorInfo{
 		Error:     err,
 		Timestamp: time.Now(),
@@ -70,10 +70,10 @@ func (h *ErrorHandler) Handle(err error, context string) tea.Cmd {
 		Severity:  h.determineSeverity(err),
 		Recovered: false,
 	}
-	
+
 	h.addError(info)
 	h.logError(info)
-	
+
 	// Return a command to show error notification
 	return h.showErrorNotification(info)
 }
@@ -82,7 +82,7 @@ func (h *ErrorHandler) Handle(err error, context string) tea.Cmd {
 func (h *ErrorHandler) HandlePanic(context string) {
 	if r := recover(); r != nil {
 		err := fmt.Errorf("panic: %v", r)
-		
+
 		info := ErrorInfo{
 			Error:     err,
 			Timestamp: time.Now(),
@@ -90,7 +90,7 @@ func (h *ErrorHandler) HandlePanic(context string) {
 			Severity:  SeverityCritical,
 			Recovered: true,
 		}
-		
+
 		h.addError(info)
 		h.logPanic(r, context)
 	}
@@ -114,7 +114,7 @@ func (h *ErrorHandler) SafeUpdate(
 			cmd = nil
 		}
 	}()
-	
+
 	return updateFn()
 }
 
@@ -146,7 +146,7 @@ func (h *ErrorHandler) RenderError(err error) string {
 	if err == nil {
 		return ""
 	}
-	
+
 	return h.errorStyle.Render(fmt.Sprintf("Error: %v", err))
 }
 
@@ -156,7 +156,7 @@ func (h *ErrorHandler) RenderLastError() string {
 	if last == nil {
 		return ""
 	}
-	
+
 	var style lipgloss.Style
 	switch last.Severity {
 	case SeverityCritical, SeverityError:
@@ -166,7 +166,7 @@ func (h *ErrorHandler) RenderLastError() string {
 	default:
 		style = h.infoStyle
 	}
-	
+
 	prefix := h.getSeverityPrefix(last.Severity)
 	return style.Render(fmt.Sprintf("%s %v", prefix, last.Error))
 }
@@ -175,7 +175,7 @@ func (h *ErrorHandler) RenderLastError() string {
 
 func (h *ErrorHandler) addError(info ErrorInfo) {
 	h.errors = append(h.errors, info)
-	
+
 	// Keep only recent errors
 	if len(h.errors) > h.maxErrors {
 		h.errors = h.errors[1:]
@@ -186,7 +186,7 @@ func (h *ErrorHandler) logError(info ErrorInfo) {
 	if h.logger == nil {
 		return
 	}
-	
+
 	switch info.Severity {
 	case SeverityCritical:
 		h.logger.LogError(info.Error, "critical_error", "context", info.Context)
@@ -203,7 +203,7 @@ func (h *ErrorHandler) logPanic(r interface{}, context string) {
 	if h.logger == nil {
 		return
 	}
-	
+
 	stack := string(debug.Stack())
 	h.logger.LogPanic(r, "panic_recovered", "context", context, "stack", stack)
 }
@@ -212,24 +212,24 @@ func (h *ErrorHandler) determineSeverity(err error) ErrorSeverity {
 	if err == nil {
 		return SeverityInfo
 	}
-	
+
 	errStr := err.Error()
-	
+
 	// Check for critical patterns
 	if contains(errStr, "panic", "fatal", "critical") {
 		return SeverityCritical
 	}
-	
+
 	// Check for error patterns
 	if contains(errStr, "error", "failed", "unable") {
 		return SeverityError
 	}
-	
+
 	// Check for warning patterns
 	if contains(errStr, "warning", "warn", "deprecated") {
 		return SeverityWarning
 	}
-	
+
 	return SeverityInfo
 }
 

@@ -1,0 +1,23 @@
+#!/bin/bash
+# Test stub for Git
+# This is used by tests to avoid dependency on the actual git binary
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "git (test stub) - Distributed version control system"
+    echo "Usage: git [command] [options]"
+    echo "This is a test stub and does not provide full functionality."
+    exit 0
+fi
+
+if [[ "$1" == "--version" ]]; then
+    echo "git version 2.39.0 (test-stub)"
+    exit 0
+fi
+
+if [[ "$1" == "config" ]]; then
+    echo "test-value"
+    exit 0
+fi
+
+echo "git test stub executed successfully"
+exit 0

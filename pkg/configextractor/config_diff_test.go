@@ -24,9 +24,9 @@ func TestConfigDiffer_DiffConfigurations(t *testing.T) {
 				"font-size":   12,
 			},
 			expected: ConfigDiff{
-				Added:     map[string]interface{}{},
-				Modified:  map[string]ValueDiff{},
-				Removed:   map[string]interface{}{},
+				Added:    map[string]interface{}{},
+				Modified: map[string]ValueDiff{},
+				Removed:  map[string]interface{}{},
 				Unchanged: map[string]interface{}{
 					"font-family": "JetBrains Mono",
 					"font-size":   12,
@@ -66,8 +66,8 @@ func TestConfigDiffer_DiffConfigurations(t *testing.T) {
 				"font-size":   14,
 			},
 			expected: ConfigDiff{
-				Added:    map[string]interface{}{},
-				Removed:  map[string]interface{}{},
+				Added:   map[string]interface{}{},
+				Removed: map[string]interface{}{},
 				Modified: map[string]ValueDiff{
 					"font-family": {Old: "JetBrains Mono", New: "Fira Code"},
 					"font-size":   {Old: 12, New: 14},
@@ -86,7 +86,7 @@ func TestConfigDiffer_DiffConfigurations(t *testing.T) {
 				"font-family": "JetBrains Mono",
 			},
 			expected: ConfigDiff{
-				Added:   map[string]interface{}{},
+				Added: map[string]interface{}{},
 				Removed: map[string]interface{}{
 					"font-size": 12,
 					"theme":     "dark",

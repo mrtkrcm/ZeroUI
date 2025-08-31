@@ -144,7 +144,7 @@ func NewParallelTestRunner(maxConcurrency int) *ParallelTestRunner {
 func (ptr *ParallelTestRunner) RunParallelTest(t *testing.T, testName string, testFunc func(t *testing.T)) {
 	t.Helper()
 
-	ptr.semaphore <- struct{}{} // Acquire
+	ptr.semaphore <- struct{}{}        // Acquire
 	defer func() { <-ptr.semaphore }() // Release
 
 	t.Run(testName, testFunc)

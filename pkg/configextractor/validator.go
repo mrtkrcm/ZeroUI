@@ -51,7 +51,7 @@ func (v *Validator) Validate(setting string, value interface{}) ValidationResult
 	var errors []string
 
 	// Type validation
-	if !v.validateType(value, rule.Type) {
+	if !v.validateValueType(value, rule.Type) {
 		errors = append(errors, fmt.Sprintf("%s must be of type %s", setting, rule.Type))
 	}
 
@@ -79,7 +79,7 @@ func (v *Validator) Validate(setting string, value interface{}) ValidationResult
 		}
 
 	case TypeNumber:
-		if num, err := v.toFloat64(value); err == nil {
+		if num, err := v.ToFloat64(value); err == nil {
 			if rule.Min != nil && num < *rule.Min {
 				errors = append(errors, fmt.Sprintf("%s must be at least %g", setting, *rule.Min))
 			}
@@ -137,13 +137,13 @@ func (v *Validator) ValidateConfig(config *Config) ValidationResult {
 }
 
 // validateType checks if value matches expected type
-func (v *Validator) validateType(value interface{}, expectedType SettingType) bool {
+func (v *Validator) validateValueType(value interface{}, expectedType SettingType) bool {
 	switch expectedType {
 	case TypeString:
 		_, ok := value.(string)
 		return ok
 	case TypeNumber:
-		_, err := v.toFloat64(value)
+		_, err := v.ToFloat64(value)
 		return err == nil
 	case TypeBoolean:
 		if _, ok := value.(bool); ok {
@@ -172,8 +172,8 @@ func (v *Validator) validateType(value interface{}, expectedType SettingType) bo
 	}
 }
 
-// toFloat64 converts various numeric types to float64
-func (v *Validator) toFloat64(value interface{}) (float64, error) {
+// ToFloat64 converts various numeric types to float64
+func (v *Validator) ToFloat64(value interface{}) (float64, error) {
 	switch v := value.(type) {
 	case float64:
 		return v, nil
@@ -251,18 +251,18 @@ type GhosttySchemaValidator struct {
 
 // GhosttyFieldSchema represents the schema for a Ghostty configuration field
 type GhosttyFieldSchema struct {
-	Name         string   `yaml:"name"`
-	Type         string   `yaml:"type"`
-	Description  string   `yaml:"description"`
+	Name         string      `yaml:"name"`
+	Type         string      `yaml:"type"`
+	Description  string      `yaml:"description"`
 	DefaultValue interface{} `yaml:"default_value"`
-	Category     string   `yaml:"category"`
-	Values       []string `yaml:"values,omitempty"` // For enum types
+	Category     string      `yaml:"category"`
+	Values       []string    `yaml:"values,omitempty"` // For enum types
 }
 
 // NewGhosttySchemaValidator creates a validator that validates against the official Ghostty schema
 func NewGhosttySchemaValidator() *GhosttySchemaValidator {
 	return &GhosttySchemaValidator{
-		schema: loadGhosttySchema(),
+		schema: LoadGhosttySchema(),
 	}
 }
 
@@ -271,7 +271,7 @@ func (v *GhosttySchemaValidator) ValidateField(fieldName string, value interface
 	fieldSchema, exists := v.schema[fieldName]
 	if !exists {
 		return ValidationResult{
-			Valid: false,
+			Valid:  false,
 			Errors: []string{fmt.Sprintf("field '%s' is not a valid Ghostty configuration option", fieldName)},
 		}
 	}
@@ -285,7 +285,7 @@ func (v *GhosttySchemaValidator) ValidateField(fieldName string, value interface
 
 	// Value validation for enum types
 	if len(fieldSchema.Values) > 0 {
-		if str := fmt.Sprintf("%v", value); !v.isValidEnumValue(str, fieldSchema.Values) {
+		if str := fmt.Sprintf("%v", value); !v.isValidEnum(str, fieldSchema.Values) {
 			errors = append(errors, fmt.Sprintf("field '%s' must be one of: %s", fieldName, strings.Join(fieldSchema.Values, ", ")))
 		}
 	}
@@ -293,7 +293,7 @@ func (v *GhosttySchemaValidator) ValidateField(fieldName string, value interface
 	// Special validation for specific field types
 	switch fieldSchema.Name {
 	case "cursor-color", "cursor-text":
-		if str, ok := value.(string); ok && !v.isValidColor(str) {
+		if str, ok := value.(string); ok && !v.isValidColorValue(str) {
 			errors = append(errors, fmt.Sprintf("field '%s' must be a valid color (hex or named color)", fieldName))
 		}
 	case "font-family":
@@ -306,7 +306,7 @@ func (v *GhosttySchemaValidator) ValidateField(fieldName string, value interface
 	}
 
 	return ValidationResult{
-		Valid: len(errors) == 0,
+		Valid:  len(errors) == 0,
 		Errors: errors,
 	}
 }
@@ -323,7 +323,7 @@ func (v *GhosttySchemaValidator) ValidateConfig(config map[string]interface{}) V
 	}
 
 	return ValidationResult{
-		Valid: len(allErrors) == 0,
+		Valid:  len(allErrors) == 0,
 		Errors: allErrors,
 	}
 }
@@ -357,7 +357,7 @@ func (v *GhosttySchemaValidator) validateGhosttyType(value interface{}, expected
 		return false
 	case "color":
 		if str, ok := value.(string); ok {
-			return v.isValidColor(str)
+			return v.isValidColorValue(str)
 		}
 		return false
 	default:
@@ -366,8 +366,8 @@ func (v *GhosttySchemaValidator) validateGhosttyType(value interface{}, expected
 	}
 }
 
-// isValidEnumValue checks if a value is in the list of allowed enum values
-func (v *GhosttySchemaValidator) isValidEnumValue(value string, allowedValues []string) bool {
+// isValidEnum checks if a value is in the list of allowed enum values
+func (v *GhosttySchemaValidator) isValidEnum(value string, allowedValues []string) bool {
 	for _, allowed := range allowedValues {
 		if value == allowed {
 			return true
@@ -376,8 +376,8 @@ func (v *GhosttySchemaValidator) isValidEnumValue(value string, allowedValues []
 	return false
 }
 
-// isValidColor validates color formats (hex or named colors)
-func (v *GhosttySchemaValidator) isValidColor(color string) bool {
+// isValidColorValue validates color formats (hex or named colors)
+func (v *GhosttySchemaValidator) isValidColorValue(color string) bool {
 	color = strings.TrimSpace(color)
 
 	// Check for hex colors
@@ -409,96 +409,96 @@ func (v *GhosttySchemaValidator) isValidColor(color string) bool {
 }
 
 // loadGhosttySchema loads the Ghostty schema from the embedded configuration
-func loadGhosttySchema() map[string]GhosttyFieldSchema {
+func LoadGhosttySchema() map[string]GhosttyFieldSchema {
 	// This would ideally load from the actual ghostty.yaml file
 	// For now, we'll define the most common invalid fields that we've seen
 	return map[string]GhosttyFieldSchema{
 		// Valid cursor fields
 		"cursor-color": {
-			Name: "cursor-color",
-			Type: "color",
+			Name:        "cursor-color",
+			Type:        "color",
 			Description: "The color of the cursor",
 		},
 		"cursor-invert-fg-bg": {
-			Name: "cursor-invert-fg-bg",
-			Type: "boolean",
+			Name:        "cursor-invert-fg-bg",
+			Type:        "boolean",
 			Description: "Swap foreground and background colors under cursor",
 		},
 		"cursor-opacity": {
-			Name: "cursor-opacity",
-			Type: "number",
+			Name:        "cursor-opacity",
+			Type:        "number",
 			Description: "Opacity level of the cursor",
 		},
 		"cursor-style": {
-			Name: "cursor-style",
-			Type: "string",
+			Name:        "cursor-style",
+			Type:        "string",
 			Description: "Style of the cursor",
-			Values: []string{"block", "bar", "underline", "outline"},
+			Values:      []string{"block", "bar", "underline", "outline"},
 		},
 		"cursor-style-blink": {
-			Name: "cursor-style-blink",
-			Type: "boolean",
+			Name:        "cursor-style-blink",
+			Type:        "boolean",
 			Description: "Whether cursor blinks",
 		},
 		"cursor-text": {
-			Name: "cursor-text",
-			Type: "color",
+			Name:        "cursor-text",
+			Type:        "color",
 			Description: "Color of text under cursor",
 		},
 		"cursor-click-to-move": {
-			Name: "cursor-click-to-move",
-			Type: "boolean",
+			Name:        "cursor-click-to-move",
+			Type:        "boolean",
 			Description: "Enable cursor click-to-move",
 		},
 
 		// Valid window padding fields
 		"window-padding-x": {
-			Name: "window-padding-x",
-			Type: "number",
+			Name:        "window-padding-x",
+			Type:        "number",
 			Description: "Horizontal window padding",
 		},
 		"window-padding-y": {
-			Name: "window-padding-y",
-			Type: "number",
+			Name:        "window-padding-y",
+			Type:        "number",
 			Description: "Vertical window padding",
 		},
 		"window-padding-balance": {
-			Name: "window-padding-balance",
-			Type: "boolean",
+			Name:        "window-padding-balance",
+			Type:        "boolean",
 			Description: "Balance padding dimensions",
 		},
 		"window-padding-color": {
-			Name: "window-padding-color",
-			Type: "color",
+			Name:        "window-padding-color",
+			Type:        "color",
 			Description: "Color of window padding area",
 		},
 
 		// Common font fields
 		"font-family": {
-			Name: "font-family",
-			Type: "string",
+			Name:        "font-family",
+			Type:        "string",
 			Description: "Font family for terminal text",
 		},
 		"font-size": {
-			Name: "font-size",
-			Type: "number",
+			Name:        "font-size",
+			Type:        "number",
 			Description: "Font size",
 		},
 
 		// Common theme fields
 		"theme": {
-			Name: "theme",
-			Type: "string",
+			Name:        "theme",
+			Type:        "string",
 			Description: "Color theme",
 		},
 		"background": {
-			Name: "background",
-			Type: "color",
+			Name:        "background",
+			Type:        "color",
 			Description: "Background color",
 		},
 		"foreground": {
-			Name: "foreground",
-			Type: "color",
+			Name:        "foreground",
+			Type:        "color",
 			Description: "Foreground color",
 		},
 	}
@@ -679,34 +679,32 @@ func (d *ConfigDiff) FormatDiff() string {
 	return result.String()
 }
 
-// KeybindValidator provides specialized validation for Ghostty keybind configurations
-type KeybindValidator struct{}
+// KeybindValidator provides specialized validation for keybind configurations across multiple apps
+type KeybindValidator struct {
+	app string // The target application (ghostty, vscode, zed, etc.)
+}
 
-// NewKeybindValidator creates a new keybind validator
+// NewKeybindValidator creates a new keybind validator for a specific app
 func NewKeybindValidator() *KeybindValidator {
 	return &KeybindValidator{}
+}
+
+// NewKeybindValidatorForApp creates a new keybind validator for a specific application
+func NewKeybindValidatorForApp(app string) *KeybindValidator {
+	return &KeybindValidator{app: strings.ToLower(app)}
 }
 
 // ValidateKeybind validates a single keybind string
 func (v *KeybindValidator) ValidateKeybind(keybind string) KeybindValidationResult {
 	result := KeybindValidationResult{Valid: true}
 
-	// Parse keybind format: "keys=action[:arg]"
-	if !strings.Contains(keybind, "=") {
+	// Parse keybind based on application format
+	keys, action, err := v.parseKeybindFormat(keybind)
+	if err != nil {
 		result.Valid = false
-		result.Errors = append(result.Errors, "keybind must contain '=' separator")
+		result.Errors = append(result.Errors, err.Error())
 		return result
 	}
-
-	parts := strings.SplitN(keybind, "=", 2)
-	if len(parts) != 2 {
-		result.Valid = false
-		result.Errors = append(result.Errors, "invalid keybind format")
-		return result
-	}
-
-	keys := strings.TrimSpace(parts[0])
-	action := strings.TrimSpace(parts[1])
 
 	if keys == "" {
 		result.Valid = false
@@ -751,6 +749,69 @@ func (v *KeybindValidator) ValidateKeybind(keybind string) KeybindValidationResu
 	return result
 }
 
+// parseKeybindFormat parses keybind format based on the target application
+func (v *KeybindValidator) parseKeybindFormat(keybind string) (keys, action string, err error) {
+	switch v.app {
+	case "ghostty":
+		// Ghostty format: "[global:]keys=action[:arg]"
+		if !strings.Contains(keybind, "=") {
+			return "", "", fmt.Errorf("ghostty keybind must contain '=' separator")
+		}
+		parts := strings.SplitN(keybind, "=", 2)
+		if len(parts) != 2 {
+			return "", "", fmt.Errorf("invalid ghostty keybind format")
+		}
+		keys = strings.TrimSpace(parts[0])
+		action = strings.TrimSpace(parts[1])
+
+		// Handle global prefix
+		if strings.HasPrefix(keys, "global:") {
+			keys = strings.TrimPrefix(keys, "global:")
+		}
+
+	case "vscode", "code":
+		// VSCode format: "keys": "action" (JSON-like)
+		if strings.Contains(keybind, `": "`) {
+			parts := strings.SplitN(keybind, `": "`, 2)
+			if len(parts) == 2 {
+				keys = strings.Trim(strings.TrimSpace(parts[0]), `"`)
+				action = strings.Trim(strings.TrimSpace(parts[1]), `"`)
+			} else {
+				return "", "", fmt.Errorf("invalid vscode keybind format")
+			}
+		} else {
+			// Fallback to ghostty format
+			return v.parseKeybindFormat(keybind)
+		}
+
+	case "zed":
+		// Zed format: similar to ghostty but may use different action names
+		if !strings.Contains(keybind, "=") {
+			return "", "", fmt.Errorf("zed keybind must contain '=' separator")
+		}
+		parts := strings.SplitN(keybind, "=", 2)
+		if len(parts) != 2 {
+			return "", "", fmt.Errorf("invalid zed keybind format")
+		}
+		keys = strings.TrimSpace(parts[0])
+		action = strings.TrimSpace(parts[1])
+
+	default:
+		// Default to ghostty format
+		if !strings.Contains(keybind, "=") {
+			return "", "", fmt.Errorf("keybind must contain '=' separator")
+		}
+		parts := strings.SplitN(keybind, "=", 2)
+		if len(parts) != 2 {
+			return "", "", fmt.Errorf("invalid keybind format")
+		}
+		keys = strings.TrimSpace(parts[0])
+		action = strings.TrimSpace(parts[1])
+	}
+
+	return keys, action, nil
+}
+
 // validateKeyCombination validates the key combination part of a keybind
 func (v *KeybindValidator) validateKeyCombination(keys string) KeybindValidationResult {
 	result := KeybindValidationResult{Valid: true}
@@ -765,7 +826,9 @@ func (v *KeybindValidator) validateKeyCombination(keys string) KeybindValidation
 	specialKeys := []string{
 		"escape", "tab", "capslock", "backspace", "enter", "return",
 		"space", "up", "down", "left", "right",
-		"home", "end", "pageup", "pagedown", "insert", "delete",
+		"home", "end", "pageup", "pagedown", "page_up", "page_down", "insert", "delete",
+		"equal", "plus", "minus", "comma", "period", "slash", "backslash",
+		"semicolon", "apostrophe", "bracketleft", "bracketright",
 		"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
 	}
 
@@ -874,11 +937,11 @@ func (v *KeybindValidator) validateAction(action string) KeybindValidationResult
 
 // KeybindValidationResult represents the result of keybind validation
 type KeybindValidationResult struct {
-	Valid         bool     `json:"valid"`
-	Errors        []string `json:"errors,omitempty"`
-	Warnings      []string `json:"warnings,omitempty"`
-	Keys          string   `json:"keys,omitempty"`
-	Action        string   `json:"action,omitempty"`
+	Valid         bool              `json:"valid"`
+	Errors        []string          `json:"errors,omitempty"`
+	Warnings      []string          `json:"warnings,omitempty"`
+	Keys          string            `json:"keys,omitempty"`
+	Action        string            `json:"action,omitempty"`
 	ParsedKeybind KeybindComponents `json:"parsed_keybind,omitempty"`
 }
 

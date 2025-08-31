@@ -1,0 +1,69 @@
+[LOG] 2025-08-31T12:48:55.132Z: 🚀 Simulating ZeroUI Raycast Extension Startup...
+[LOG] 2025-08-31T12:48:55.139Z: 📦 Loading ZeroUI utilities...
+[LOG] 2025-08-31T12:48:55.139Z: 🔧 Initializing ZeroUI class...
+[LOG] 2025-08-31T12:48:55.139Z: ⚙️  Preferences loaded: {
+  "zerouiPath": "",
+  "timeout": "30000",
+  "enableCache": true,
+  "cacheDuration": "300000"
+}
+[LOG] 2025-08-31T12:48:55.139Z: 🔍 Testing fallback paths for ZeroUI binary:
+[LOG] 2025-08-31T12:48:55.139Z: Testing ZeroUI path: /Users/m/code/muka-hq/zeroui/zeroui
+[LOG] 2025-08-31T12:48:55.140Z: ❌ Path does not exist: /Users/m/code/muka-hq/zeroui/zeroui
+[LOG] 2025-08-31T12:48:55.140Z: Testing ZeroUI path: /Users/m/code/muka-hq/zeroui
+[LOG] 2025-08-31T12:48:55.140Z: ⚠️  Path exists but is not an executable file: /Users/m/code/muka-hq/zeroui (directory)
+[LOG] 2025-08-31T12:48:55.140Z: Testing ZeroUI path: /Users/m/code/muka-hq/zeroui/raycast-extension/zeroui
+[LOG] 2025-08-31T12:48:55.141Z: ✅ Found executable ZeroUI binary at: /Users/m/code/muka-hq/zeroui/raycast-extension/zeroui
+[LOG] 2025-08-31T12:48:55.142Z: ZeroUI binary path resolved to: /Users/m/code/muka-hq/zeroui/raycast-extension/zeroui
+[LOG] 2025-08-31T12:48:55.142Z: __dirname: /Users/m/code/muka-hq/zeroui/raycast-extension
+[LOG] 2025-08-31T12:48:55.142Z: process.cwd(): /Users/m/code/muka-hq/zeroui/raycast-extension
+[LOG] 2025-08-31T12:48:55.142Z: Current directory contents: .cursor,.eslintrc.json,.gitignore,README.md,assets,capture-logs.js,demo.js,diagnose-extension.js,diagnostic-report.txt,icon.png
+[LOG] 2025-08-31T12:48:55.143Z: ✅ ZeroUI binary exists at resolved path
+[LOG] 2025-08-31T12:48:55.143Z: 🧪 Testing ZeroUI binary functionality...
+[ERROR] 2025-08-31T12:48:55.230Z: ❌ ZeroUI version check failed: Command failed: /Users/m/code/muka-hq/zeroui/raycast-extension/zeroui --version
+Error: unknown flag: --version
+Usage:
+  zeroui [flags]
+  zeroui [command]
+
+Available Commands:
+  backup             Manage configuration backups
+  completion         Generate the autocompletion script for the specified shell
+  cycle              Cycle to the next value for a UI configuration key
+  design-system      Launch native design system showcase
+  enhanced-ui        Launch enhanced TUI with advanced Bubble Tea integration
+  extract            Extract configuration for app(s)
+  help               Help about any command
+  keymap             Manage keyboard shortcuts and keymaps for applications
+  list               List available apps, presets, keys, current values, or changed values
+  preset             Apply a preset UI configuration to an application
+  ref                Configuration reference (improved)
+  toggle             Toggle a UI configuration value for an application
+  ui                 Launch interactive TUI for UI configuration management
+  ui-select          Select and configure UI implementation
+  validate-reference Validate reference config mapping for an app
+
+Flags:
+      --config string   config file (default is $HOME/.config/zeroui/config.yaml)
+  -n, --dry-run         show what would be changed without making changes
+  -h, --help            help for zeroui
+  -v, --verbose         verbose output
+
+Use "zeroui [command] --help" for more information about a command.
+
+
+[LOG] 2025-08-31T12:48:55.319Z: ✅ ZeroUI list apps successful:
+[LOG] 2025-08-31T12:48:55.319Z: Available Applications (3)
+
+  • ghostty
+  • mise
+  • zed
+
+[LOG] 2025-08-31T12:48:55.319Z: 📊 Cache statistics simulation:
+[LOG] 2025-08-31T12:48:55.319Z: ✅ Cache hits: 0
+[LOG] 2025-08-31T12:48:55.319Z: ✅ Cache misses: 0
+[LOG] 2025-08-31T12:48:55.319Z: ✅ Hit rate: 0%
+[LOG] 2025-08-31T12:48:55.319Z: ✅ Total requests: 0
+[LOG] 2025-08-31T12:48:55.320Z: 
+📋 LOG CAPTURE COMPLETE
+[LOG] 2025-08-31T12:48:55.320Z: ==================================================

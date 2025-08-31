@@ -8,16 +8,16 @@ import (
 
 // ConfigValue represents a strongly-typed configuration value
 type ConfigValue struct {
-	Key         string      `json:"key"`
-	Type        ValueType   `json:"type"`
-	StringVal   *string     `json:"string_value,omitempty"`
-	IntVal      *int        `json:"int_value,omitempty"`
-	FloatVal    *float64    `json:"float_value,omitempty"`
-	BoolVal     *bool       `json:"bool_value,omitempty"`
+	Key         string         `json:"key"`
+	Type        ValueType      `json:"type"`
+	StringVal   *string        `json:"string_value,omitempty"`
+	IntVal      *int           `json:"int_value,omitempty"`
+	FloatVal    *float64       `json:"float_value,omitempty"`
+	BoolVal     *bool          `json:"bool_value,omitempty"`
 	DurationVal *time.Duration `json:"duration_value,omitempty"`
-	Description string      `json:"description"`
-	Required    bool        `json:"required"`
-	Default     *ConfigValue `json:"default,omitempty"`
+	Description string         `json:"description"`
+	Required    bool           `json:"required"`
+	Default     *ConfigValue   `json:"default,omitempty"`
 }
 
 // ValueType represents the type of a configuration value
@@ -168,7 +168,7 @@ func (cd ConfigData) SetDuration(key string, value time.Duration, description st
 // Validate validates all configuration values
 func (cd ConfigData) Validate() []ValidationError {
 	var errors []ValidationError
-	
+
 	for key, value := range cd {
 		if value.Required && value.IsEmpty() {
 			errors = append(errors, ValidationError{
@@ -177,10 +177,10 @@ func (cd ConfigData) Validate() []ValidationError {
 				Type:    "required",
 			})
 		}
-		
+
 		// Type-specific validation could be added here
 	}
-	
+
 	return errors
 }
 

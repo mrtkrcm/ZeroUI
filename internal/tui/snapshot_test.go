@@ -18,7 +18,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/tui/registry"
 )
 
-const snapshotDir = "testdata/snapshots"
+const SNAPSHOT_DIR = "testdata/snapshots"
 
 // File permission constants
 const (
@@ -435,9 +435,9 @@ func saveSnapshot(t *testing.T, filename, content string) {
 	t.Helper()
 
 	// Create snapshot directory if it doesn't exist
-	ensureDir(t, snapshotDir)
+	ensureDir(t, SNAPSHOT_DIR)
 
-	path := filepath.Join(snapshotDir, filename)
+	path := filepath.Join(SNAPSHOT_DIR, filename)
 
 	// Save snapshot
 	writeFile(t, path, []byte(content), FilePerm)
@@ -545,11 +545,7 @@ func getStateName(state ViewState) string {
 	}
 }
 
-
-
 // stripAnsiCodes is now defined in automation_framework.go
-
-
 
 // TestCoreUIFunctionality validates core UI operations
 func TestCoreUIFunctionality(t *testing.T) {

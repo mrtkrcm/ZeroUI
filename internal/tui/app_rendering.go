@@ -14,7 +14,7 @@ func (m *Model) View() string {
 	if m.width == 0 || m.height == 0 {
 		return ""
 	}
-	
+
 	// Check for cached view first (performance optimization)
 	if cached, ok := m.getCachedView(); ok {
 		return cached
@@ -187,7 +187,7 @@ func (m *Model) renderFormView() string {
 	if m.tabbedConfig != nil {
 		return m.renderTabbedConfigView()
 	}
-	
+
 	return m.styles.Error.Render("Configuration not initialized")
 }
 
@@ -262,7 +262,7 @@ func (m *Model) renderProgressView() string {
 	if m.appScanner != nil && m.appScanner.IsScanning() {
 		return m.renderScannerProgress()
 	}
-	
+
 	// Simple progress view for other loading states
 	spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	idx := (m.frameCount / 2) % len(spinner)
@@ -291,10 +291,10 @@ func (m *Model) renderScannerProgress() string {
 	if m.appScanner == nil {
 		return "Initializing scanner..."
 	}
-	
+
 	// Get scanner view
 	scannerView := m.appScanner.View()
-	
+
 	// Center it on screen
 	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(scannerView)
 	return lipgloss.Place(

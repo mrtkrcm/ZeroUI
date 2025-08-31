@@ -1,0 +1,329 @@
+---
+alwaysApply: false
+description: Raycast extension architecture and development patterns
+globs: raycast-extension/**/*.ts,raycast-extension/**/*.tsx,raycast-extension/**/*.js
+---
+
+# ZeroUI Raycast Extension Architecture
+
+## 📁 Extension Structure
+
+### Core Files
+- `package.json` - Extension manifest with commands and preferences
+- `tsconfig.json` - TypeScript configuration
+- `src/utils.ts` - ZeroUI integration and caching utilities
+- `src/types.ts` - TypeScript type definitions
+
+### Command Components (`src/`)
+- `list-apps.tsx` - Application listing with search and navigation
+- `toggle-config.tsx` - Configuration value toggling
+- `list-values.tsx` - Current configuration values display
+- `list-changed.tsx` - Changed values from defaults
+- `keymap-list.tsx` - Keyboard shortcuts display
+- `manage-presets.tsx` - Preset management interface
+- `menubar.tsx` - Menu bar integration
+- `cache-management.tsx` - Cache statistics and management
+
+## 🏗️ Architecture Patterns
+
+### ZeroUI Integration Layer
+```typescript
+// Core integration in src/utils.ts
+export class ZeroUI {
+  private zerouiPath: string;
+  private timeout: number;
+  private cache: Map<string, CacheEntry>;
+  private enableCache: boolean;
+
+  constructor(zerouiPath?: string) {
+    // Initialize with preferences and caching
+  }
+
+  async executeCommand(command: string, args: string[] = [], useCache: boolean = true): Promise<ZeroUIResult> {
+    // Intelligent caching and command execution
+  }
+}
+```
+
+### Component Structure
+```typescript
+// Standard React component pattern
+export default function CommandName() {
+  const [state, setState] = useState<InitialState>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await zeroui.someMethod();
+      setState(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (error) {
+    return <List><List.Item title="Error" subtitle={error} /></List>;
+  }
+
+  return (
+    <List isLoading={isLoading}>
+      {/* Component content */}
+    </List>
+  );
+}
+```
+
+### Action Panels
+```typescript
+// Rich action panels with shortcuts
+<ActionPanel>
+  <ActionPanel.Section>
+    <Action.Push title="View Details" target={<DetailView />} icon={Icon.Eye} shortcut={{ modifiers: ["cmd"], key: "d" }} />
+    <Action title="Copy" icon={Icon.Clipboard} shortcut={{ modifiers: ["cmd"], key: "c" }} />
+  </ActionPanel.Section>
+
+  <ActionPanel.Section>
+    <Action title="Refresh" icon={Icon.ArrowClockwise} shortcut={{ modifiers: ["cmd"], key: "r" }} onAction={refresh} />
+  </ActionPanel.Section>
+</ActionPanel>
+```
+
+## 🎯 Best Practices
+
+### 1. Error Handling
+```typescript
+// Consistent error handling pattern
+try {
+  const result = await zeroui.executeCommand('list apps');
+  if (!result.success) {
+    throw new Error(result.error || 'Command failed');
+  }
+  setData(result.output);
+} catch (err) {
+  const message = err instanceof Error ? err.message : 'Unknown error';
+  setError(message);
+  await showToast({
+    style: Toast.Style.Failure,
+    title: 'Operation Failed',
+    message,
+  });
+}
+```
+
+### 2. Loading States
+```typescript
+// Proper loading state management
+const [isLoading, setIsLoading] = useState(true);
+
+// Always reset loading state
+useEffect(() => {
+  loadData();
+}, []);
+
+const loadData = async () => {
+  try {
+    setIsLoading(true);
+    setError(null);
+    const data = await fetchData();
+    setData(data);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+### 3. Search and Filtering
+```typescript
+// Built-in search with filtering
+<List
+  isLoading={isLoading}
+  searchBarPlaceholder="Search items..."
+  filtering={true}
+  throttle={true}
+>
+  {filteredItems.map((item) => (
+    <List.Item
+      key={item.id}
+      title={item.title}
+      subtitle={item.subtitle}
+      keywords={[item.title.toLowerCase(), item.category]}
+    />
+  ))}
+</List>
+```
+
+### 4. Keyboard Shortcuts
+```typescript
+// Consistent keyboard shortcuts
+<Action
+  title="Primary Action"
+  shortcut={{ modifiers: ["cmd"], key: "p" }}
+  onAction={handlePrimary}
+/>
+
+<Action
+  title="Secondary Action"
+  shortcut={{ modifiers: ["cmd"], key: "s" }}
+  onAction={handleSecondary}
+/>
+```
+
+## ⚙️ Preferences System
+
+### User Preferences
+```json
+{
+  "preferences": [
+    {
+      "name": "zerouiPath",
+      "type": "textfield",
+      "title": "ZeroUI Binary Path",
+      "description": "Path to the ZeroUI binary",
+      "placeholder": "/path/to/zeroui"
+    },
+    {
+      "name": "enableCache",
+      "type": "checkbox",
+      "title": "Enable Caching",
+      "description": "Cache results for better performance",
+      "default": true
+    },
+    {
+      "name": "cacheDuration",
+      "type": "textfield",
+      "title": "Cache Duration",
+      "description": "Cache TTL in milliseconds",
+      "default": "300000"
+    }
+  ]
+}
+```
+
+### Preferences Usage
+```typescript
+import { getPreferenceValues } from "@raycast/api";
+
+interface Preferences {
+  zerouiPath: string;
+  timeout: string;
+  enableCache: boolean;
+  cacheDuration: string;
+}
+
+const preferences = getPreferenceValues<Preferences>();
+```
+
+## 🚀 Performance Optimization
+
+### Caching Strategy
+```typescript
+// Intelligent caching with TTL
+interface CacheEntry {
+  data: ZeroUIResult;
+  timestamp: number;
+  ttl: number;
+}
+
+class ZeroUI {
+  private cache = new Map<string, CacheEntry>();
+
+  private getCacheKey(command: string, args: string[]): string {
+    return `${command}:${args.join(':')}`;
+  }
+
+  private getCachedResult(key: string): ZeroUIResult | null {
+    const entry = this.cache.get(key);
+    if (!entry || Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+}
+```
+
+### Lazy Loading
+```typescript
+// Load data on demand
+const [data, setData] = useState(null);
+const [hasLoaded, setHasLoaded] = useState(false);
+
+const loadData = useCallback(async () => {
+  if (hasLoaded) return; // Don't reload
+
+  try {
+    const result = await zeroui.listValues(app);
+    setData(result);
+    setHasLoaded(true);
+  } catch (err) {
+    // Handle error
+  }
+}, [app, hasLoaded]);
+```
+
+## 📱 Menu Bar Integration
+
+### Menu Bar Extra
+```typescript
+import { MenuBarExtra } from "@raycast/api";
+
+export default function MenuBarCommand() {
+  const [apps, setApps] = useState<AppInfo[]>([]);
+
+  return (
+    <MenuBarExtra
+      title={getMenuBarTitle()}
+      icon={getMenuBarIcon()}
+      tooltip="ZeroUI Configuration Manager"
+    >
+      {/* Menu items */}
+    </MenuBarExtra>
+  );
+}
+```
+
+## 🔧 Development Workflow
+
+### Build and Development
+```bash
+# Development
+npm run dev
+
+# Build for production
+npm run build
+
+# Lint code
+npm run lint
+
+# Fix linting issues
+npm run fix-lint
+```
+
+### Testing Commands
+```typescript
+// Test ZeroUI connectivity
+const result = await zeroui.executeCommand('list apps');
+console.log('ZeroUI Response:', result);
+
+// Test caching
+zeroui.clearCache();
+const cachedResult = await zeroui.executeCommand('list apps', [], true);
+console.log('Cached Response:', cachedResult);
+```
+
+## 📚 Key Files
+- [raycast-extension/package.json](mdc:raycast-extension/package.json) - Extension manifest
+- [raycast-extension/src/utils.ts](mdc:raycast-extension/src/utils.ts) - ZeroUI integration
+- [raycast-extension/src/list-apps.tsx](mdc:raycast-extension/src/list-apps.tsx) - Main application view
+- [raycast-extension/src/menubar.tsx](mdc:raycast-extension/src/menubar.tsx) - Menu bar integration

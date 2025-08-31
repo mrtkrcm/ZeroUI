@@ -27,7 +27,7 @@ type UIIntegrationManager struct {
 
 // NewUIIntegrationManager creates a new UI integration manager
 func NewUIIntegrationManager() *UIIntegrationManager {
-	theme := styles.DefaultTheme()
+	theme := &styles.DefaultTheme
 	appStyles := theme.BuildStyles()
 
 	return &UIIntegrationManager{

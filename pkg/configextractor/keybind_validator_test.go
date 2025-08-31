@@ -8,10 +8,10 @@ func TestKeybindValidator_ValidateKeybind(t *testing.T) {
 	validator := NewKeybindValidator()
 
 	tests := []struct {
-		name     string
-		keybind  string
-		expected bool
-		errorMsg string
+		name       string
+		keybind    string
+		expected   bool
+		errorMsg   string
 		hasWarning bool
 	}{
 		// Valid keybinds
@@ -85,9 +85,9 @@ func TestKeybindValidator_ValidateKeybind(t *testing.T) {
 
 		// Keybinds with warnings (unknown actions)
 		{
-			name:     "unknown action",
-			keybind:  "ctrl+c=custom_action",
-			expected: true,
+			name:       "unknown action",
+			keybind:    "ctrl+c=custom_action",
+			expected:   true,
 			hasWarning: true,
 		},
 	}
@@ -220,9 +220,9 @@ func TestKeybindValidator_ValidateAction(t *testing.T) {
 	validator := NewKeybindValidator()
 
 	tests := []struct {
-		name      string
-		action    string
-		expected  bool
+		name       string
+		action     string
+		expected   bool
 		hasWarning bool
 	}{
 		// Valid actions

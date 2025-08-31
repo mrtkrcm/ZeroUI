@@ -1,0 +1,18 @@
+#!/bin/bash
+# Test stub for Alacritty terminal emulator
+# This is used by tests to avoid dependency on the actual alacritty binary
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "alacritty (test stub) - A cross-platform, GPU-accelerated terminal emulator"
+    echo "Usage: alacritty [options]"
+    echo "This is a test stub and does not provide full functionality."
+    exit 0
+fi
+
+if [[ "$1" == "--version" || "$1" == "-V" ]]; then
+    echo "alacritty 0.12.0 (test-stub)"
+    exit 0
+fi
+
+echo "alacritty test stub executed successfully"
+exit 0

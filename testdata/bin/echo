@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test stub for echo (for hook testing)
+# This is used by tests for safe hook command execution
+
+echo "$@"
+exit 0

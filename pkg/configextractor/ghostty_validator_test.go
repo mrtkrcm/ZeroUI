@@ -113,14 +113,14 @@ func TestGhosttySchemaValidator_ValidateConfig(t *testing.T) {
 
 	t.Run("valid configuration", func(t *testing.T) {
 		config := map[string]interface{}{
-			"font-family":        "JetBrains Mono",
-			"font-size":          12,
-			"cursor-style":       "block",
-			"cursor-color":       "#ff0000",
-			"window-padding-x":   10,
-			"window-padding-y":   10,
-			"background":         "#000000",
-			"foreground":         "#ffffff",
+			"font-family":      "JetBrains Mono",
+			"font-size":        12,
+			"cursor-style":     "block",
+			"cursor-color":     "#ff0000",
+			"window-padding-x": 10,
+			"window-padding-y": 10,
+			"background":       "#000000",
+			"foreground":       "#ffffff",
 		}
 
 		result := validator.ValidateConfig(config)
@@ -131,11 +131,11 @@ func TestGhosttySchemaValidator_ValidateConfig(t *testing.T) {
 
 	t.Run("configuration with invalid fields", func(t *testing.T) {
 		config := map[string]interface{}{
-			"font-family":        "JetBrains Mono",
-			"cursor-blink":       true,        // Invalid field
-			"window-padding":     10,          // Invalid field
-			"cursor-style":       "invalid",   // Invalid value
-			"cursor-color":       "not-color", // Invalid color
+			"font-family":    "JetBrains Mono",
+			"cursor-blink":   true,        // Invalid field
+			"window-padding": 10,          // Invalid field
+			"cursor-style":   "invalid",   // Invalid value
+			"cursor-color":   "not-color", // Invalid color
 		}
 
 		result := validator.ValidateConfig(config)
@@ -189,12 +189,12 @@ func TestValidateGhosttyConfig(t *testing.T) {
 func containsError(errorText, fieldName string) bool {
 	return len(errorText) > 0 && (errorText == fieldName ||
 		len(errorText) >= len(fieldName) &&
-		func() bool {
-			for i := 0; i <= len(errorText)-len(fieldName); i++ {
-				if errorText[i:i+len(fieldName)] == fieldName {
-					return true
+			func() bool {
+				for i := 0; i <= len(errorText)-len(fieldName); i++ {
+					if errorText[i:i+len(fieldName)] == fieldName {
+						return true
+					}
 				}
-			}
-			return false
-		}())
+				return false
+			}())
 }

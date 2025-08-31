@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run tests
+      run: go test -v -race ./...
+
+    - name: Build binaries
+      run: make build-all
+
+    - name: Create release archives
+      run: make release
+
+    - name: Generate release notes
+      run: |
+        # Get the latest tag
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        
+        # Generate changelog from commits since last tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "## Changes since $PREVIOUS_TAG" > release-notes.md
+          echo "" >> release-notes.md
+          git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG"..HEAD >> release-notes.md
+        else
+          echo "## Initial Release" > release-notes.md
+          echo "" >> release-notes.md
+          echo "First stable release of ZeroUI!" >> release-notes.md
+        fi
+        
+        echo "" >> release-notes.md
+        echo "## Installation" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "Download the appropriate binary for your platform from the assets below." >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### Linux/macOS" >> release-notes.md
+        echo '```bash' >> release-notes.md
+        echo "tar -xzf zeroui-*-amd64.tar.gz" >> release-notes.md
+        echo "sudo mv zeroui /usr/local/bin/" >> release-notes.md
+        echo '```' >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### Windows" >> release-notes.md
+        echo "Extract the ZIP file and add to your PATH." >> release-notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body_path: release-notes.md
+        files: |
+          releases/*.tar.gz
+          releases/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  raycast-release:
+    needs: release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Copy ZeroUI binary to Raycast extension
+      run: |
+        mkdir -p raycast-extension
+        cp dist/zeroui-linux-amd64 raycast-extension/zeroui
+        chmod +x raycast-extension/zeroui
+
+    - name: Install Raycast extension dependencies
+      working-directory: raycast-extension
+      run: npm ci
+
+    - name: Build Raycast extension
+      working-directory: raycast-extension
+      run: npm run build
+
+    - name: Create Raycast extension archive
+      run: |
+        cd raycast-extension
+        zip -r ../raycast-extension-${{ github.ref_name }}.zip .
+        cd ..
+
+    - name: Upload Raycast extension to release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        files: raycast-extension-${{ github.ref_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

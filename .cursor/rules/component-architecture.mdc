@@ -1,0 +1,142 @@
+---
+alwaysApply: true
+description: Component architecture and organization patterns for the TUI
+globs: internal/tui/**/*.go
+---
+
+# ZeroUI Component Architecture
+
+## 📁 Component Organization
+
+ZeroUI uses a modular component architecture organized into logical packages:
+
+### Core Package (`internal/tui/components/core/`)
+- **Purpose**: Core interfaces, base components, and shared types
+- **Key Files**:
+  - `interfaces.go` - Component interfaces (Component, Focusable, Sizeable, etc.)
+  - `base.go` - BaseComponent implementation
+  - `layout.go` - Layout utilities and spacing system
+  - `config_types.go` - Configuration-related types
+
+### Display Package (`internal/tui/components/display/`)
+- **Purpose**: UI rendering and display components
+- **Key Files**:
+  - `toast.go` - Toast notifications
+  - `help.go` - Help systems
+  - `status_bar.go` - Status bar components
+  - `glamour_help.go` - Glamour-powered help rendering
+
+### Forms Package (`internal/tui/components/forms/`)
+- **Purpose**: Form components and configuration interfaces
+- **Key Files**:
+  - `forms.go` - Form utilities and demos
+  - `enhanced_config.go` - Enhanced configuration forms
+  - `types.go` - Form-related types
+  - `huh_config_form.go` - Huh-based configuration forms
+
+### UI Package (`internal/tui/components/ui/`)
+- **Purpose**: High-level UI integration and management
+- **Key Files**:
+  - `ui_integration.go` - UI integration manager
+  - `enhanced_app_list.go` - Enhanced application list
+  - `screenshot_component.go` - Screenshot capture functionality
+
+### App Package (`internal/tui/components/app/`)
+- **Purpose**: Application-specific components
+- **Key Files**:
+  - `app_card.go` - Individual application cards
+  - `app_grid.go` - Grid layout for applications
+  - `app_scanner.go` - Application scanning functionality
+  - `delightful_ui.go` - Enhanced UI implementations
+
+## 🏗️ Component Patterns
+
+### Interface Implementation
+```go
+// Components must implement the Component interface
+type MyComponent struct {
+    // ... fields
+}
+
+// Implement tea.Model interface (which Component extends)
+func (m MyComponent) Init() tea.Cmd { /* ... */ }
+func (m MyComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) { /* ... */ }
+func (m MyComponent) View() string { /* ... */ }
+```
+
+### Focus Management
+```go
+// For focusable components, implement Focusable interface
+func (m MyComponent) Focus() tea.Cmd {
+    return tea.Sequence(
+        // Focus logic here
+    )
+}
+
+func (m MyComponent) Blur() tea.Cmd {
+    return tea.Sequence(
+        // Blur logic here
+    )
+}
+
+func (m MyComponent) IsFocused() bool {
+    return m.focused
+}
+```
+
+### Size Management
+```go
+// For sizeable components, implement Sizeable interface
+func (m MyComponent) SetSize(width, height int) tea.Cmd {
+    m.width = width
+    m.height = height
+    return nil
+}
+
+func (m MyComponent) GetSize() (int, int) {
+    return m.width, m.height
+}
+```
+
+## 🔗 Component Communication
+
+### Message Passing
+- Use Bubble Tea's message system for component communication
+- Define custom message types for component-specific events
+- Use `tea.Batch()` to combine multiple commands
+
+### State Management
+- Each component manages its own state
+- Use composition to combine multiple components
+- Leverage Bubble Tea's model updates for state changes
+
+## 🎯 Best Practices
+
+### 1. Component Naming
+- Use descriptive names: `EnhancedApplicationList`, `GlamourHelp`
+- Follow Go naming conventions: PascalCase for exported types
+
+### 2. Interface Segregation
+- Implement only necessary interfaces
+- Keep components focused on single responsibilities
+- Use composition over inheritance
+
+### 3. Error Handling
+- Return errors from methods rather than panicking
+- Use structured error types when appropriate
+- Log errors with context for debugging
+
+### 4. Performance
+- Avoid unnecessary re-renders in `View()` method
+- Use efficient string concatenation
+- Cache expensive operations when possible
+
+### 5. Testing
+- Write unit tests for component logic
+- Test component interactions
+- Use table-driven tests for multiple scenarios
+
+## 📚 Related Files
+- [internal/tui/components/core/interfaces.go](mdc:internal/tui/components/core/interfaces.go) - Component interfaces
+- [internal/tui/components/core/base.go](mdc:internal/tui/components/core/base.go) - Base component implementation
+- [internal/tui/app_state.go](mdc:internal/tui/app_state.go) - Main application state management

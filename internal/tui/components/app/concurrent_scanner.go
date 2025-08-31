@@ -6,7 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 )
 
@@ -41,26 +41,26 @@ func NewConcurrentScanner() *ConcurrentScanner {
 func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 	return func() tea.Msg {
 		defer cs.cancel()
-		
+
 		// Load registry
 		registry, err := config.LoadAppsRegistry()
 		if err != nil {
 			return scanErrorMsg{error: err}
 		}
-		
+
 		cs.registry = registry
 		apps := registry.GetAllApps()
-		
+
 		// Start workers
 		numWorkers := 5
 		workChan := make(chan config.AppDefinition, len(apps))
-		
+
 		// Start worker goroutines
 		for i := 0; i < numWorkers; i++ {
 			cs.wg.Add(1)
 			go cs.worker(workChan)
 		}
-		
+
 		// Send work to workers
 		for _, app := range apps {
 			select {
@@ -71,13 +71,13 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 			}
 		}
 		close(workChan)
-		
+
 		// Wait for completion in a separate goroutine
 		go func() {
 			cs.wg.Wait()
 			close(cs.results)
 		}()
-		
+
 		// Collect results
 		var scanResults []AppInfo
 		for result := range cs.results {
@@ -88,19 +88,19 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 				ConfigPath:   result.ConfigPath,
 				ConfigExists: result.ConfigExists,
 			}
-			
+
 			if result.ConfigExists {
 				info.Status = StatusReady
 			}
-			
+
 			if result.Error != nil {
 				info.Status = StatusError
 				info.Error = result.Error
 			}
-			
+
 			scanResults = append(scanResults, info)
 		}
-		
+
 		return ScanCompleteMsg{Apps: scanResults}
 	}
 }
@@ -108,14 +108,14 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 // worker processes apps from the work channel
 func (cs *ConcurrentScanner) worker(workChan <-chan config.AppDefinition) {
 	defer cs.wg.Done()
-	
+
 	for app := range workChan {
 		select {
 		case <-cs.ctx.Done():
 			return
 		default:
 			result := cs.checkApp(app)
-			
+
 			select {
 			case cs.results <- result:
 			case <-cs.ctx.Done():
@@ -130,12 +130,12 @@ func (cs *ConcurrentScanner) checkApp(app config.AppDefinition) ScanResult {
 	result := ScanResult{
 		App: app,
 	}
-	
+
 	// Check if config exists
 	exists, path := cs.registry.CheckAppStatus(app.Name)
 	result.ConfigExists = exists
 	result.ConfigPath = path
-	
+
 	return result
 }
 

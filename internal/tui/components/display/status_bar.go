@@ -76,8 +76,8 @@ func (m *StatusBarModel) View() string {
 	// Style the status bar
 	style := m.styles.Base.
 		Width(m.width).
-		Background(lipgloss.Color(styles.ColorToHex(styles.GetTheme().BgSubtle))).
-		Foreground(lipgloss.Color(styles.ColorToHex(styles.GetTheme().FgMuted)))
+		Background(lipgloss.Color(styles.GetTheme().BgSubtle)).
+		Foreground(lipgloss.Color(styles.GetTheme().FgMuted))
 
 	return style.Render(statusLine)
 }

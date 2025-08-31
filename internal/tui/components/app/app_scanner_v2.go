@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	
+
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 )
 
@@ -27,28 +27,28 @@ const (
 // AppScannerV2 is an improved, cleaner app scanner
 type AppScannerV2 struct {
 	// State
-	state      ScannerState
-	apps       []AppInfo
-	errors     []error
-	
+	state  ScannerState
+	apps   []AppInfo
+	errors []error
+
 	// Progress tracking
-	current    int
-	total      int
-	startTime  time.Time
-	
+	current   int
+	total     int
+	startTime time.Time
+
 	// UI components
-	spinner    spinner.Model
-	progress   progress.Model
-	
+	spinner  spinner.Model
+	progress progress.Model
+
 	// Dimensions
-	width      int
-	height     int
-	
+	width  int
+	height int
+
 	// Configuration
-	registry   *config.AppsRegistry
-	
+	registry *config.AppsRegistry
+
 	// Thread safety
-	mu         sync.RWMutex
+	mu sync.RWMutex
 }
 
 // NewAppScannerV2 creates an improved scanner
@@ -56,13 +56,13 @@ func NewAppScannerV2() *AppScannerV2 {
 	s := spinner.New()
 	s.Spinner = spinner.Points
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
-	
+
 	p := progress.New(
 		progress.WithDefaultGradient(),
 		progress.WithWidth(40),
 		progress.WithoutPercentage(),
 	)
-	
+
 	return &AppScannerV2{
 		state:    ScannerIdle,
 		spinner:  s,
@@ -76,7 +76,7 @@ func NewAppScannerV2() *AppScannerV2 {
 func (s *AppScannerV2) Init() tea.Cmd {
 	s.state = ScannerScanning
 	s.startTime = time.Now()
-	
+
 	return tea.Batch(
 		s.spinner.Tick,
 		s.scan(),
@@ -91,7 +91,7 @@ func (s *AppScannerV2) Update(msg tea.Msg) (*AppScannerV2, tea.Cmd) {
 		s.height = msg.Height
 		s.progress.Width = min(msg.Width-4, 60)
 		return s, nil
-		
+
 	case spinner.TickMsg:
 		if s.state == ScannerScanning {
 			var cmd tea.Cmd
@@ -99,7 +99,7 @@ func (s *AppScannerV2) Update(msg tea.Msg) (*AppScannerV2, tea.Cmd) {
 			return s, cmd
 		}
 		return s, nil
-		
+
 	case progress.FrameMsg:
 		if s.state == ScannerScanning {
 			progressModel, cmd := s.progress.Update(msg)
@@ -107,7 +107,7 @@ func (s *AppScannerV2) Update(msg tea.Msg) (*AppScannerV2, tea.Cmd) {
 			return s, cmd
 		}
 		return s, nil
-		
+
 	case scanTickMsg:
 		// Update progress
 		s.current = msg.current
@@ -117,18 +117,18 @@ func (s *AppScannerV2) Update(msg tea.Msg) (*AppScannerV2, tea.Cmd) {
 			return s, s.progress.SetPercent(percent)
 		}
 		return s, nil
-		
+
 	case ScanCompleteMsg:
 		s.state = ScannerComplete
 		s.apps = msg.Apps
 		return s, nil
-		
+
 	case scanErrorMsg:
 		s.state = ScannerError
 		s.errors = append(s.errors, msg.error)
 		return s, nil
 	}
-	
+
 	return s, nil
 }
 
@@ -149,50 +149,50 @@ func (s *AppScannerV2) View() string {
 // viewScanning shows scanning progress
 func (s *AppScannerV2) viewScanning() string {
 	var b strings.Builder
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("86"))
-	
+
 	b.WriteString(titleStyle.Render("Scanning Applications"))
 	b.WriteString("\n\n")
-	
+
 	// Spinner and status
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	status := fmt.Sprintf("%s Checking %d/%d applications...", 
+	status := fmt.Sprintf("%s Checking %d/%d applications...",
 		s.spinner.View(),
 		s.current,
 		s.total,
 	)
 	b.WriteString(statusStyle.Render(status))
 	b.WriteString("\n\n")
-	
+
 	// Progress bar
 	b.WriteString(s.progress.View())
 	b.WriteString("\n\n")
-	
+
 	// Elapsed time
 	elapsed := time.Since(s.startTime).Round(time.Second)
 	b.WriteString(statusStyle.Render(fmt.Sprintf("Time: %s", elapsed)))
-	
+
 	return b.String()
 }
 
 // viewComplete shows scan results
 func (s *AppScannerV2) viewComplete() string {
 	var b strings.Builder
-	
+
 	// Title
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("86"))
 	b.WriteString(titleStyle.Render("Applications"))
 	b.WriteString("\n\n")
-	
+
 	// Group apps by status
 	ready := []AppInfo{}
 	notConfigured := []AppInfo{}
-	
+
 	for _, app := range s.apps {
 		if app.ConfigExists {
 			ready = append(ready, app)
@@ -200,7 +200,7 @@ func (s *AppScannerV2) viewComplete() string {
 			notConfigured = append(notConfigured, app)
 		}
 	}
-	
+
 	// Style definitions
 	readyStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("42")).
@@ -209,26 +209,26 @@ func (s *AppScannerV2) viewComplete() string {
 		Foreground(lipgloss.Color("214"))
 	dimStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241"))
-	
+
 	// Show ready apps
 	if len(ready) > 0 {
 		b.WriteString(readyStyle.Render("● Configured"))
 		b.WriteString(fmt.Sprintf(" %s\n", dimStyle.Render(fmt.Sprintf("(%d)", len(ready)))))
-		
+
 		for _, app := range ready {
-			b.WriteString(fmt.Sprintf("  %s %s\n", 
-				app.Icon, 
+			b.WriteString(fmt.Sprintf("  %s %s\n",
+				app.Icon,
 				app.Name,
 			))
 		}
 		b.WriteString("\n")
 	}
-	
+
 	// Show not configured apps
 	if len(notConfigured) > 0 {
 		b.WriteString(notConfiguredStyle.Render("○ Not Configured"))
 		b.WriteString(fmt.Sprintf(" %s\n", dimStyle.Render(fmt.Sprintf("(%d)", len(notConfigured)))))
-		
+
 		for _, app := range notConfigured {
 			b.WriteString(fmt.Sprintf("  %s %s\n",
 				app.Icon,
@@ -236,18 +236,18 @@ func (s *AppScannerV2) viewComplete() string {
 			))
 		}
 	}
-	
+
 	// Summary
 	b.WriteString("\n")
 	summaryStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241")).
 		Italic(true)
-	summary := fmt.Sprintf("Found %d apps, %d configured", 
-		len(s.apps), 
+	summary := fmt.Sprintf("Found %d apps, %d configured",
+		len(s.apps),
 		len(ready),
 	)
 	b.WriteString(summaryStyle.Render(summary))
-	
+
 	return b.String()
 }
 
@@ -256,15 +256,15 @@ func (s *AppScannerV2) viewError() string {
 	errorStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("196")).
 		Bold(true)
-	
+
 	var b strings.Builder
 	b.WriteString(errorStyle.Render("✗ Scan Failed"))
 	b.WriteString("\n\n")
-	
+
 	for _, err := range s.errors {
 		b.WriteString(fmt.Sprintf("  • %v\n", err))
 	}
-	
+
 	return b.String()
 }
 
@@ -284,20 +284,20 @@ func (s *AppScannerV2) scan() tea.Cmd {
 		if err != nil {
 			return scanErrorMsg{error: fmt.Errorf("failed to load registry: %w", err)}
 		}
-		
+
 		s.registry = registry
 		apps := registry.GetAllApps()
 		s.total = len(apps)
-		
+
 		results := make([]AppInfo, 0, len(apps))
-		
+
 		for i, app := range apps {
 			// Send progress update
 			s.current = i + 1
-			
+
 			// Check config
 			exists, path := registry.CheckAppStatus(app.Name)
-			
+
 			info := AppInfo{
 				Name:         app.Name,
 				Icon:         app.Icon,
@@ -305,17 +305,17 @@ func (s *AppScannerV2) scan() tea.Cmd {
 				ConfigPath:   path,
 				ConfigExists: exists,
 			}
-			
+
 			if exists {
 				info.Status = StatusReady
 			}
-			
+
 			results = append(results, info)
-			
+
 			// Small delay for UI smoothness
 			time.Sleep(30 * time.Millisecond)
 		}
-		
+
 		return ScanCompleteMsg{Apps: results}
 	}
 }
@@ -348,7 +348,7 @@ func (s *AppScannerV2) IsComplete() bool {
 func (s *AppScannerV2) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.state = ScannerIdle
 	s.apps = []AppInfo{}
 	s.errors = []error{}
