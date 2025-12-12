@@ -50,10 +50,9 @@ func TestUIInitialization(t *testing.T) {
 	// Validate initial state
 	assert.Equal(t, ListView, model.state, "Should start with ListView")
 	assert.NotNil(t, model.appList, "AppList should be initialized")
-	// Config components are initialized on-demand when entering FormView
-	// So they may be nil in the initial state
-	// assert.NotNil(t, model.enhancedConfig, "EnhancedConfig should be initialized")
-	// assert.NotNil(t, model.tabbedConfig, "TabbedConfig should be initialized")
+	// Config component is initialized on-demand when entering FormView
+	// So it may be nil in the initial state
+	// assert.NotNil(t, model.configEditor, "Config editor should be initialized")
 	assert.NotNil(t, model.helpSystem, "HelpSystem should be initialized")
 	assert.NotNil(t, model.styles, "Styles should be initialized")
 	assert.NotNil(t, model.theme, "Theme should be initialized")

@@ -34,12 +34,11 @@ type Model struct {
 	errorHandler *ErrorHandler
 
 	// Modern components using unified component system
-	appList        *app.ApplicationListModel
-	appScanner     *app.AppScannerV2          // Improved scanner
-	tabbedConfig   *forms.TabbedConfigModel   // Basic tabbed interface
-	enhancedConfig *forms.EnhancedConfigModel // Enhanced config editor
-	helpSystem     *display.GlamourHelpModel
-	presetSel      *app.PresetsSelector
+	appList      *app.ApplicationListModel
+	appScanner   *app.AppScannerV2          // Improved scanner
+	configEditor *forms.EnhancedConfigModel // Primary config editor (was duplicated)
+	helpSystem   *display.GlamourHelpModel
+	presetSel    *app.PresetsSelector
 
 	// Unified component system
 	componentManager *ui.ComponentManager
@@ -239,26 +238,19 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		targetConfig = make(map[string]interface{})
 	}
 
-	// Create configuration interfaces
-	m.tabbedConfig = forms.NewTabbedConfig(appName)
-	m.enhancedConfig = forms.NewEnhancedConfig(appName)
+	// Create the primary configuration interface (single source instead of duplicated UIs)
+	m.configEditor = forms.NewEnhancedConfig(appName)
 
 	// Set initial size to prevent flicker when switching views
 	if m.width > 0 && m.height > 0 {
-		m.enhancedConfig.SetSize(m.width, m.height)
-		if m.tabbedConfig != nil {
-			// Try to set size if method exists
-			if setter, ok := interface{}(m.tabbedConfig).(interface{ SetSize(int, int) }); ok {
-				setter.SetSize(m.width, m.height)
-			}
-		}
+		m.configEditor.SetSize(m.width, m.height)
 	}
 
 	// Load the actual config file content for viewing
 	if targetPath != "" {
 		content, err := os.ReadFile(targetPath)
 		if err == nil {
-			m.enhancedConfig.SetConfigFile(targetPath, string(content))
+			m.configEditor.SetConfigFile(targetPath, string(content))
 		} else {
 			m.logger.Warn("Failed to read config file for viewing",
 				"path", targetPath,
@@ -322,9 +314,8 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 		configFields = append(configFields, configField)
 	}
 
-	// Set fields on both interfaces
-	m.tabbedConfig.SetFields(configFields)
-	m.enhancedConfig.SetFields(configFields)
+	// Set fields on the active configuration interface
+	m.configEditor.SetFields(configFields)
 
 	// NOTE: targetConfig integration not yet implemented - forms currently use field definitions only
 	_ = targetConfig // Suppress unused variable warning for now
@@ -368,11 +359,8 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	if m.appList != nil {
 		m.appList.SetSize(m.width, m.height-4) // Leave room for header/footer
 	}
-	if m.tabbedConfig != nil {
-		m.tabbedConfig.SetSize(m.width, m.height-4)
-	}
-	if m.enhancedConfig != nil {
-		m.enhancedConfig.SetSize(m.width, m.height-4)
+	if m.configEditor != nil {
+		m.configEditor.SetSize(m.width, m.height-4)
 	}
 	if m.helpSystem != nil {
 		m.helpSystem.SetSize(m.width, m.height-4)

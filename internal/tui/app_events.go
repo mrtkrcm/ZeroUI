@@ -206,12 +206,8 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 	switch {
 	case key.Matches(msg, m.keyMap.Quit):
 		hasUnsavedChanges := false
-		if m.state == FormView {
-			if m.enhancedConfig != nil && m.enhancedConfig.HasUnsavedChanges() {
-				hasUnsavedChanges = true
-			} else if m.tabbedConfig != nil && m.tabbedConfig.HasUnsavedChanges() {
-				hasUnsavedChanges = true
-			}
+		if m.state == FormView && m.configEditor != nil {
+			hasUnsavedChanges = m.configEditor.HasUnsavedChanges()
 		}
 
 		if hasUnsavedChanges {
@@ -263,15 +259,8 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 	case FormView:
 		switch {
 		case key.Matches(msg, m.keyMap.Save):
-			// Try enhanced config first
-			if m.enhancedConfig != nil && m.enhancedConfig.IsValid() {
-				values := m.enhancedConfig.GetValues()
-				m.logger.Info("Saving configuration", "app", m.currentApp)
-				return m.saveConfiguration(m.currentApp, values)
-			}
-			// Fall back to tabbed config
-			if m.tabbedConfig != nil && m.tabbedConfig.IsValid() {
-				values := m.tabbedConfig.GetValues()
+			if m.configEditor != nil && m.configEditor.IsValid() {
+				values := m.configEditor.GetValues()
 				m.logger.Info("Saving configuration", "app", m.currentApp)
 				return m.saveConfiguration(m.currentApp, values)
 			}
@@ -318,29 +307,15 @@ func (m *Model) handleComponentKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case FormView:
-		// Handle enhanced config first
-		if m.enhancedConfig != nil {
+		if m.configEditor != nil {
 			updatedModel, cmd := m.safeUpdateComponent(
 				func() (interface{}, tea.Cmd) {
-					return m.enhancedConfig.Update(msg)
+					return m.configEditor.Update(msg)
 				},
-				"enhancedConfig",
+				"configEditor",
 			)
 			if updated, ok := updatedModel.(*forms.EnhancedConfigModel); ok {
-				m.enhancedConfig = updated
-			}
-			return m, cmd
-		}
-		// Fall back to tabbed config
-		if m.tabbedConfig != nil {
-			updatedModel, cmd := m.safeUpdateComponent(
-				func() (interface{}, tea.Cmd) {
-					return m.tabbedConfig.Update(msg)
-				},
-				"tabbedConfig",
-			)
-			if updated, ok := updatedModel.(*forms.TabbedConfigModel); ok {
-				m.tabbedConfig = updated
+				m.configEditor = updated
 			}
 			return m, cmd
 		}
@@ -381,29 +356,15 @@ func (m *Model) handleStateUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case FormView:
-		// Handle enhanced config first
-		if m.enhancedConfig != nil {
+		if m.configEditor != nil {
 			updatedModel, cmd := m.safeUpdateComponent(
 				func() (interface{}, tea.Cmd) {
-					return m.enhancedConfig.Update(msg)
+					return m.configEditor.Update(msg)
 				},
-				"enhancedConfig",
+				"configEditor",
 			)
 			if updated, ok := updatedModel.(*forms.EnhancedConfigModel); ok {
-				m.enhancedConfig = updated
-			}
-			return m, cmd
-		}
-		// Fall back to tabbed config
-		if m.tabbedConfig != nil {
-			updatedModel, cmd := m.safeUpdateComponent(
-				func() (interface{}, tea.Cmd) {
-					return m.tabbedConfig.Update(msg)
-				},
-				"tabbedConfig",
-			)
-			if updated, ok := updatedModel.(*forms.TabbedConfigModel); ok {
-				m.tabbedConfig = updated
+				m.configEditor = updated
 			}
 			return m, cmd
 		}
@@ -440,8 +401,7 @@ func (m *Model) handleBack() tea.Cmd {
 		// Clean transition back to list
 		m.state = ListView
 		m.currentApp = ""
-		m.tabbedConfig = nil
-		m.enhancedConfig = nil
+		m.configEditor = nil
 		m.presetSel = nil
 		m.invalidateCache()
 		// Ensure list is refreshed
@@ -508,8 +468,7 @@ func (m *Model) handleConfigSaved(msg core.ConfigSavedMsg) (tea.Model, tea.Cmd) 
 	// Return to app list
 	m.state = ListView
 	m.currentApp = ""
-	m.tabbedConfig = nil
-	m.enhancedConfig = nil
+	m.configEditor = nil
 	m.invalidateCache()
 
 	return m, func() tea.Msg {

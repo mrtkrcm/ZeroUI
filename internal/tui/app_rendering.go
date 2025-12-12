@@ -179,42 +179,54 @@ func (m *Model) renderListView() string {
 
 // renderFormView renders the configuration form view
 func (m *Model) renderFormView() string {
-	// Use the enhanced interface as primary
-	if m.enhancedConfig != nil {
-		return m.renderEnhancedConfigView()
-	}
-	// Fall back to tabbed interface
-	if m.tabbedConfig != nil {
-		return m.renderTabbedConfigView()
+	if m.configEditor == nil {
+		return m.styles.Error.Render("Configuration not initialized")
 	}
 
-	return m.styles.Error.Render("Configuration not initialized")
+	return m.renderConfigView()
 }
 
-// renderTabbedConfigView renders the tabbed configuration interface
-func (m *Model) renderTabbedConfigView() string {
-	if m.tabbedConfig == nil {
-		return m.styles.Error.Render("Tabbed configuration not initialized")
+// renderConfigView renders the configuration interface with helpful framing
+func (m *Model) renderConfigView() string {
+	if m.configEditor == nil {
+		return m.styles.Error.Render("Configuration not initialized")
 	}
 
-	// Get the tabbed config view
-	configView := m.tabbedConfig.View()
-
-	// The tabbed view handles its own layout
-	return configView
-}
-
-// renderEnhancedConfigView renders the enhanced configuration interface
-func (m *Model) renderEnhancedConfigView() string {
-	if m.enhancedConfig == nil {
-		return m.styles.Error.Render("Enhanced configuration not initialized")
+	headerText := fmt.Sprintf("⚙️  Configure %s", m.currentApp)
+	if m.uiManager != nil {
+		headerText = m.uiManager.CreateHeader(headerText, "")
+	} else {
+		headerText = m.styles.Title.Render(headerText)
 	}
 
-	// Get the enhanced config view
-	configView := m.enhancedConfig.View()
+	status := ""
+	if m.configEditor.HasUnsavedChanges() {
+		status = m.styles.Warning.Render("Unsaved changes • Press Ctrl+S to save")
+	}
 
-	// The enhanced view handles its own layout
-	return configView
+	configView := m.configEditor.View()
+	footerText := "Esc: Back • Ctrl+S: Save • q: Quit"
+	if m.uiManager != nil {
+		footerText = m.uiManager.CreateFooter(footerText, "", "")
+	} else {
+		footerText = m.styles.Help.Render(footerText)
+	}
+
+	elements := []string{headerText, ""}
+	if status != "" {
+		elements = append(elements, status, "")
+	}
+	elements = append(elements, configView, "", footerText)
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Top,
+		elements...,
+	)
+
+	return lipgloss.NewStyle().
+		MaxWidth(m.width).
+		Align(lipgloss.Left).
+		Render(content)
 }
 
 // renderHelpView renders the help view
