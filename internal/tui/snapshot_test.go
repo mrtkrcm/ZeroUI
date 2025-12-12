@@ -226,13 +226,12 @@ func TestSnapshotFormView(t *testing.T) {
 	model.height = 40
 
 	// Initialize form components for testing - use a simpler approach
-	// Create basic form components without loading actual config
-	model.enhancedConfig = forms.NewEnhancedConfig("ghostty")
-	model.tabbedConfig = forms.NewTabbedConfig("ghostty")
+	// Create basic form component without loading actual config
+	model.configEditor = forms.NewEnhancedConfig("ghostty")
 
 	// Set basic size
-	if model.enhancedConfig != nil {
-		model.enhancedConfig.SetSize(model.width, model.height)
+	if model.configEditor != nil {
+		model.configEditor.SetSize(model.width, model.height)
 	}
 
 	model.updateComponentSizes()

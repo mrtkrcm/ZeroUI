@@ -1,17 +1,11 @@
 package toggle
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
-	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
@@ -32,14 +26,14 @@ type ConfigLoader interface {
 // Engine handles configuration toggling operations (refactored for better separation of concerns)
 type Engine struct {
 	// Core services
-	configOp      *ConfigOperator
-	fieldVal      *FieldValidator
-	valueConv     *ValueConverter
-	hookRunner    *HookRunner
-	logger        *logger.Logger
-	
+	configOp   *ConfigOperator
+	fieldVal   *FieldValidator
+	valueConv  *ValueConverter
+	hookRunner *HookRunner
+	logger     *logger.Logger
+
 	// Legacy interface compatibility
-	loader        ConfigLoader // Keep for interface compatibility
+	loader ConfigLoader // Keep for interface compatibility
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -63,13 +57,13 @@ func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
 	if log == nil {
 		log = logger.New(logger.DefaultConfig())
 	}
-	
+
 	// Initialize service components
 	configOp := NewConfigOperator(configLoader)
 	fieldVal := NewFieldValidator()
 	valueConv := NewValueConverter()
 	hookRunner := NewHookRunner(log)
-	
+
 	return &Engine{
 		configOp:   configOp,
 		fieldVal:   fieldVal,
