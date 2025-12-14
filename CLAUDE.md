@@ -222,16 +222,45 @@ If you add new tests that exec external tools, add a small stub under `testdata/
 ## Commands Structure
 
 - `zeroui` (no args) - Launch interactive app grid
-- `zeroui toggle <app> <field> <value>` - Direct configuration toggle
-- `zeroui ui <app>` - Launch app-specific configuration UI
+- `zeroui backup <subcommand>` - Configuration backup management
+  - `backup list <app>` - List available backups
+  - `backup create <app>` - Create new backup
+  - `backup restore <app> <backup>` - Restore from backup
+  - `backup cleanup <app>` - Clean old backups
+- `zeroui cycle <app> <field>` - Cycle through field values
+- `zeroui design-system` - Display design system showcase
+- `zeroui enhanced-ui` - Launch enhanced UI with themes
+- `zeroui extract [apps]` - Extract configurations to files
 - `zeroui list apps` - List supported applications
 - `zeroui preset <app> <preset>` - Apply configuration preset
+- `zeroui reference <subcommand>` - Reference system management
+  - `reference list` - List reference configurations
+  - `reference show <app>` - Show reference configuration
+  - `reference validate <app>` - Validate reference configuration
+  - `reference search <query>` - Search reference configurations
+- `zeroui toggle <app> <field> <value>` - Direct configuration toggle
+- `zeroui ui <app>` - Launch app-specific configuration UI
+- `zeroui ui-select` - Select UI implementation
+- `zeroui validate-reference [apps]` - Validate reference configurations
 
 ## Environment Variables
 
 - `FAST_TUI_TESTS=true` - Skip slow visual tests
 - `ZEROUI_TEST_MODE=true` - Enable deterministic test mode
 - `UPDATE_TUI_BASELINES=true` - Update visual baselines
+- `ZEROUI_CONFIG_DIR=<path>` - Override config directory location
+- `RUN_SNAPSHOTS=true` - Enable snapshot tests (CI mode)
+- `GENERATE_TUI_IMAGES=true` - Enable visual regression image generation
+
+### Accessibility Variables
+
+- `ACCESSIBLE=true` / `ACCESSIBILITY=true` / `A11Y=true` - Enable accessibility mode
+- `SCREEN_READER=true` / `NVDA=true` / `JAWS=true` / `ORCA=true` - Enable screen reader mode
+- `HIGH_CONTRAST=true` / `CONTRAST=high` - Enable high contrast mode
+- `REDUCED_MOTION=true` / `MOTION=reduced` - Enable reduced motion
+- `NO_COLOR=true` / `MONOCHROME=true` - Disable color output
+- `VERBOSE_DESCRIPTIONS=true` / `ACCESSIBILITY_VERBOSE=true` - Enable verbose descriptions
+- `SIMPLE_UI=true` / `ACCESSIBILITY_SIMPLE=true` - Enable simplified UI
 
 ## Dependencies
 
