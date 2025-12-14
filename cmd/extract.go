@@ -19,8 +19,11 @@ var extractCmd = &cobra.Command{
 	Use:   "extract [app|--all]",
 	Short: "Extract configuration for app(s)",
 	Long:  `Extract configuration from applications using parallel methods (CLI, GitHub, local files).`,
-	Args:  cobra.MaximumNArgs(1),
-	RunE:  runExtract,
+	Example: `  zeroui extract ghostty
+  zeroui extract --all
+  zeroui extract --apps "ghostty,zed" --output configs`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runExtract,
 }
 
 var (

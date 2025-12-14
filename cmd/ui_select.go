@@ -27,6 +27,11 @@ Examples:
   zeroui ui-select --list             # List available implementations
   zeroui ui-select --current          # Show current implementation`,
 	Aliases: []string{"select-ui", "ui-choose", "choose-ui"},
+	Example: `  zeroui ui-select
+  zeroui ui-select --implementation enhanced
+  zeroui ui-select --list
+  zeroui ui-select --current`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flags
 		implementation, _ := cmd.Flags().GetString("implementation")

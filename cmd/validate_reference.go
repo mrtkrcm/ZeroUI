@@ -23,6 +23,8 @@ This command checks:
 Examples:
   zeroui validate-reference ghostty
   zeroui validate-reference --all`,
+	Example: `  zeroui validate-reference ghostty
+  zeroui validate-reference --all`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runValidateReference,
 }

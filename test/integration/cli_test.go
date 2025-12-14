@@ -240,6 +240,7 @@ func buildBinary(t testing.TB) string {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "go", "build",
+			"-buildvcs=false",
 			"-ldflags=-s -w", // Strip debug info for smaller binary
 			"-o", binaryPath, ".")
 		cmd.Dir = projectRoot

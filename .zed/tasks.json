@@ -54,7 +54,7 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
-    "reveal": "on_output"
+    "reveal": "no_focus"
   },
   {
     "label": "Start Development Server",
@@ -117,7 +117,7 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
-    "reveal": "on_output"
+    "reveal": "no_focus"
   },
   {
     "label": "Run ZeroUI",

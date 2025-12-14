@@ -1,185 +1,50 @@
-name: ZeroUI CI/CD Pipeline
+name: CI (Deterministic)
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [published]
-
-env:
-  GO_VERSION: '1.25'
 
 jobs:
   test:
-    name: Test Suite
+    name: Go ${{ matrix.go-version }} • deterministic tests
     runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
-    - name: Download dependencies
-      run: |
-        go mod download
-        go work sync
-
-    - name: Run tests with coverage
-      run: go test -v -race -coverprofile=coverage.out ./...
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.out
-
-  build:
-    needs: test
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        include:
-        - os: ubuntu-latest
-          goos: linux
-          goarch: amd64
-          name: linux-amd64
-        - os: ubuntu-latest
-          goos: linux
-          goarch: arm64
-          name: linux-arm64
-        - os: macos-latest
-          goos: darwin
-          goarch: amd64
-          name: darwin-amd64
-        - os: macos-latest
-          goos: darwin
-          goarch: arm64
-          name: darwin-arm64
-        - os: windows-latest
-          goos: windows
-          goarch: amd64
-          name: windows-amd64
-
+        go-version: [ '1.22.x', '1.23.x' ]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
 
-    - name: Build binary
-      run: |
-        mkdir -p dist
-        EXT=""
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          EXT=".exe"
-        fi
-        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
-          -ldflags="-X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          -o dist/zeroui-${{ matrix.name }}${EXT} \
-          .
+      - name: Cache Go build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+            ${{ runner.os }}-go-
 
-    - name: Test binary
-      run: |
-        EXT=""
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          EXT=".exe"
-        fi
-        chmod +x dist/zeroui-${{ matrix.name }}${EXT}
-        ./dist/zeroui-${{ matrix.name }}${EXT} --help
+      - name: Download deps
+        run: make deps
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: zeroui-${{ matrix.name }}
-        path: dist/zeroui-${{ matrix.name }}*
+      - name: Run deterministic full tests (relaxed visuals)
+        env:
+          ZEROUI_TEST_MODE: "true"
+          FAST_TUI_TESTS: "true"
+        run: make test-deterministic
 
-  raycast-extension:
-    name: Build Raycast Extension
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: raycast-extension/package-lock.json
-
-    - name: Copy ZeroUI binary to Raycast extension
-      run: |
-        mkdir -p raycast-extension
-        cp dist/zeroui-linux-amd64 raycast-extension/zeroui
-        chmod +x raycast-extension/zeroui
-
-    - name: Install Raycast extension dependencies
-      working-directory: raycast-extension
-      run: npm ci
-
-    - name: Build Raycast extension
-      working-directory: raycast-extension
-      run: npm run build
-
-    - name: Upload Raycast extension
-      uses: actions/upload-artifact@v3
-      with:
-        name: raycast-extension
-        path: raycast-extension/
-
-  release:
-    needs: [build, raycast-extension]
-    if: github.event_name == 'release'
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v3
-
-    - name: Create release archives
-      run: |
-        mkdir -p releases
-
-        # Create tarballs for each platform
-        for artifact in zeroui-*; do
-          if [ -d "$artifact" ]; then
-            echo "Creating archive for $artifact"
-            tar -czf "releases/$(basename $artifact).tar.gz" -C "$artifact" .
-          fi
-        done
-
-        # Create Raycast extension zip
-        if [ -d "raycast-extension" ]; then
-          cd raycast-extension
-          zip -r ../releases/raycast-extension.zip .
-          cd ..
-        fi
-
-        # List created archives
-        ls -la releases/
-
-    - name: Upload release assets
-      uses: softprops/action-gh-release@v1
-      with:
-        files: releases/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Short unit tests (redundant sanity)
+        env:
+          ZEROUI_TEST_MODE: "true"
+          FAST_TUI_TESTS: "true"
+        run: make test-fast

@@ -123,7 +123,18 @@ func (d ApplicationDelegate) Render(w io.Writer, m list.Model, index int, item l
 
 		fmt.Fprint(w, line)
 		if desc != "" {
-			fmt.Fprintf(w, "\n  %s", desc)
+			// Constrain description to available width as well
+			constrainedDesc := desc
+			if m.Width() > 0 {
+				descWidth := lipgloss.Width(desc)
+				if descWidth > m.Width()-2 { // Account for "  " prefix
+					constrainedDesc = lipgloss.NewStyle().
+						Width(m.Width()-2).
+						MaxWidth(m.Width()-2).
+						Render(desc)
+				}
+			}
+			fmt.Fprintf(w, "\n  %s", constrainedDesc)
 		}
 	}
 }
@@ -290,13 +301,24 @@ func max(a, b int) int {
 
 // View implements tea.Model
 func (m *ApplicationListModel) View() string {
+	var content string
 	if len(m.list.Items()) == 0 {
 		empty := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(
 			"No applications detected. Press 'r' to refresh.\nAdd schemas to apps/ or install plugins.")
 		header := styles.GetStyles().ApplicationList.Title.Render("ZeroUI Applications")
-		return lipgloss.JoinVertical(lipgloss.Left, header, "", empty)
+		content = lipgloss.JoinVertical(lipgloss.Left, header, "", empty)
+	} else {
+		content = m.list.View()
 	}
-	return m.list.View()
+
+	// Ensure the entire content fits within the set width
+	if m.width > 0 {
+		content = lipgloss.NewStyle().
+			Width(m.width).
+			Render(content)
+	}
+
+	return content
 }
 
 // SetApplications updates the list of applications

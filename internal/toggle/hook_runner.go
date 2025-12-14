@@ -67,7 +67,7 @@ func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log *logger.L
 
 	// Security: Use only the command name, not any path
 	commandName := filepath.Base(parts[0])
-	
+
 	// Resolve command from system PATH only (prevents path traversal)
 	commandPath, err := exec.LookPath(commandName)
 	if err != nil {
@@ -79,16 +79,16 @@ func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log *logger.L
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, commandPath, parts[1:]...)
-	
+
 	// Security: Restrict command capabilities
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = nil // Prevent interactive input
-	
+
 	// Set working directory to a safe, temporary location
 	tempDir := os.TempDir()
 	cmd.Dir = tempDir
-	
+
 	// Clear environment to prevent environment variable attacks
 	cmd.Env = []string{
 		"PATH=" + os.Getenv("PATH"),

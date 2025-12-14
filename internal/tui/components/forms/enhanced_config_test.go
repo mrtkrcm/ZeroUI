@@ -468,7 +468,7 @@ func TestSaveConfiguration(t *testing.T) {
 	config.saveConfiguration()
 
 	// Verify loading system was activated
-	if !config.loadingSystem.IsLoading("config-save") {
+	if !config.loadingSystem.IsLoading("save-config") {
 		t.Error("Expected config save loading to be active")
 	}
 

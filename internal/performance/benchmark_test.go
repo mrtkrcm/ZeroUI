@@ -11,22 +11,11 @@ func BenchmarkStringBoolMapPool(b *testing.B) {
 	b.Run("WithPool", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			m := GetStringBoolMap() // Now uses direct allocation for small maps
+			m := GetStringBoolMap()
 			m["key1"] = true
 			m["key2"] = false
 			m["key3"] = true
-			// No need to call PutStringBoolMap for direct-allocated maps
-		}
-	})
-	
-	b.Run("WithPooled", func(b *testing.B) {
-		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
-			m := GetStringBoolMapPooled() // Uses sync.Pool
-			m["key1"] = true
-			m["key2"] = false
-			m["key3"] = true
-			PutStringBoolMap(m) // Return to pool
+			PutStringBoolMap(m)
 		}
 	})
 
@@ -46,24 +35,12 @@ func BenchmarkStringBuilderPool(b *testing.B) {
 	b.Run("WithPool", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			sb := GetStringBuilder() // Now uses direct allocation for small strings
+			sb := GetStringBuilder()
 			sb.WriteString("hello")
 			sb.WriteString(" ")
 			sb.WriteString("world")
 			_ = sb.String()
-			// No need to call PutStringBuilder for direct-allocated builders
-		}
-	})
-	
-	b.Run("WithPooled", func(b *testing.B) {
-		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
-			sb := GetStringBuilderPooled() // Uses sync.Pool
-			sb.WriteString("hello")
-			sb.WriteString(" ")
-			sb.WriteString("world")
-			_ = sb.String()
-			PutStringBuilder(sb) // Return to pool
+			PutStringBuilder(sb)
 		}
 	})
 

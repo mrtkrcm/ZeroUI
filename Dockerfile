@@ -1,58 +1,80 @@
 # Multi-stage Docker build for ZeroUI
-
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
-# Install git and ca-certificates (needed for Go modules)
-RUN apk add --no-cache git ca-certificates
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
+# Copy go.mod and go.sum first for better caching
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download
+RUN go mod download && go mod verify
 
 # Copy source code
 COPY . .
 
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-w -s -X main.version=$(git describe --tags --always --dirty) -X main.commit=$(git rev-parse --short HEAD) -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+# Build the application
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags "-w -s \
+    -X 'github.com/mrtkrcm/ZeroUI/internal/version.Version=${VERSION}' \
+    -X 'github.com/mrtkrcm/ZeroUI/internal/version.Commit=${COMMIT}' \
+    -X 'github.com/mrtkrcm/ZeroUI/internal/version.BuildTime=${BUILD_TIME}'" \
     -o zeroui .
 
-# Runtime stage
-FROM alpine:latest
+# Final stage - minimal image
+FROM alpine:3.19
 
-# Install ca-certificates for HTTPS calls
-RUN apk --no-cache add ca-certificates
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup
 
-# Create a non-root user
-RUN adduser -D -s /bin/sh zeroui
+# Set timezone
+ENV TZ=UTC
 
-# Set working directory
+# Create app directory
 WORKDIR /app
 
-# Copy the binary from builder stage
+# Copy binary and set permissions
 COPY --from=builder /app/zeroui .
+RUN chmod +x zeroui
 
-# Change ownership to non-root user
-RUN chown zeroui:zeroui zeroui
+# Copy configuration directory structure
+RUN mkdir -p /home/appuser/.config/zeroui/{apps,presets,backups} && \
+    chown -R appuser:appgroup /home/appuser/.config
+
+# Create sample configuration
+COPY configs/* /home/appuser/.config/zeroui/apps/
+RUN chown -R appuser:appgroup /home/appuser/.config
 
 # Switch to non-root user
-USER zeroui
-
-# Expose port if needed (for future web interface)
-# EXPOSE 8080
+USER appuser:appgroup
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD ./zeroui --version || exit 1
 
-# Set the binary as the entrypoint
+# Set default command
 ENTRYPOINT ["./zeroui"]
-
-# Default command
 CMD ["--help"]
+
+# Metadata
+LABEL maintainer="ZeroUI Team" \
+      description="Zero-configuration UI toolkit manager for developers" \
+      version="${VERSION}" \
+      org.opencontainers.image.title="ZeroUI" \
+      org.opencontainers.image.description="Zero-configuration UI toolkit manager" \
+      org.opencontainers.image.url="https://github.com/mrtkrcm/ZeroUI" \
+      org.opencontainers.image.source="https://github.com/mrtkrcm/ZeroUI" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${COMMIT}" \
+      org.opencontainers.image.vendor="ZeroUI" \
+      org.opencontainers.image.licenses="MIT"

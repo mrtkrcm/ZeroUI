@@ -26,6 +26,11 @@ var backupCmd = &cobra.Command{
 
 Backups are automatically created before any configuration changes to ensure you can recover
 from any issues. Use these commands to manually manage your backups.`,
+	Example: `  zeroui backup list
+  zeroui backup create ghostty
+  zeroui backup restore ghostty ghostty_20240101T120000.tar.gz
+  zeroui backup cleanup ghostty --keep 3`,
+	Args: cobra.NoArgs,
 }
 
 // backupListCmd lists available backups
@@ -34,6 +39,8 @@ var backupListCmd = &cobra.Command{
 	Short: "List available backups",
 	Long: `List available configuration backups. If an app name is provided, only backups
 for that app will be shown.`,
+	Example: `  zeroui backup list
+  zeroui backup list ghostty`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := ""
@@ -99,6 +106,8 @@ var backupCreateCmd = &cobra.Command{
 	Short: "Create a manual backup of an app's configuration",
 	Long: `Create a manual backup of an application's configuration file.
 This is useful before making major changes or for creating restore points.`,
+	Example: `  zeroui backup create ghostty
+  zeroui backup create vscode`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := args[0]
@@ -162,6 +171,8 @@ var backupRestoreCmd = &cobra.Command{
 This will overwrite the current configuration file.
 
 Use 'zeroui backup list <app>' to see available backups.`,
+	Example: `  zeroui backup restore ghostty ghostty_20240101T120000.tar.gz
+  zeroui backup restore zed zed_20240102T080000.tar.gz --yes`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := args[0]
@@ -281,6 +292,8 @@ var backupCleanupCmd = &cobra.Command{
 	Short: "Clean up old backups",
 	Long: `Remove old backup files, keeping only the most recent ones.
 By default, keeps the 5 most recent backups per application.`,
+	Example: `  zeroui backup cleanup
+  zeroui backup cleanup ghostty --keep 10`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appName := ""

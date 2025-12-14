@@ -5,8 +5,9 @@ ZeroUI uses modern Go libraries from the Charm ecosystem and essential tools for
 ## Core TUI Framework
 
 ### Bubble Tea v1.3.6 ⭐
-**Repository:** https://github.com/charmbracelet/bubbletea  
-**Purpose:** Terminal User Interface framework based on The Elm Architecture  
+
+**Repository:** https://github.com/charmbracelet/bubbletea
+**Purpose:** Terminal User Interface framework based on The Elm Architecture
 **Role:** Core application framework, event handling, component lifecycle
 
 ```go
@@ -36,7 +37,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         m.width, m.height = msg.Width, msg.Height
         m.list.SetSize(msg.Width, msg.Height-2)
     }
-    
+
     var cmd tea.Cmd
     m.list, cmd = m.list.Update(msg)
     return m, cmd
@@ -55,12 +56,14 @@ p.Run()
 ```
 
 **Key Messages:**
+
 - `tea.KeyMsg` - Keyboard input
-- `tea.WindowSizeMsg` - Terminal resize  
+- `tea.WindowSizeMsg` - Terminal resize
 - `tea.MouseMsg` - Mouse events
 - `tea.BatchMsg` - Multiple commands
 
 **Commands:**
+
 ```go
 tea.Quit                    // Exit program
 tea.Batch(cmd1, cmd2)       // Execute multiple commands
@@ -69,11 +72,13 @@ tea.Tick(time.Second)       // Timer command
 ```
 
 ### Bubbles v0.21.0 ⭐
-**Repository:** https://github.com/charmbracelet/bubbles  
-**Purpose:** Collection of common Bubble Tea components  
+
+**Repository:** https://github.com/charmbracelet/bubbles
+**Purpose:** Collection of common Bubble Tea components
 **Role:** List navigation, text input, viewport scrolling, progress indicators
 
 #### List Component
+
 ```go
 import "github.com/charmbracelet/bubbles/list"
 
@@ -100,6 +105,7 @@ l.SetFilteringEnabled(true)
 ```
 
 #### Text Input Component
+
 ```go
 import "github.com/charmbracelet/bubbles/textinput"
 
@@ -115,6 +121,7 @@ ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 ```
 
 #### Viewport (Scrollable Content)
+
 ```go
 import "github.com/charmbracelet/bubbles/viewport"
 
@@ -129,6 +136,7 @@ return vp.View()
 ```
 
 #### Progress & Spinner
+
 ```go
 import (
     "github.com/charmbracelet/bubbles/progress"
@@ -147,8 +155,9 @@ s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 ```
 
 ### Huh v0.7.0 ⭐
-**Repository:** https://github.com/charmbracelet/huh  
-**Purpose:** Interactive forms and prompts with accessibility support  
+
+**Repository:** https://github.com/charmbracelet/huh
+**Purpose:** Interactive forms and prompts with accessibility support
 **Role:** Dynamic configuration editing, form validation, accessibility
 
 ```go
@@ -170,7 +179,7 @@ form := huh.NewForm(
                 }
                 return nil
             }),
-        
+
         // Select dropdown
         huh.NewSelect[string]().
             Title("Choose theme").
@@ -180,7 +189,7 @@ form := huh.NewForm(
                 huh.NewOption("Auto", "auto"),
             ).
             Value(&theme),
-            
+
         // Multi-select with limit
         huh.NewMultiSelect[string]().
             Title("Enable features").
@@ -191,7 +200,7 @@ form := huh.NewForm(
             ).
             Limit(3).
             Value(&features),
-            
+
         // Numeric input
         huh.NewInput().
             Title("Font size").
@@ -218,17 +227,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
     if f, ok := form.(*huh.Form); ok {
         m.form = f
     }
-    
+
     if m.form.State == huh.StateCompleted {
         // Handle form completion
         values := m.form.GetString("name")
     }
-    
+
     return m, cmd
 }
 ```
 
 **Advanced Features:**
+
 ```go
 // Dynamic forms with conditional fields
 huh.NewInput().
@@ -243,8 +253,9 @@ form.WithAccessible(true)  // Screen reader compatible mode
 ```
 
 ### Lipgloss v1.1.1 ⭐
-**Repository:** https://github.com/charmbracelet/lipgloss  
-**Purpose:** CSS-like styling for terminal applications  
+
+**Repository:** https://github.com/charmbracelet/lipgloss
+**Purpose:** CSS-like styling for terminal applications
 **Role:** Component styling, layout, colors, themes
 
 ```go
@@ -266,7 +277,7 @@ adaptiveStyle := lipgloss.NewStyle().
     })
 
 // Layout helpers
-content := lipgloss.JoinVertical(lipgloss.Left, 
+content := lipgloss.JoinVertical(lipgloss.Left,
     titleStyle.Render("Title"),
     bodyStyle.Render("Content"),
     helpStyle.Render("Help text"),
@@ -277,11 +288,12 @@ centered := lipgloss.PlaceHorizontal(80, lipgloss.Center, content)
 ```
 
 **Color Systems:**
+
 ```go
 // Hex colors
 lipgloss.Color("#FF0000")
 
-// 256-color mode  
+// 256-color mode
 lipgloss.Color("205")
 
 // Named colors
@@ -290,14 +302,15 @@ lipgloss.Color("red")
 // Adaptive colors
 lipgloss.AdaptiveColor{
     Light: "#000000",
-    Dark:  "#FFFFFF", 
+    Dark:  "#FFFFFF",
 }
 ```
 
 ## User Interface & Experience
 
 ### Glamour v0.10.0
-**Purpose:** Markdown rendering in terminal with syntax highlighting  
+
+**Purpose:** Markdown rendering in terminal with syntax highlighting
 **Role:** Help system, documentation display, rich text rendering
 
 ```go
@@ -311,7 +324,7 @@ markdown := `
 
 ## Navigation
 - **↑/↓** Navigate items
-- **Enter** Select item  
+- **Enter** Select item
 - **/** Filter/search
 - **?** Toggle help
 
@@ -338,7 +351,8 @@ renderer, err := glamour.NewTermRenderer(
 ```
 
 ### Log v0.4.2
-**Purpose:** Beautiful, human-readable structured logging  
+
+**Purpose:** Beautiful, human-readable structured logging
 **Role:** Application logging, debugging, performance tracking
 
 ```go
@@ -377,7 +391,7 @@ logger.SetStyles(styles)
 // Performance logging
 start := time.Now()
 // ... operation ...
-logger.Debug("Operation completed", 
+logger.Debug("Operation completed",
     "duration", time.Since(start),
     "operation", "config_save",
 )
@@ -386,7 +400,8 @@ logger.Debug("Operation completed",
 ## Configuration Management
 
 ### Koanf v2.0.1
-**Purpose:** Configuration management with multiple sources  
+
+**Purpose:** Configuration management with multiple sources
 **Role:** Loading app configurations, YAML/TOML/JSON parsing
 
 ```go
@@ -423,7 +438,8 @@ k.Unmarshal("", &cfg)
 ```
 
 ### Cobra v1.9.1
-**Purpose:** CLI framework for command-line applications  
+
+**Purpose:** CLI framework for command-line applications
 **Role:** Command structure, argument parsing, help generation
 
 ```go
@@ -458,7 +474,8 @@ func init() {
 ## Plugin Architecture
 
 ### Go-Plugin v1.7.0 + gRPC v1.74.2
-**Purpose:** RPC-based plugin system for cross-language compatibility  
+
+**Purpose:** RPC-based plugin system for cross-language compatibility
 **Role:** Plugin discovery, RPC communication, process isolation
 
 ```go
@@ -479,24 +496,24 @@ type Registry struct {
 
 func (r *Registry) LoadPlugin(name string) (ConfigPlugin, error) {
     pluginPath := filepath.Join(r.pluginDir, "zeroui-plugin-"+name)
-    
+
     client := plugin.NewClient(&plugin.ClientConfig{
         HandshakeConfig: handshakeConfig,
         Plugins:         pluginMap,
         Cmd:            exec.Command(pluginPath),
         AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
     })
-    
+
     rpcClient, err := client.Client()
     if err != nil {
         return nil, err
     }
-    
+
     raw, err := rpcClient.Dispense("config")
     if err != nil {
         return nil, err
     }
-    
+
     return raw.(ConfigPlugin), nil
 }
 
@@ -515,7 +532,8 @@ func main() {
 ## Development & Quality
 
 ### Air v1.62.0
-**Purpose:** Live reloading for Go applications during development  
+
+**Purpose:** Live reloading for Go applications during development
 **Role:** Hot reloading, automatic rebuilds
 
 ```toml
@@ -557,23 +575,24 @@ tmp_dir = "tmp"
 ```
 
 ### Testing & Quality
+
 ```go
 // Testify assertions
 import "github.com/stretchr/testify/assert"
 
 func TestApplicationList(t *testing.T) {
     model := NewApplicationList()
-    
+
     // Set test data
     apps := []ApplicationInfo{
         {Name: "ghostty", Status: "configured"},
         {Name: "vscode", Status: "needs_config"},
     }
     model.SetApplications(apps)
-    
+
     // Test selection
     assert.Equal(t, "", model.GetSelectedApp())
-    
+
     // Simulate key press
     model, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
     assert.NotNil(t, cmd)
@@ -586,7 +605,8 @@ func TestApplicationList(t *testing.T) {
 ## Performance & Observability
 
 ### OpenTelemetry v1.37.0
-**Purpose:** Observability framework for metrics and tracing  
+
+**Purpose:** Observability framework for metrics and tracing
 **Role:** Performance monitoring, metrics collection
 
 ```go
@@ -629,6 +649,7 @@ operationDuration.Record(ctx, time.Since(start).Seconds(),
 ## Key Architecture Patterns
 
 ### 1. Component Integration Pattern
+
 ```go
 type Model struct {
     // Core Bubbles components
@@ -637,10 +658,10 @@ type Model struct {
     viewport  viewport.Model
     progress  progress.Model
     spinner   spinner.Model
-    
+
     // Huh forms
     form     *huh.Form
-    
+
     // App state
     state    ViewState
     keyMap   KeyMap
@@ -649,12 +670,12 @@ type Model struct {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
     var cmds []tea.Cmd
-    
+
     // Update components
     var cmd tea.Cmd
     m.list, cmd = m.list.Update(msg)
     cmds = append(cmds, cmd)
-    
+
     if m.form != nil {
         form, cmd := m.form.Update(msg)
         if f, ok := form.(*huh.Form); ok {
@@ -662,12 +683,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         }
         cmds = append(cmds, cmd)
     }
-    
+
     return m, tea.Batch(cmds...)
 }
 ```
 
 ### 2. Key Binding Pattern
+
 ```go
 import "github.com/charmbracelet/bubbles/key"
 
@@ -686,7 +708,7 @@ func NewKeyMap() KeyMap {
             key.WithHelp("↑/k", "move up"),
         ),
         Down: key.NewBinding(
-            key.WithKeys("down", "j"), 
+            key.WithKeys("down", "j"),
             key.WithHelp("↓/j", "move down"),
         ),
         // ...
@@ -708,6 +730,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 ```
 
 ### 3. Accessibility Pattern
+
 ```go
 // Environment-based accessibility detection
 opts := accessibility.DetectAccessibilityNeeds()
@@ -741,7 +764,7 @@ make test
 
 # Code quality
 make lint
-make fmt 
+make fmt
 make security
 
 # Dependency management
@@ -768,13 +791,13 @@ go build -o zeroui-plugin-ghostty-rpc
 
 All dependencies are pinned to specific versions for reproducible builds. Core Charm dependencies (Bubble Tea, Bubbles, Huh, Lipgloss) are kept in sync for compatibility.
 
-| Library | Version | Compatibility Notes |
-|---------|---------|-------------------|
-| Bubble Tea | v1.3.6 | Core framework - pin to exact version |
-| Bubbles | v0.21.0 | Component library - compatible with Bubble Tea v1.3.x |
-| Huh | v0.7.0 | Forms library - requires Bubble Tea v1.3+ |
-| Lipgloss | v1.1.1 | Styling library - stable API |
-| Glamour | v0.10.0 | Markdown rendering - stable |
-| Log | v0.4.2 | Logging - stable API |
+| Library    | Version | Compatibility Notes                                   |
+| ---------- | ------- | ----------------------------------------------------- |
+| Bubble Tea | v1.3.6  | Core framework - pin to exact version                 |
+| Bubbles    | v0.21.0 | Component library - compatible with Bubble Tea v1.3.x |
+| Huh        | v0.7.0  | Forms library - requires Bubble Tea v1.3+             |
+| Lipgloss   | v1.1.1  | Styling library - stable API                          |
+| Glamour    | v0.10.0 | Markdown rendering - stable                           |
+| Log        | v0.4.2  | Logging - stable API                                  |
 
 Run `go mod tidy` to ensure dependencies are current and `make check` to validate compatibility across all dependencies.

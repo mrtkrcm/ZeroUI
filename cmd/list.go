@@ -14,15 +14,16 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list <type> [app]",
-	Short: "List available apps, presets, keys, current values, or changed values",
-	Long: `List available applications, presets for an app, UI configurable keys, current configuration values, or only changed values.
+	Short: "List available apps, presets, or UI configuration keys",
+	Long: `List available applications, presets for an app, or UI configurable keys.
 
 Examples:
   zeroui list apps
   zeroui list presets ghostty
-  zeroui list keys ghostty
-  zeroui list values ghostty
-  zeroui list changed ghostty`,
+  zeroui list keys ghostty`,
+	Example: `  zeroui list apps
+  zeroui list presets ghostty
+  zeroui list keys ghostty`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		listType := args[0]
@@ -51,18 +52,8 @@ Examples:
 				return fmt.Errorf("app name required for listing keys")
 			}
 			return listKeys(configService, app)
-		case "values", "current":
-			if app == "" {
-				return fmt.Errorf("app name required for listing current values")
-			}
-			return listCurrentValues(configService, app)
-		case "changed":
-			if app == "" {
-				return fmt.Errorf("app name required for listing changed values")
-			}
-			return listChangedValues(configService, app)
 		default:
-			return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys, values, changed)", listType)
+			return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys)", listType)
 		}
 	},
 }
@@ -82,28 +73,18 @@ Examples:
   zeroui keymap validate ghostty
   zeroui keymap presets ghostty
   zeroui keymap conflicts ghostty`,
+	Example: `  zeroui keymap list ghostty
+  zeroui keymap add ghostty "ctrl+shift+t=new_tab"
+  zeroui keymap remove ghostty "ctrl+w"
+  zeroui keymap edit ghostty
+  zeroui keymap validate ghostty
+  zeroui keymap presets ghostty
+  zeroui keymap conflicts ghostty`,
+	Args: cobra.NoArgs,
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(keymapCmd)
-
-	// Add keymap subcommands
-	keymapCmd.AddCommand(keymapListCmd)
-	keymapCmd.AddCommand(keymapAddCmd)
-	keymapCmd.AddCommand(keymapRemoveCmd)
-	keymapCmd.AddCommand(keymapEditCmd)
-	keymapCmd.AddCommand(keymapValidateCmd)
-	keymapCmd.AddCommand(keymapPresetsCmd)
-	keymapCmd.AddCommand(keymapConflictsCmd)
-}
-
-// Helper functions
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // Styles for list output
@@ -332,7 +313,9 @@ func listChangedValues(configService *service.ConfigService, app string) error {
 var keymapListCmd = &cobra.Command{
 	Use:   "list <app>",
 	Short: "List all keymaps for an application",
-	Args:  cobra.ExactArgs(1),
+	Example: `  zeroui keymap list ghostty
+  zeroui keymap list zed`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		container := GetContainer()
@@ -348,7 +331,9 @@ var keymapListCmd = &cobra.Command{
 var keymapAddCmd = &cobra.Command{
 	Use:   "add <app> <keymap>",
 	Short: "Add a new keymap to an application",
-	Args:  cobra.ExactArgs(2),
+	Example: `  zeroui keymap add ghostty "ctrl+shift+t=new_tab"
+  zeroui keymap add zed "cmd+b=toggle_sidebar"`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		keymap := args[1]
@@ -365,7 +350,9 @@ var keymapAddCmd = &cobra.Command{
 var keymapRemoveCmd = &cobra.Command{
 	Use:   "remove <app> <keys>",
 	Short: "Remove a keymap from an application",
-	Args:  cobra.ExactArgs(2),
+	Example: `  zeroui keymap remove ghostty "ctrl+w"
+  zeroui keymap remove vscode "ctrl+shift+p"`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		keys := args[1]
@@ -382,7 +369,9 @@ var keymapRemoveCmd = &cobra.Command{
 var keymapEditCmd = &cobra.Command{
 	Use:   "edit <app>",
 	Short: "Launch interactive keymap editor",
-	Args:  cobra.ExactArgs(1),
+	Example: `  zeroui keymap edit ghostty
+  zeroui keymap edit vscode`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		container := GetContainer()
@@ -397,7 +386,9 @@ var keymapEditCmd = &cobra.Command{
 var keymapValidateCmd = &cobra.Command{
 	Use:   "validate <app>",
 	Short: "Validate all keymaps for an application",
-	Args:  cobra.ExactArgs(1),
+	Example: `  zeroui keymap validate ghostty
+  zeroui keymap validate zed`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		container := GetContainer()
@@ -413,7 +404,9 @@ var keymapValidateCmd = &cobra.Command{
 var keymapPresetsCmd = &cobra.Command{
 	Use:   "presets <app>",
 	Short: "Show available keymap presets for an application",
-	Args:  cobra.ExactArgs(1),
+	Example: `  zeroui keymap presets ghostty
+  zeroui keymap presets wezterm`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		return showKeymapPresets(app)
@@ -423,7 +416,9 @@ var keymapPresetsCmd = &cobra.Command{
 var keymapConflictsCmd = &cobra.Command{
 	Use:   "conflicts <app>",
 	Short: "Detect and show keymap conflicts",
-	Args:  cobra.ExactArgs(1),
+	Example: `  zeroui keymap conflicts ghostty
+  zeroui keymap conflicts vscode`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		container := GetContainer()
@@ -507,22 +502,27 @@ func addKeymap(configService *service.ConfigService, app, keymap string) error {
 	fmt.Printf("Adding keymap: %s\n", keymap)
 
 	// Validate keymap format
-	validator := &configextractor.KeybindValidator{}
+	validator := configextractor.NewKeybindValidator()
 	result := validator.ValidateKeybind(keymap)
 
 	if !result.Valid {
-		fmt.Printf("❌ Invalid keymap format:\n")
+		fmt.Printf("Invalid keymap format:\n")
 		for _, err := range result.Errors {
 			fmt.Printf("  - %s\n", err)
 		}
 		return fmt.Errorf("keymap validation failed")
 	}
 
+	// Parse keys and action from the keymap
+	parts := strings.SplitN(keymap, "=", 2)
+	keys := strings.TrimSpace(parts[0])
+	action := strings.TrimSpace(parts[1])
+
 	// Here we would typically add the keymap to the configuration
 	// For now, just show success
-	fmt.Printf("✅ Keymap validated successfully\n")
-	fmt.Printf("📝 Keys: %s\n", result.ParsedKeybind.Keys)
-	fmt.Printf("🎯 Action: %s\n", result.ParsedKeybind.Action)
+	fmt.Printf("Keymap validated successfully\n")
+	fmt.Printf("Keys: %s\n", keys)
+	fmt.Printf("Action: %s\n", action)
 
 	return nil
 }
@@ -532,16 +532,16 @@ func removeKeymap(configService *service.ConfigService, app, keys string) error 
 
 	// Here we would search and remove the keymap
 	// For now, just show what would be done
-	fmt.Printf("🔍 Searching for keymap with keys: %s\n", keys)
-	fmt.Printf("⚠️  Note: This would remove the keymap from %s configuration\n", app)
+	fmt.Printf("Searching for keymap with keys: %s\n", keys)
+	fmt.Printf("Note: This would remove the keymap from %s configuration\n", app)
 
 	return nil
 }
 
 func editKeymaps(app string) error {
 	fmt.Printf("Launching interactive keymap editor for %s\n", app)
-	fmt.Printf("🔧 Interactive editing not yet implemented\n")
-	fmt.Printf("💡 Use: zeroui keymap add/remove for now\n")
+	fmt.Printf("Interactive editing not yet implemented\n")
+	fmt.Printf("Use: zeroui keymap add/remove for now\n")
 
 	return nil
 }
@@ -554,7 +554,7 @@ func validateKeymaps(configService *service.ConfigService, app string) error {
 	}
 
 	// Extract and validate keybind values
-	validator := configextractor.NewKeybindValidatorForApp(app)
+	validator := configextractor.NewKeybindValidator()
 	var validCount, invalidCount int
 	var allKeymaps []string
 
@@ -580,22 +580,22 @@ func validateKeymaps(configService *service.ConfigService, app string) error {
 			validCount++
 		} else {
 			invalidCount++
-			fmt.Printf("❌ Invalid keymap: %s\n", keymap)
+			fmt.Printf("Invalid keymap: %s\n", keymap)
 			for _, err := range result.Errors {
 				fmt.Printf("   %s\n", err)
 			}
 			if len(result.Warnings) > 0 {
 				for _, warning := range result.Warnings {
-					fmt.Printf("   ⚠️  %s\n", warning)
+					fmt.Printf("   Warning: %s\n", warning)
 				}
 			}
 		}
 	}
 
-	fmt.Printf("✅ Keymap validation complete for %s\n", app)
-	fmt.Printf("📊 Valid keymaps: %d\n", validCount)
+	fmt.Printf("Keymap validation complete for %s\n", app)
+	fmt.Printf("Valid keymaps: %d\n", validCount)
 	if invalidCount > 0 {
-		fmt.Printf("❌ Invalid keymaps: %d\n", invalidCount)
+		fmt.Printf("Invalid keymaps: %d\n", invalidCount)
 		return fmt.Errorf("found %d invalid keymaps", invalidCount)
 	}
 
@@ -629,11 +629,11 @@ func showKeymapPresets(app string) error {
 	presetNames := make([]string, 0, len(presets))
 	for presetName, keymaps := range presets {
 		presetNames = append(presetNames, presetName)
-		fmt.Printf("\n🎨 %s:\n", presetName)
+		fmt.Printf("\n%s:\n", presetName)
 		for _, keymap := range keymaps {
 			if strings.Contains(keymap, "=") {
 				parts := strings.SplitN(keymap, "=", 2)
-				fmt.Printf("  %s → %s\n",
+				fmt.Printf("  %s -> %s\n",
 					listItemDisplayStyle.Render(parts[0]),
 					listDescriptionStyle.Render(parts[1]))
 			}
@@ -641,7 +641,7 @@ func showKeymapPresets(app string) error {
 	}
 
 	if len(presetNames) > 0 {
-		fmt.Printf("\n💡 Use: zeroui preset apply %s <preset> where preset is one of: %s\n", app, strings.Join(presetNames, ", "))
+		fmt.Printf("\nUse: zeroui preset apply %s <preset> where preset is one of: %s\n", app, strings.Join(presetNames, ", "))
 	}
 	return nil
 }
@@ -677,13 +677,13 @@ func detectKeymapConflicts(configService *service.ConfigService, app string) err
 	}
 
 	if len(conflicts) == 0 {
-		fmt.Printf("✅ No keymap conflicts found in %s\n", app)
+		fmt.Printf("No keymap conflicts found in %s\n", app)
 	} else {
-		fmt.Printf("⚠️  Keymap conflicts detected in %s:\n\n", app)
+		fmt.Printf("Keymap conflicts detected in %s:\n\n", app)
 		for _, conflict := range conflicts {
-			fmt.Printf("  ❌ %s\n", conflict)
+			fmt.Printf("  - %s\n", conflict)
 		}
-		fmt.Printf("\n🔧 Consider using: zeroui keymap edit %s\n", app)
+		fmt.Printf("\nConsider using: zeroui keymap edit %s\n", app)
 		return fmt.Errorf("found %d keymap conflicts", len(conflicts))
 	}
 

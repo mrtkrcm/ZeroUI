@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"strings"
@@ -8,6 +9,30 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/test/helpers"
 )
+
+func executeCommand(t *testing.T, args ...string) (int, string, string) {
+	t.Helper()
+	cmd := rootCmd
+	var stdout, stderr bytes.Buffer
+
+	oldOut := cmd.OutOrStdout()
+	oldErr := cmd.ErrOrStderr()
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs(args)
+
+	err := cmd.Execute()
+	cmd.SetOut(oldOut)
+	cmd.SetErr(oldErr)
+	cmd.SetArgs(nil)
+
+	code := 0
+	if err != nil {
+		code = 1
+	}
+
+	return code, stdout.String(), stderr.String()
+}
 
 func TestMain(m *testing.M) {
 	helpers.RunTestMainWithCleanup(m, "cmd", "zeroui-cmd-test-home-", nil)
@@ -39,10 +64,17 @@ func TestExecuteWithContext(t *testing.T) {
 	_, w, _ := os.Pipe()
 	os.Stdout = w
 
+	// Replace stdin with a pipe to avoid triggering TUI launches
+	oldStdin := os.Stdin
+	stdinR, stdinW, _ := os.Pipe()
+	os.Stdin = stdinR
+
 	// Run the command (it will fail because no subcommands, but shouldn't panic)
 	defer func() {
 		os.Stdout = old
 		w.Close()
+		stdinW.Close()
+		os.Stdin = oldStdin
 	}()
 
 	// This should not panic
@@ -95,5 +127,41 @@ func TestContainerInitialization(t *testing.T) {
 	// This tests the init() function that sets up the container
 	if appContainer == nil {
 		t.Error("appContainer should be initialized by init() function")
+	}
+}
+
+func TestUnknownCommand(t *testing.T) {
+	code, _, stderr := executeCommand(t, "unknown")
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for unknown command, got %d", code)
+	}
+
+	if !strings.Contains(stderr, "unknown command \"unknown\"") {
+		t.Fatalf("expected unknown command message, got %q", stderr)
+	}
+}
+
+func TestUnknownFlag(t *testing.T) {
+	code, _, stderr := executeCommand(t, "--does-not-exist")
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for unknown flag, got %d", code)
+	}
+
+	if !strings.Contains(stderr, "unknown flag") {
+		t.Fatalf("expected unknown flag message, got %q", stderr)
+	}
+}
+
+func TestMissingArgsValidation(t *testing.T) {
+	code, _, stderr := executeCommand(t, "toggle", "ghostty")
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for missing args, got %d", code)
+	}
+
+	if !strings.Contains(stderr, "accepts 3 arg(s)") {
+		t.Fatalf("expected argument validation message, got %q", stderr)
 	}
 }

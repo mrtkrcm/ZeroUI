@@ -84,6 +84,7 @@ func testPluginCommunication(t *testing.T, binaryPath, pluginPath, testDir strin
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
+	os.Remove(pluginLink) // Remove if exists
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
 	// Test 1: Basic RPC communication
@@ -136,6 +137,7 @@ func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
+	os.Remove(pluginLink) // Remove if exists
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
 	// Test 1: Plugin starts and stops cleanly
@@ -191,8 +193,8 @@ func buildGhosttyPlugin(t *testing.T, testDir string) string {
 	// Build the Ghostty RPC plugin
 	pluginPath := filepath.Join(testDir, "zeroui-plugin-ghostty-rpc")
 
-	cmd := exec.Command("go", "build", "-o", pluginPath, "./plugins/ghostty-rpc")
-	cmd.Dir = "../../" // Go back to project root
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", pluginPath, ".")
+	cmd.Dir = "../../plugins/ghostty-rpc" // Go to plugin directory with its own go.mod
 
 	err := cmd.Run()
 	require.NoError(t, err, "Should build Ghostty plugin")
@@ -236,6 +238,7 @@ func TestRPCProtocolIntegration(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pluginDir, 0755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
+	os.Remove(pluginLink) // Remove if exists
 	require.NoError(t, os.Symlink(pluginPath, pluginLink))
 
 	t.Run("RPC method invocation", func(t *testing.T) {

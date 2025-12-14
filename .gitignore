@@ -72,6 +72,9 @@ plugins/*/*.dylib
 # Test reports and temporary files
 internal/tui/testdata/reports/*/
 internal/tui/testdata/diff_images/
+internal/tui/testdata/automated/
+internal/tui/testdata/diffs/
+internal/tui/testdata/baseline_images/
 tmp-configs/
 
 # Development environment
@@ -112,5 +115,7 @@ test_output/
 config.local.*
 .env.local
 coverage.out
-internal/tui/testdata/screenshots/*.json
-internal/tui/testdata/screenshots/*.json
+internal/tui/testdata/screenshots/**
+internal/tui/testdata/snapshots/*.new
+internal/tui/testdata/visual/*.txt
+internal/tui/testdata/baseline/*.txt
