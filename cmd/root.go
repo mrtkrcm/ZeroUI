@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
@@ -16,6 +18,8 @@ import (
 var (
 	cfgFile      string
 	appContainer *container.Container
+	cleanupMu    sync.Mutex
+	cleanupHooks []func()
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -70,7 +74,12 @@ func Execute() {
 }
 
 // ExecuteWithContext executes the root command with context support for graceful shutdown
-func ExecuteWithContext(ctx context.Context) {
+func ExecuteWithContext(ctx context.Context) error {
+	return ExecuteContext(ctx, nil)
+}
+
+// ExecuteContext executes the root command with optional arguments
+func ExecuteContext(ctx context.Context, args []string) error {
 	// Initialize dependency container
 	containerConfig := &container.Config{
 		LogLevel:  "info",
@@ -84,23 +93,31 @@ func ExecuteWithContext(ctx context.Context) {
 	}
 
 	defer func() {
-		if err := appContainer.Close(); err != nil {
-			logger.Error("Failed to close application container", err)
+		if appContainer != nil {
+			if err := appContainer.Close(); err != nil {
+				logger.Error("Failed to close application container", err)
+			}
 		}
+		runCleanupHooks()
 	}()
 
 	// Set the context on the root command for propagation to subcommands
 	rootCmd.SetContext(ctx)
+	if args != nil {
+		rootCmd.SetArgs(args)
+	}
 
 	err = rootCmd.ExecuteContext(ctx)
 	if err != nil {
 		// Check if error is due to context cancellation (graceful shutdown)
-		if ctx.Err() == context.Canceled {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
 			logger.Info("Application shutdown requested")
-			os.Exit(0)
+			return context.Canceled
 		}
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 func init() {
@@ -145,4 +162,26 @@ func initConfig() {
 // GetContainer returns the application container (for use in subcommands)
 func GetContainer() *container.Container {
 	return appContainer
+}
+
+// RegisterCleanupHook adds a function to run after command execution completes
+func RegisterCleanupHook(hook func()) {
+	if hook == nil {
+		return
+	}
+
+	cleanupMu.Lock()
+	defer cleanupMu.Unlock()
+	cleanupHooks = append(cleanupHooks, hook)
+}
+
+func runCleanupHooks() {
+	cleanupMu.Lock()
+	hooks := cleanupHooks
+	cleanupHooks = nil
+	cleanupMu.Unlock()
+
+	for _, hook := range hooks {
+		hook()
+	}
 }

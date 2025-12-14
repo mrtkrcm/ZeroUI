@@ -3,11 +3,15 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/mrtkrcm/ZeroUI/test/helpers"
+	"github.com/spf13/cobra"
 )
 
 func executeCommand(t *testing.T, args ...string) (int, string, string) {
@@ -78,7 +82,9 @@ func TestExecuteWithContext(t *testing.T) {
 	}()
 
 	// This should not panic
-	ExecuteWithContext(ctx)
+	if err := ExecuteWithContext(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatalf("ExecuteWithContext returned error: %v", err)
+	}
 
 	// Restore stdout
 	w.Close()
@@ -164,4 +170,114 @@ func TestMissingArgsValidation(t *testing.T) {
 	if !strings.Contains(stderr, "accepts 3 arg(s)") {
 		t.Fatalf("expected argument validation message, got %q", stderr)
 	}
+}
+
+func TestRunWithSIGINTTriggersCleanup(t *testing.T) {
+	signalChan := make(chan os.Signal, 1)
+
+	cleanupCalled := make(chan struct{}, 1)
+	RegisterCleanupHook(func() { cleanupCalled <- struct{}{} })
+	t.Cleanup(func() { cleanupHooks = nil })
+
+	started := make(chan struct{}, 1)
+	blockCmd := &cobra.Command{
+		Use:   "test-block",
+		Short: "test command that waits for cancellation",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			started <- struct{}{}
+			<-cmd.Context().Done()
+			return cmd.Context().Err()
+		},
+	}
+	rootCmd.AddCommand(blockCmd)
+	t.Cleanup(func() { rootCmd.RemoveCommand(blockCmd) })
+
+	exitCodeCh := make(chan int, 1)
+	go func() {
+		exitCodeCh <- RunWithOptions(RunOptions{Args: []string{"test-block"}, SignalChan: signalChan})
+	}()
+
+	helpers.WaitForCondition(t, func() bool {
+		select {
+		case <-started:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, "command should start")
+
+	signalChan <- syscall.SIGINT
+
+	select {
+	case code := <-exitCodeCh:
+		if code != 0 {
+			t.Fatalf("expected exit code 0 for SIGINT, got %d", code)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("run did not complete after SIGINT")
+	}
+
+	helpers.WaitForCondition(t, func() bool {
+		select {
+		case <-cleanupCalled:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, "cleanup hook should be called after SIGINT")
+}
+
+func TestRunWithSIGTERMTriggersCleanup(t *testing.T) {
+	signalChan := make(chan os.Signal, 1)
+
+	cleanupCalled := make(chan struct{}, 1)
+	RegisterCleanupHook(func() { cleanupCalled <- struct{}{} })
+	t.Cleanup(func() { cleanupHooks = nil })
+
+	started := make(chan struct{}, 1)
+	blockCmd := &cobra.Command{
+		Use:   "test-block",
+		Short: "test command that waits for cancellation",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			started <- struct{}{}
+			<-cmd.Context().Done()
+			return cmd.Context().Err()
+		},
+	}
+	rootCmd.AddCommand(blockCmd)
+	t.Cleanup(func() { rootCmd.RemoveCommand(blockCmd) })
+
+	exitCodeCh := make(chan int, 1)
+	go func() {
+		exitCodeCh <- RunWithOptions(RunOptions{Args: []string{"test-block"}, SignalChan: signalChan})
+	}()
+
+	helpers.WaitForCondition(t, func() bool {
+		select {
+		case <-started:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, "command should start")
+
+	signalChan <- syscall.SIGTERM
+
+	select {
+	case code := <-exitCodeCh:
+		if code != 0 {
+			t.Fatalf("expected exit code 0 for SIGTERM, got %d", code)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("run did not complete after SIGTERM")
+	}
+
+	helpers.WaitForCondition(t, func() bool {
+		select {
+		case <-cleanupCalled:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, "cleanup hook should be called after SIGTERM")
 }
