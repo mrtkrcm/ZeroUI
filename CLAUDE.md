@@ -1,168 +1,118 @@
-# CLAUDE.md
+# Claude Code Integration Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides essential guidance for Claude Code (claude.ai/code) when working with the ZeroUI repository.
 
 ## Project Overview
 
-ZeroUI is a delightful zero-configuration UI toolkit manager that simplifies managing UI configurations, themes, and settings across development tools. It provides both CLI commands and an enhanced interactive TUI built with Charm libraries (Bubble Tea, Huh, Lipgloss), featuring intelligent notifications, contextual help, and smooth animations.
+ZeroUI is a zero-configuration UI toolkit manager that simplifies managing UI configurations, themes, and settings across development tools. It provides both CLI commands and an interactive TUI built with Charm libraries (Bubble Tea, Huh, Lipgloss).
 
 ## Essential Commands
 
-### Building and Running
-- `make build` - Build the binary to `./build/zeroui`
-- `make install` - Install to GOPATH/bin
-- `make run` - Build and run the application
-- `./build/zeroui` - Run the interactive TUI (main use case)
-- `./build/zeroui toggle <app> <key> <value>` - CLI toggle functionality
+### Build & Run
+
+- `make build` - Build binary to `./build/zeroui`
+- `make run` - Build and run TUI application
+- `./build/zeroui` - Run interactive TUI
 
 ### Testing
-- `make test-setup` - Prepare deterministic test stubs (required before testing)
-- `make test-fast` - Run fast unit tests only (short mode, no integration/perf)
-- `make test-deterministic` - Full test suite in deterministic/fast mode (CI-like)
-- `make test` - Full test run with coverage and HTML report
-- `make test-update-baselines` - Update visual test baselines (run and review diffs carefully)
-- `make test-watch` - Run tests in watch mode (requires entr)
+
+- `make test-setup` - Prepare test stubs (required)
+- `make test-fast` - Run fast unit tests
+- `make test-deterministic` - Full deterministic test suite
+- `make test` - Complete test run with coverage
 
 ### Code Quality
-- `make fmt` - Format code with gofmt and goimports
-- `make lint` - Run golangci-lint (requires golangci-lint installed)
-- `make security` - Run security checks (gosec, nancy)
-- `make vuln` - Check for known vulnerabilities
 
-### Development
-- `make dev` - Start development environment with file watching (requires entr)
-- `make air` - Hot reloading development server (installs air if needed)
-- `go test ./internal/tui -run TestSpecificTest` - Run individual tests
+- `make fmt` - Format code
+- `make lint` - Run linters
+- `make security` - Security checks
 
 ## Architecture
 
 ### Core Structure
+
 ```
-cmd/                    # CLI commands and Cobra entry points
-├── root.go            # Main CLI root command
-├── ui.go              # TUI command entry point
-└── toggle.go          # Core toggle functionality
-
-internal/               # Application internals
-├── config/            # Configuration management and parsing
-│   ├── apps_registry.go    # Application discovery and registry
-│   ├── loader.go          # Config file loading and validation
-│   └── providers/         # App-specific config providers (ghostty, etc)
-├── tui/               # Terminal UI implementation (Bubble Tea)
-│   ├── app_core.go        # Main TUI application struct
-│   ├── components/        # Reusable UI components
-│   │   ├── app/           # App selection and scanning
-│   │   ├── forms/         # Configuration editing forms
-│   │   └── display/       # Status bars, help, notifications
-│   ├── styles/theme.go    # Design system and themes
-│   ├── animations/        # Animation and transition effects
-│   ├── feedback/          # Notifications and loading states
-│   └── help/              # Contextual help system
-├── toggle/            # Core toggle operations engine
-├── service/           # Business logic services
-└── plugins/rpc/       # Plugin system with gRPC
-
-pkg/                   # Public reusable packages
-├── configextractor/   # Config extraction utilities
-└── reference/         # Reference system for app configs
+cmd/           # CLI commands (Cobra)
+internal/      # Application internals
+├── config/   # Configuration management
+├── tui/      # Terminal UI (Bubble Tea)
+├── toggle/   # Core toggle operations
+└── plugins/  # Plugin system (gRPC)
+pkg/          # Public packages
+testdata/     # Test fixtures and stubs
 ```
 
-### Key Design Patterns
+### Key Patterns
 
-1. **Clean Architecture**: Separation between CLI commands, business logic (toggle engine), and UI components
-2. **Bubble Tea MVC**: TUI components follow the Bubble Tea pattern with Model, Update, View methods
-3. **Plugin Architecture**: Extensible via gRPC plugins for new application support
-4. **Configuration Registry**: Centralized app discovery and config management
-5. **Test Isolation**: Comprehensive test environment with deterministic stubs in `testdata/bin/`
-
-### TUI State Machine
-The TUI uses a state machine with these primary views:
-- **ListView**: App grid selection with responsive layout
-- **FormView**: Configuration editing with enhanced UX
-- **HelpView**: Contextual help overlay
-- **ProgressView**: Loading states and operation feedback
+- **Clean Architecture**: CLI ↔ Business Logic ↔ UI separation
+- **Bubble Tea MVC**: Model/Update/View pattern for TUI components
+- **Plugin Architecture**: gRPC-based extensible plugins
+- **Test Isolation**: Deterministic stubs in `testdata/bin/`
 
 ## Testing Environment
 
-**IMPORTANT**: Always run `make test-setup` before running tests. This ensures:
-- Test stub binaries in `testdata/bin/` are executable
-- Git index marks them as executable
-- Deterministic test environment is prepared
+**Important**: Run `make test-setup` before testing to prepare deterministic stubs in `testdata/bin/`.
 
 ### Test Categories
-- **Fast tests**: Use `FAST_TUI_TESTS=true` environment variable
-- **Deterministic tests**: Use `ZEROUI_TEST_MODE=true` for CI-like behavior
-- **Visual tests**: TUI visual regression tests with baseline comparison
-- **Integration tests**: Full end-to-end testing with real config files
 
-### Test Stubs
-The repository uses deterministic test stubs in `testdata/bin/` to avoid dependency on system-installed tools. When adding tests that exec external tools, create corresponding stubs here.
+- **Unit tests**: Fast, isolated component tests
+- **Integration tests**: Full end-to-end workflows
+- **Visual tests**: TUI regression testing with baselines
+- **Deterministic mode**: `ZEROUI_TEST_MODE=true` for CI consistency
 
 ## Development Workflow
 
-1. **Setup**: Ensure Go 1.24+ is installed
-2. **Dependencies**: Run `make deps` to download and verify modules
-3. **Build**: Use `make build` to create the binary
-4. **Test**: Always run `make test-setup` first, then `make test-fast` for quick iteration
-5. **Format**: Run `make fmt` before committing
-6. **Quality**: Use `make lint` to catch issues
+1. **Setup**: Install Go 1.24+
+2. **Build**: `make build`
+3. **Test**: `make test-setup && make test-fast`
+4. **Format**: `make fmt`
+5. **Quality**: `make lint`
 
 ## Key Implementation Notes
 
 ### Configuration Management
-- Uses `koanf` library for flexible config parsing
-- Supports YAML, TOML, JSON config formats
+
+- `koanf` library for flexible config parsing (YAML/TOML/JSON)
 - App-specific providers in `internal/config/providers/`
-- Configuration validation with Go playground validator
+- Validation with Go playground validator
 
 ### TUI Components
-- Built with Charm ecosystem (Bubble Tea, Lipgloss, Huh)
-- Responsive design system with theme support
-- Animation system for smooth transitions
-- Comprehensive visual regression testing
+
+- Charm ecosystem (Bubble Tea, Lipgloss, Huh)
+- Responsive design with theme support
+- Visual regression testing
 
 ### Plugin System
-- gRPC-based plugins for extending app support
-- Plugin registry with health checking
-- Example plugin: `plugins/ghostty-rpc/`
 
-### Performance Optimizations
-- Object pooling for frequent allocations
-- Concurrent configuration loading
-- Optimized string interning for config keys
-- Memory-efficient parser pools
+- gRPC-based plugins for extensibility
+- Plugin registry with health checking
+- Example: `plugins/ghostty-rpc/`
 
 ## Common Patterns
 
 ### Adding New App Support
+
 1. Create provider in `internal/config/providers/`
-2. Register in `apps_registry.yaml`
-3. Add configuration templates and validation
-4. Create comprehensive tests with stubs
+2. Register in app registry
+3. Add config templates and validation
+4. Create tests with stubs
 
 ### TUI Component Development
+
 1. Follow Bubble Tea Model/Update/View pattern
-2. Use existing styles from `internal/tui/styles/theme.go`
+2. Use styles from `internal/tui/styles/theme.go`
 3. Add visual regression tests
 4. Update baselines with `make test-update-baselines`
-
-### Plugin Development
-1. Use `internal/plugins/rpc/` as reference
-2. Implement gRPC protocol defined in `protocol.proto`
-3. Register with plugin manager
-4. Add integration tests
 
 ## Environment Variables
 
 - `FAST_TUI_TESTS=true` - Skip slow visual tests
 - `ZEROUI_TEST_MODE=true` - Enable deterministic test mode
-- `UPDATE_TUI_BASELINES=true` - Update visual test baselines
-- `CGO_ENABLED=0` - Disabled for static binary builds
+- `UPDATE_TUI_BASELINES=true` - Update visual baselines
 
 ## Dependencies
 
 - **Core**: Go 1.24+, Charm libraries (bubbletea, lipgloss, huh)
-- **Testing**: testify, golang/mock for mocking
 - **Config**: koanf, viper, go-playground/validator
 - **Plugins**: gRPC, protobuf
-- **Development**: golangci-lint, air (hot reloading), entr (file watching)
+- **Dev**: golangci-lint, air, entr
