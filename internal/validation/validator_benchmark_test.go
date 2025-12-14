@@ -3,7 +3,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // BenchmarkValidator_ValidateAppConfig compares old vs new validation performance

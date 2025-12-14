@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cfg "github.com/mrtkrcm/ZeroUI/internal/config"
+	cfg "github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // This integration test ensures we only persist modified keys for Ghostty configs,

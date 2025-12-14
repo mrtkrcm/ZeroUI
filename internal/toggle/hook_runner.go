@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/spf13/viper"
 )
@@ -27,7 +27,7 @@ func NewHookRunner(log *logger.Logger) *HookRunner {
 }
 
 // RunHooks executes hooks for a given type (pre-toggle, post-toggle, etc.)
-func (hr *HookRunner) RunHooks(appConfig *config.AppConfig, hookType string) error {
+func (hr *HookRunner) RunHooks(appConfig *appconfig.AppConfig, hookType string) error {
 	hookCmd, exists := appConfig.Hooks[hookType]
 	if !exists {
 		return nil // No hook defined, not an error

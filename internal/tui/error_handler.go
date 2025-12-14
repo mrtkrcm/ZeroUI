@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mrtkrcm/ZeroUI/internal/logging"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 )
 
 // ErrorHandler provides centralized error handling for the TUI

@@ -3,7 +3,7 @@ package container
 import (
 	"fmt"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
@@ -12,7 +12,7 @@ import (
 // Container holds all application dependencies
 type Container struct {
 	logger        *logger.Logger
-	configLoader  *config.ReferenceEnhancedLoader
+	configLoader  *appconfig.ReferenceEnhancedLoader
 	toggleEngine  *toggle.Engine
 	configService *service.ConfigService
 }
@@ -44,7 +44,7 @@ func New(cfg *Config) (*Container, error) {
 	c.logger = logger.Global()
 
 	// Initialize enhanced config loader with reference integration
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize enhanced config loader: %w", err)
 	}
@@ -65,7 +65,7 @@ func (c *Container) Logger() *logger.Logger {
 }
 
 // ConfigLoader returns the config loader instance
-func (c *Container) ConfigLoader() *config.ReferenceEnhancedLoader {
+func (c *Container) ConfigLoader() *appconfig.ReferenceEnhancedLoader {
 	return c.configLoader
 }
 

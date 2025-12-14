@@ -406,7 +406,7 @@ func (e *FastExtractor) parseGitHubStream(app string, r io.Reader) (*ConfigRefer
 
 // extractFromLocalFile reads from local configs directory
 func (e *FastExtractor) extractFromLocalFile(ctx context.Context, app string) (*ConfigReference, error) {
-	path := fmt.Sprintf("configs/%s.yaml", app)
+	path := fmt.Sprintf("resources/configs/%s.yaml", app)
 
 	file, err := os.Open(path)
 	if err != nil {

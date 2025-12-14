@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
@@ -11,7 +11,7 @@ import (
 
 // ConfigLoader interface to support different loader types
 type ConfigLoader interface {
-	LoadAppConfig(appName string) (*config.AppConfig, error)
+	LoadAppConfig(appName string) (*appconfig.AppConfig, error)
 	ListApps() ([]string, error)
 }
 
@@ -98,7 +98,7 @@ func (s *ConfigService) ListApplications() ([]string, error) {
 }
 
 // GetApplicationConfig returns configuration metadata for an app
-func (s *ConfigService) GetApplicationConfig(app string) (*config.AppConfig, error) {
+func (s *ConfigService) GetApplicationConfig(app string) (*appconfig.AppConfig, error) {
 	log := s.logger.WithApp(app)
 	log.Debug("Getting application configuration")
 
@@ -167,7 +167,7 @@ func (s *ConfigService) ValidateConfiguration(app, key, value string) error {
 }
 
 // ListPresets returns all available presets for an application
-func (s *ConfigService) ListPresets(app string) (map[string]config.PresetConfig, error) {
+func (s *ConfigService) ListPresets(app string) (map[string]appconfig.PresetConfig, error) {
 	log := s.logger.WithApp(app)
 	log.Debug("Listing presets")
 
@@ -184,7 +184,7 @@ func (s *ConfigService) ListPresets(app string) (map[string]config.PresetConfig,
 }
 
 // ListFields returns all configurable fields for an application
-func (s *ConfigService) ListFields(app string) (map[string]config.FieldConfig, error) {
+func (s *ConfigService) ListFields(app string) (map[string]appconfig.FieldConfig, error) {
 	log := s.logger.WithApp(app)
 	log.Debug("Listing fields")
 

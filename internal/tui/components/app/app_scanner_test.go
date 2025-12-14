@@ -5,7 +5,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 func TestAppScanner(t *testing.T) {
@@ -80,7 +80,7 @@ func TestAppScanner(t *testing.T) {
 
 func TestAppRegistry(t *testing.T) {
 	// Load the registry
-	registry, err := config.LoadAppsRegistry()
+	registry, err := appconfig.LoadAppsRegistry()
 	if err != nil {
 		t.Fatalf("Failed to load registry: %v", err)
 	}

@@ -7,12 +7,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // ConcurrentScanner performs parallel application scanning
 type ConcurrentScanner struct {
-	registry *config.AppsRegistry
+	registry *appconfig.AppsRegistry
 	results  chan ScanResult
 	wg       sync.WaitGroup
 	ctx      context.Context
@@ -21,7 +21,7 @@ type ConcurrentScanner struct {
 
 // ScanResult represents a single scan result
 type ScanResult struct {
-	App          config.AppDefinition
+	App          appconfig.AppDefinition
 	ConfigExists bool
 	ConfigPath   string
 	Error        error
@@ -43,7 +43,7 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 		defer cs.cancel()
 
 		// Load registry
-		registry, err := config.LoadAppsRegistry()
+		registry, err := appconfig.LoadAppsRegistry()
 		if err != nil {
 			return scanErrorMsg{error: err}
 		}
@@ -53,7 +53,7 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 
 		// Start workers
 		numWorkers := 5
-		workChan := make(chan config.AppDefinition, len(apps))
+		workChan := make(chan appconfig.AppDefinition, len(apps))
 
 		// Start worker goroutines
 		for i := 0; i < numWorkers; i++ {
@@ -106,7 +106,7 @@ func (cs *ConcurrentScanner) ScanAll() tea.Cmd {
 }
 
 // worker processes apps from the work channel
-func (cs *ConcurrentScanner) worker(workChan <-chan config.AppDefinition) {
+func (cs *ConcurrentScanner) worker(workChan <-chan appconfig.AppDefinition) {
 	defer cs.wg.Done()
 
 	for app := range workChan {
@@ -126,7 +126,7 @@ func (cs *ConcurrentScanner) worker(workChan <-chan config.AppDefinition) {
 }
 
 // checkApp checks a single app's configuration
-func (cs *ConcurrentScanner) checkApp(app config.AppDefinition) ScanResult {
+func (cs *ConcurrentScanner) checkApp(app appconfig.AppDefinition) ScanResult {
 	result := ScanResult{
 		App: app,
 	}

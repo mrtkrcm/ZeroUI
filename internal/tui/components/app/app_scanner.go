@@ -12,7 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // AppStatus represents the status of an application
@@ -341,8 +341,8 @@ func (s *AppScanner) performFallbackScanMsg() tea.Msg {
 }
 
 // loadAppsRegistry loads the apps registry
-func loadAppsRegistry() (*config.AppsRegistry, error) {
-	return config.LoadAppsRegistry()
+func loadAppsRegistry() (*appconfig.AppsRegistry, error) {
+	return appconfig.LoadAppsRegistry()
 }
 
 // GetApps returns the scanned applications
