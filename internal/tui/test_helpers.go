@@ -2,21 +2,21 @@ package tui
 
 import (
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
-	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 )
 
 // NewTestModel creates a model for testing with a default logger
 // and initializes commonly used subcomponents (like helpSystem) so
 // tests that interact with those subsystems don't nil-deref or hang.
-func NewTestModel(engine *toggle.Engine, initialApp string) (*Model, error) {
+func NewTestModel(configService *service.ConfigService, initialApp string) (*Model, error) {
 	logger, err := logging.NewCharmLogger(logging.DefaultConfig())
 	if err != nil {
 		// For tests, we can use a minimal config or ignore the logger error
 		logger = &logging.CharmLogger{} // minimal logger for tests
 	}
 
-	model, err := NewModel(engine, initialApp, logger)
+	model, err := NewModel(configService, initialApp, logger)
 	if err != nil {
 		return nil, err
 	}

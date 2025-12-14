@@ -230,3 +230,49 @@ func (s *KeymapService) SuggestAlternatives(conflictingKeys string) []string {
 		"alt+" + strings.TrimPrefix(conflictingKeys, "ctrl+"),
 	}
 }
+
+// AddKeymap adds a new keymap to an application
+func (s *KeymapService) AddKeymap(app, keymap string) error {
+	// Validate before adding
+	validator := configextractor.NewKeybindValidator()
+	result := validator.ValidateKeybind(keymap)
+	if !result.Valid {
+		return fmt.Errorf("invalid keymap format: %v", result.Errors)
+	}
+
+	return s.configService.AppendConfiguration(app, "keybind", keymap)
+}
+
+// RemoveKeymap removes a keymap by its keys (e.g., "ctrl+c")
+func (s *KeymapService) RemoveKeymap(app, keys string) error {
+	// We need to find the full keymap string to remove it consistently
+	// Use fuzzy matching logic similar to engine but here we can be smarter
+	return s.configService.RemoveConfiguration(app, "keybind", keys)
+}
+
+// ValidateAllKeymaps validates all keymaps for an application
+func (s *KeymapService) ValidateAllKeymaps(app string) (int, int, []string, error) {
+	keymaps, err := s.GetKeymapsForApp(app)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+
+	var validCount, invalidCount int
+	var errorMessages []string
+	validator := configextractor.NewKeybindValidator()
+
+	for _, km := range keymaps {
+		// Reconstruct keymap string or validate parts?
+		// Better to validate the reconstruction "keys=action"
+		keymapStr := fmt.Sprintf("%s=%s", km.Keys, km.Action)
+		result := validator.ValidateKeybind(keymapStr)
+		if result.Valid {
+			validCount++
+		} else {
+			invalidCount++
+			errorMessages = append(errorMessages, fmt.Sprintf("Invalid keymap '%s': %v", keymapStr, result.Errors))
+		}
+	}
+
+	return validCount, invalidCount, errorMessages, nil
+}

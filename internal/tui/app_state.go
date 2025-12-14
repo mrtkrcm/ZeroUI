@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
-	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
@@ -23,8 +23,8 @@ import (
 // Model represents the application state
 type Model struct {
 	// Core state
-	engine       *toggle.Engine
-	state        ViewState
+	configService *service.ConfigService
+	state         ViewState
 	stateMachine *StateMachine
 	width        int
 	height       int
@@ -43,8 +43,6 @@ type Model struct {
 	// Unified component system
 	componentManager *ui.ComponentManager
 	screenshotComp   *ui.ScreenshotComponent
-	uiManager        *ui.UIIntegrationManager
-	enhancedAppList  *ui.EnhancedApplicationList
 	confirmDialog    *ui.ConfirmDialog
 
 	// UI implementation selection
@@ -83,7 +81,7 @@ type Model struct {
 type RefreshAppsMsg = app.RefreshAppsMsg
 
 // NewModel creates a new model for the application
-func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLogger) (*Model, error) {
+func NewModel(configService *service.ConfigService, initialApp string, logger *logging.CharmLogger) (*Model, error) {
 	// Initialize theme
 	theme := &styles.DefaultTheme
 	appStyles := theme.BuildStyles()
@@ -92,8 +90,8 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 	// Create a help system and a basic config form so tests and the UI have
 	// sensible defaults even when no app is loaded yet.
 	helpModel := display.NewGlamourHelp()
-	// Get available apps from engine
-	_, err := engine.GetApps()
+	// Get available apps from service
+	_, err := configService.ListApplications()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get apps: %w", err)
 	}
@@ -105,7 +103,6 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 	// Initialize unified component system
 	componentManager := ui.NewComponentManager()
 	screenshotComp := ui.NewScreenshotComponent("testdata/screenshots")
-	uiManager := ui.NewUIIntegrationManager()
 	confirmDialog := ui.NewConfirmDialog(
 		"Unsaved Changes",
 		"You have unsaved changes. Are you sure you want to quit?",
@@ -115,8 +112,8 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 
 	// Create base model
 	model := &Model{
-		engine:       engine,
-		state:        ListView,
+		configService: configService,
+		state:         ListView,
 		stateMachine: stateMachine,
 		keyMap:       keybindings.NewAppKeyMap(),
 		styles:       appStyles,
@@ -129,7 +126,6 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		presetSel:        app.NewPresetsSelector(),
 		componentManager: componentManager,
 		screenshotComp:   screenshotComp,
-		uiManager:        uiManager,
 		confirmDialog:    confirmDialog,
 		renderCache:      make(map[ViewState]string),
 		eventBatcher:     NewEventBatcher(),
@@ -144,6 +140,8 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		model.currentApp = initialApp
 		if err := model.loadAppConfigForForm(initialApp); err == nil {
 			model.state = FormView
+			// Sync state machine with the forced state change during initialization
+			model.stateMachine.Reset(FormView)
 			logger.Info("Loaded initial app", "app", initialApp)
 		} else {
 			logger.LogError(err, "initial_app_load", "app", initialApp)
@@ -171,7 +169,11 @@ func (m *Model) Init() tea.Cmd {
 	}
 
 	// Start with scanning state
-	m.state = ProgressView
+	// We use direct assignment here or SetState? 
+	// SetState checks transitions. 
+	// If NewModel set FormView, FormView->ProgressView is valid.
+	// If ListView, ListView->ProgressView is valid.
+	m.SetState(ProgressView)
 	m.isLoading = true
 	m.loadingText = "Scanning applications..."
 
@@ -194,8 +196,8 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) loadAppConfigForForm(appName string) error {
 	m.logger.Info("Loading app config for form", "app", appName)
 
-	// Get app config from engine
-	appConfig, err := m.engine.GetAppConfig(appName)
+	// Get app config from service
+	appConfig, err := m.configService.GetApplicationConfig(appName)
 	if err != nil {
 		m.logger.LogError(err, "app_config_load", "app", appName)
 		return fmt.Errorf("failed to get app config: %w", err)
@@ -224,15 +226,15 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 	var targetConfig map[string]interface{}
 	if targetPath != "" {
 		// First load the app config
-		_, err := m.engine.GetAppConfig(appName)
+		_, err := m.configService.GetApplicationConfig(appName)
 		if err != nil {
 			m.logger.Warn("Failed to load app config",
 				"app", appName,
 				"error", err.Error())
 			targetConfig = make(map[string]interface{})
 		} else {
-			// For now, just get current values from engine
-			currentValues, err := m.engine.GetCurrentValues(appName)
+			// For now, just get current values from service
+			currentValues, err := m.configService.GetCurrentValues(appName)
 			if err != nil {
 				m.logger.Warn("Failed to load current config values",
 					"app", appName,
@@ -388,9 +390,24 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 
 // State management helpers
 
-// SetState changes the current view state
+// SetState changes the current view state using the state machine
 func (m *Model) SetState(state ViewState) {
-	m.state = state
+    if err := m.stateMachine.Transition(state); err != nil {
+        m.logger.Warn("Invalid state transition attempted", 
+            "from", m.state, 
+            "to", state, 
+            "error", err)
+        // For now, we don't block the transition to avoid breaking things immediately,
+        // but we log it. In a stricter future version, we might return the error.
+        // However, to enforce using the state machine, we should rely on its internal state
+        // if the transition was successful.
+        // But since we just failed, we probably shouldn't update m.state if we want to be strict.
+        // Let's force it for now to maintain behavior but log the violation.
+        m.state = state
+    } else {
+        // Sync model state with state machine
+        m.state = m.stateMachine.Current()
+    }
 	m.invalidateCache()
 }
 

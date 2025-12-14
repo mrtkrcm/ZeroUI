@@ -11,11 +11,15 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -47,8 +51,8 @@ const (
 
 // AutomatedRenderingTest provides comprehensive automated TUI testing
 type AutomatedRenderingTest struct {
-	engine     *toggle.Engine
-	scenarios  []TestScenario
+	configService *service.ConfigService
+	scenarios     []TestScenario
 	baselines  map[string]string // scenario -> hash
 	updateMode bool              // whether to update baselines
 }
@@ -61,13 +65,19 @@ func TestAutomatedTUIRendering(t *testing.T) {
 		t.Skip("skipping automated TUI rendering tests in short mode")
 	}
 	// Initialize test framework
-	engine, err := toggle.NewEngine()
+	// We need ConfigService now, so we need config loader and logger
+	log := logger.Global() // tests run with global logger
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+
+	configService := service.NewConfigService(engine, configLoader, log)
+
 	tester := &AutomatedRenderingTest{
-		engine:     engine,
-		baselines:  make(map[string]string),
-		updateMode: os.Getenv("UPDATE_TUI_BASELINES") == "true",
+		configService: configService,
+		baselines:     make(map[string]string),
+		updateMode:    os.Getenv("UPDATE_TUI_BASELINES") == "true",
 	}
 
 	// Define comprehensive test scenarios
@@ -252,7 +262,7 @@ func TestAutomatedTUIRendering(t *testing.T) {
 // runScenario executes a complete test scenario
 func (art *AutomatedRenderingTest) runScenario(t *testing.T, scenario TestScenario) {
 	// Create model
-	model, err := NewTestModel(art.engine, "")
+	model, err := NewTestModel(art.configService, "")
 	require.NoError(t, err)
 
 	// Set dimensions
@@ -540,10 +550,14 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping rendering correctness tests in short mode")
 	}
-	engine, err := toggle.NewEngine()
+	
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test specific rendering correctness scenarios
@@ -614,8 +628,9 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 				// Verify no line exceeds terminal width
 				for i, line := range lines {
 					// Allow 15 characters tolerance for rendering edge cases and emoji/unicode
-					assert.LessOrEqual(t, len(line), 95,
-						"Line %d should not exceed terminal width", i+1)
+					length := utf8.RuneCountInString(line)
+					assert.LessOrEqual(t, length, 95,
+						"Line %d should not exceed terminal width (len: %d)", i+1, length)
 				}
 
 				// Verify total height doesn't exceed terminal

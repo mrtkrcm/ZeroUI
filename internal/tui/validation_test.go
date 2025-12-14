@@ -10,17 +10,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
 // createTestModel creates a properly initialized test model for both testing.T and testing.B
 func createTestModel(t testing.TB, initialApp string) *Model {
-	// Create a test engine
-	engine, err := toggle.NewEngine()
+	// Create a test engine with dependencies
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	if err != nil {
-		t.Fatalf("Failed to create engine: %v", err)
+		t.Fatalf("Failed to create config loader: %v", err)
 	}
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Create logger for testing
 	logConfig := logging.DefaultConfig()
@@ -31,7 +37,7 @@ func createTestModel(t testing.TB, initialApp string) *Model {
 	}
 
 	// Create model
-	model, err := NewModel(engine, initialApp, logger)
+	model, err := NewModel(configService, initialApp, logger)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -94,10 +100,13 @@ func TestUIRendering(t *testing.T) {
 
 // TestFullscreenLayout validates fullscreen rendering
 func TestFullscreenLayout(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Set fullscreen dimensions
@@ -123,10 +132,13 @@ func TestFullscreenLayout(t *testing.T) {
 // TestKeyboardNavigation validates keyboard input handling
 func TestKeyboardNavigation(t *testing.T) {
 	t.Parallel() // This test can run in parallel
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test navigation keys
@@ -178,10 +190,13 @@ func TestKeyboardNavigation(t *testing.T) {
 
 // TestComponentInteraction validates component message handling
 func TestComponentInteraction(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test window size message propagation
@@ -195,10 +210,13 @@ func TestComponentInteraction(t *testing.T) {
 
 // TestStateTransitions validates view state transitions
 func TestStateTransitions(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Start in ListView
@@ -242,10 +260,13 @@ func stripAnsi(str string) string {
 
 // TestInitCommand validates initialization commands
 func TestInitCommand(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test Init command
@@ -255,10 +276,13 @@ func TestInitCommand(t *testing.T) {
 
 // TestErrorHandling validates error display
 func TestErrorHandling(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Set an error
@@ -271,10 +295,13 @@ func TestErrorHandling(t *testing.T) {
 
 // TestHelpView validates help rendering
 func TestHelpView(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Enable help

@@ -53,7 +53,8 @@ Built for speed and simplicity with both CLI and interactive TUI interfaces.`,
 
 			// Launch the UI without a specific app (show grid)
 			// Import the functionality directly instead of calling uiCmd
-			tuiApp, err := tui.NewApp("")
+			container := GetContainer()
+			tuiApp, err := tui.NewApp(container, "")
 			if err != nil {
 				return fmt.Errorf("failed to create TUI app: %w", err)
 			}

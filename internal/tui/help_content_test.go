@@ -6,14 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
 func TestHelpContainsPresetsAndChangedOnly(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	model.state = HelpView

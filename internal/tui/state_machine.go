@@ -59,6 +59,7 @@ func (sm *StateMachine) defineTransitions() {
 	// From ProgressView
 	sm.addTransition(ProgressView, ListView, nil)
 	sm.addTransition(ProgressView, FormView, nil)
+	sm.addTransition(ProgressView, HelpView, nil)
 
 	// Self-transitions (refresh)
 	sm.addTransition(ListView, ListView, nil)

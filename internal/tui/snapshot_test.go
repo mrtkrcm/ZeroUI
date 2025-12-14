@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 )
@@ -96,10 +98,13 @@ func TestSnapshotListView(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Set standard dimensions
@@ -126,10 +131,13 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Switch to app selection view
@@ -151,10 +159,13 @@ func TestSnapshotFormView(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Set up config editor with test data
@@ -184,10 +195,13 @@ func TestSnapshotHelpView(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Enable help
@@ -209,10 +223,13 @@ func TestSnapshotErrorView(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Set an error
@@ -234,8 +251,11 @@ func TestSnapshotResponsiveSizes(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
 	sizes := []struct {
 		name   string
@@ -249,7 +269,7 @@ func TestSnapshotResponsiveSizes(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(size.name, func(t *testing.T) {
-			model, err := NewTestModel(engine, "")
+			model, err := NewTestModel(configService, "")
 			require.NoError(t, err)
 
 			// Set size
@@ -292,10 +312,13 @@ func TestSnapshotComponentStates(t *testing.T) {
 		t.Skip("Skipping snapshot test - set RUN_SNAPSHOTS=true to run")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Standard size
@@ -374,10 +397,13 @@ func TestCoreUIFunctionality(t *testing.T) {
 		t.Skip("Skipping UI functionality test in short mode")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test 1: Initialization
@@ -427,8 +453,11 @@ func TestUILayoutCoverage(t *testing.T) {
 		t.Skip("Skipping layout coverage test in short mode")
 	}
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Test each view state with proper setup
 	viewStates := []struct {
@@ -471,7 +500,7 @@ func TestUILayoutCoverage(t *testing.T) {
 
 	for _, vs := range viewStates {
 		t.Run(vs.name, func(t *testing.T) {
-			model, err := NewTestModel(engine, "")
+			model, err := NewTestModel(configService, "")
 			require.NoError(t, err)
 
 			// Set standard size

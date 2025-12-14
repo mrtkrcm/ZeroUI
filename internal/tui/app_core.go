@@ -7,8 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
-	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 )
 
 // ViewState represents the view states for the app
@@ -23,37 +24,41 @@ const (
 
 // App represents the TUI application with modern components
 type App struct {
-	engine     *toggle.Engine
-	initialApp string
+	configService *service.ConfigService
+	initialApp    string
 	program    *tea.Program
 	ctx        context.Context
 	logger     *logging.CharmLogger
 }
 
 // NewApp creates a new TUI application
-func NewApp(initialApp string) (*App, error) {
-	// Initialize logging first
-	logConfig := logging.DefaultConfig()
-	logger, err := logging.NewCharmLogger(logConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
-	}
+func NewApp(c *container.Container, initialApp string) (*App, error) {
+	// We might need to adapt or just use what we have.
+	// The existing code creates a new CharmLogger. Let's reuse that for now but using container's logger config?
+	// Actually, container already has a logger.
+	// But App expects *logging.CharmLogger.
+	// Let's create a CharmLogger that wraps or is compatible.
+	// Re-initializing CharmLogger is fine for now as it mostly handles bubbletea integration.
 
-	// Initialize the toggle engine
-	engine, err := toggle.NewEngine()
-	if err != nil {
-		logger.LogError(err, "engine_initialization")
-		return nil, fmt.Errorf("failed to create toggle engine: %w", err)
-	}
+	// Use container's config service
+	configService := c.ConfigService()
 
-	logger.Info("ZeroUI initialized",
-		"initial_app", initialApp,
-		"log_file", logger.GetFileLocation())
+	// Log using container logger
+	c.Logger().Info("ZeroUI TUI initialized",
+		map[string]interface{}{
+			"initial_app": initialApp,
+		})
+
+	// Create a CharmLogger for the TUI components
+	charmLogger, err := logging.NewCharmLogger(logging.DefaultConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create charm logger: %w", err)
+	}
 
 	return &App{
-		engine:     engine,
-		initialApp: initialApp,
-		logger:     logger,
+		configService: configService,
+		initialApp:    initialApp,
+		logger:        charmLogger,
 	}, nil
 }
 
@@ -67,7 +72,7 @@ func (app *App) RunWithContext(ctx context.Context) error {
 	app.ctx = ctx
 
 	// Create the model
-	model, err := NewModel(app.engine, app.initialApp, app.logger)
+	model, err := NewModel(app.configService, app.initialApp, app.logger)
 	if err != nil {
 		return fmt.Errorf("failed to create model: %w", err)
 	}

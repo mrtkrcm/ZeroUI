@@ -59,6 +59,27 @@ func (s *ConfigService) ApplyPreset(app, presetName string) error {
 	return s.engine.ApplyPreset(app, presetName)
 }
 
+// AppendConfiguration adds a value to a list-based configuration
+func (s *ConfigService) AppendConfiguration(app, key, value string) error {
+	log := s.logger.WithApp(app).WithField(key)
+	log.Info("Appending configuration", map[string]interface{}{
+		"value": value,
+	})
+
+	return s.engine.AppendConfiguration(app, key, value)
+}
+
+// RemoveConfiguration removes a value from a list-based configuration
+func (s *ConfigService) RemoveConfiguration(app, key, value string) error {
+	log := s.logger.WithApp(app).WithField(key)
+	log.Info("Removing configuration", map[string]interface{}{
+		"value": value,
+	})
+
+	return s.engine.RemoveConfiguration(app, key, value)
+}
+
+
 // ListApplications returns all available applications
 func (s *ConfigService) ListApplications() ([]string, error) {
 	s.logger.Debug("Listing applications")

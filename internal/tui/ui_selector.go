@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
+	// ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
 )
 
 // UIImplementation represents different UI implementation options
@@ -142,24 +142,8 @@ func (uis *UISelector) CreateAppModel(initialApp string) (*Model, error) {
 
 // createEnhancedModel creates an enhanced app model with advanced components
 func (uis *UISelector) createEnhancedModel(initialApp string) (*Model, error) {
-	// Initialize enhanced UI manager
-	uiManager := ui.NewUIIntegrationManager()
-	uiManager.Initialize(120, 40)
-
-	// Create enhanced components
-	enhancedList := ui.NewEnhancedApplicationList()
-
-	// For now, create a standard model and enhance it
-	model, err := NewModel(nil, initialApp, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add enhanced components to the model
-	model.uiManager = uiManager
-	model.enhancedAppList = enhancedList
-
-	return model, nil
+	// Enhanced UI is currently merged with Standard/Delightful
+	return NewModel(nil, initialApp, nil)
 }
 
 // createDelightfulModel creates a delightful model with animations and effects
@@ -190,8 +174,8 @@ func (uis *UISelector) createMinimalModel(initialApp string) (*Model, error) {
 
 // GetRecommendedImplementation returns the recommended implementation based on context
 func (uis *UISelector) GetRecommendedImplementation() UIImplementation {
-	// For now, recommend enhanced UI as the best balance
-	return UIImplementationEnhanced
+	// For now, recommend delightful UI as the best balance
+	return UIImplementationDelightful
 }
 
 // GetImplementationSummary returns a summary of all available implementations

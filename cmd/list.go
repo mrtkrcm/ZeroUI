@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
-	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 	"github.com/spf13/cobra"
 )
 
@@ -434,7 +433,13 @@ var keymapPresetsCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
-		return showKeymapPresets(app)
+		container := GetContainer()
+		if container == nil {
+			return fmt.Errorf("application container not initialized")
+		}
+		
+		configService := container.ConfigService()
+		return showKeymapPresets(configService, app)
 	},
 }
 
@@ -458,39 +463,10 @@ var keymapConflictsCmd = &cobra.Command{
 
 // Keymap management functions
 func listKeymaps(configService *service.ConfigService, app string) error {
-	// Get current configuration values
-	values, err := configService.GetCurrentValues(app)
+	kmService := service.NewKeymapService(configService)
+	keymaps, err := kmService.GetKeymapsForApp(app)
 	if err != nil {
 		return err
-	}
-
-	// Extract keybind values
-	var keymaps []string
-	for key, value := range values {
-		if key == "keybind" || strings.HasPrefix(key, "keybind") {
-			if strVal, ok := value.(string); ok && strVal != "" {
-				// Handle ghostty format where multiple keymaps are in one string
-				if strings.HasPrefix(strVal, "[") && strings.HasSuffix(strVal, "]") {
-					// Remove brackets and split by spaces
-					content := strings.Trim(strVal, "[]")
-					if content != "" {
-						individualKeymaps := strings.Fields(content)
-						keymaps = append(keymaps, individualKeymaps...)
-					}
-				} else {
-					keymaps = append(keymaps, strVal)
-				}
-			} else if strSlice, ok := value.([]string); ok {
-				// Handle []string type (which is what we're getting from ghostty)
-				keymaps = append(keymaps, strSlice...)
-			} else if sliceVal, ok := value.([]interface{}); ok {
-				for _, item := range sliceVal {
-					if strItem, ok := item.(string); ok && strItem != "" {
-						keymaps = append(keymaps, strItem)
-					}
-				}
-			}
-		}
 	}
 
 	if len(keymaps) == 0 {
@@ -498,26 +474,14 @@ func listKeymaps(configService *service.ConfigService, app string) error {
 		return nil
 	}
 
-	// Sort keymaps for consistent output
-	sort.Strings(keymaps)
-
 	header := listHeaderStyle.Render(fmt.Sprintf("Keymaps for %s", app))
 	count := listCountStyle.Render(fmt.Sprintf("(%d)", len(keymaps)))
 	fmt.Printf("%s %s\n\n", header, count)
 
-	for _, keymap := range keymaps {
-		// Parse keymap to extract keys and action
-		if strings.Contains(keymap, "=") {
-			parts := strings.SplitN(keymap, "=", 2)
-			keys := strings.TrimSpace(parts[0])
-			action := strings.TrimSpace(parts[1])
-
-			fmt.Printf("  %s → %s\n",
-				listItemDisplayStyle.Render(keys),
-				listDescriptionStyle.Render(action))
-		} else {
-			fmt.Printf("  %s\n", listItemDisplayStyle.Render(keymap))
-		}
+	for _, km := range keymaps {
+		fmt.Printf("  %s → %s\n",
+			listItemDisplayStyle.Render(km.Keys),
+			listDescriptionStyle.Render(km.Action))
 	}
 
 	return nil
@@ -526,26 +490,17 @@ func listKeymaps(configService *service.ConfigService, app string) error {
 func addKeymap(configService *service.ConfigService, app, keymap string) error {
 	fmt.Printf("Adding keymap: %s\n", keymap)
 
-	// Validate keymap format
-	validator := configextractor.NewKeybindValidator()
-	result := validator.ValidateKeybind(keymap)
-
-	if !result.Valid {
-		fmt.Printf("Invalid keymap format:\n")
-		for _, err := range result.Errors {
-			fmt.Printf("  - %s\n", err)
-		}
-		return fmt.Errorf("keymap validation failed")
+	kmService := service.NewKeymapService(configService)
+	if err := kmService.AddKeymap(app, keymap); err != nil {
+		return err
 	}
 
-	// Parse keys and action from the keymap
+	// Parse keys and action for display
 	parts := strings.SplitN(keymap, "=", 2)
 	keys := strings.TrimSpace(parts[0])
 	action := strings.TrimSpace(parts[1])
 
-	// Here we would typically add the keymap to the configuration
-	// For now, just show success
-	fmt.Printf("Keymap validated successfully\n")
+	fmt.Printf("Keymap added successfully\n")
 	fmt.Printf("Keys: %s\n", keys)
 	fmt.Printf("Action: %s\n", action)
 
@@ -555,11 +510,12 @@ func addKeymap(configService *service.ConfigService, app, keymap string) error {
 func removeKeymap(configService *service.ConfigService, app, keys string) error {
 	fmt.Printf("Removing keymap for keys: %s\n", keys)
 
-	// Here we would search and remove the keymap
-	// For now, just show what would be done
-	fmt.Printf("Searching for keymap with keys: %s\n", keys)
-	fmt.Printf("Note: This would remove the keymap from %s configuration\n", app)
+	kmService := service.NewKeymapService(configService)
+	if err := kmService.RemoveKeymap(app, keys); err != nil {
+		return err
+	}
 
+	fmt.Printf("Keymap removed successfully from %s configuration\n", app)
 	return nil
 }
 
@@ -572,48 +528,16 @@ func editKeymaps(app string) error {
 }
 
 func validateKeymaps(configService *service.ConfigService, app string) error {
-	// Get current configuration values
-	values, err := configService.GetCurrentValues(app)
+	kmService := service.NewKeymapService(configService)
+
+	validCount, invalidCount, errors, err := kmService.ValidateAllKeymaps(app)
 	if err != nil {
 		return err
 	}
 
-	// Extract and validate keybind values
-	validator := configextractor.NewKeybindValidator()
-	var validCount, invalidCount int
-	var allKeymaps []string
-
-	// Collect all keymaps first
-	for key, value := range values {
-		if key == "keybind" || strings.HasPrefix(key, "keybind") {
-			if strSlice, ok := value.([]string); ok {
-				allKeymaps = append(allKeymaps, strSlice...)
-			} else if strVal, ok := value.(string); ok && strVal != "" {
-				allKeymaps = append(allKeymaps, strVal)
-			}
-		}
-	}
-
-	// Validate each keymap
-	for _, keymap := range allKeymaps {
-		if strings.TrimSpace(keymap) == "" {
-			continue // Skip empty entries
-		}
-
-		result := validator.ValidateKeybind(keymap)
-		if result.Valid {
-			validCount++
-		} else {
-			invalidCount++
-			fmt.Printf("Invalid keymap: %s\n", keymap)
-			for _, err := range result.Errors {
-				fmt.Printf("   %s\n", err)
-			}
-			if len(result.Warnings) > 0 {
-				for _, warning := range result.Warnings {
-					fmt.Printf("   Warning: %s\n", warning)
-				}
-			}
+	if len(errors) > 0 {
+		for _, errMsg := range errors {
+			fmt.Printf("  %s\n", errMsg)
 		}
 	}
 
@@ -627,40 +551,36 @@ func validateKeymaps(configService *service.ConfigService, app string) error {
 	return nil
 }
 
-func showKeymapPresets(app string) error {
+func showKeymapPresets(configService *service.ConfigService, app string) error {
 	fmt.Printf("Available keymap presets for %s\n", app)
 
-	presets := map[string][]string{
-		"vim-like": {
-			"ctrl+h=previous_tab",
-			"ctrl+l=next_tab",
-			"ctrl+j=scroll_page_down",
-			"ctrl+k=scroll_page_up",
-		},
-		"tmux-like": {
-			"ctrl+b+c=new_tab",
-			"ctrl+b+n=next_tab",
-			"ctrl+b+p=previous_tab",
-			"ctrl+b+x=close_surface",
-		},
-		"emacs-like": {
-			"ctrl+x+ctrl+c=quit",
-			"ctrl+x+2=split_vertical",
-			"ctrl+x+3=split_horizontal",
-			"ctrl+x+o=goto_split:next",
-		},
-	}
+	kmService := service.NewKeymapService(configService)
+	presets := kmService.GetKeymapPresets(app)
 
-	presetNames := make([]string, 0, len(presets))
-	for presetName, keymaps := range presets {
-		presetNames = append(presetNames, presetName)
-		fmt.Printf("\n%s:\n", presetName)
-		for _, keymap := range keymaps {
+	// Convert map to sorted slice of names for consistent output
+	var presetNames []string
+	for name := range presets {
+		presetNames = append(presetNames, name)
+	}
+	sort.Strings(presetNames)
+
+	for _, presetName := range presetNames {
+		preset := presets[presetName]
+		
+		fmt.Printf("\n%s", presetName)
+		if preset.Description != "" {
+			fmt.Printf(" - %s", preset.Description)
+		}
+		fmt.Println(":")
+		
+		for _, keymap := range preset.Keymaps {
 			if strings.Contains(keymap, "=") {
 				parts := strings.SplitN(keymap, "=", 2)
 				fmt.Printf("  %s -> %s\n",
 					listItemDisplayStyle.Render(parts[0]),
 					listDescriptionStyle.Render(parts[1]))
+			} else {
+				fmt.Printf("  %s\n", listItemDisplayStyle.Render(keymap))
 			}
 		}
 	}
@@ -672,33 +592,11 @@ func showKeymapPresets(app string) error {
 }
 
 func detectKeymapConflicts(configService *service.ConfigService, app string) error {
-	// Get current configuration values
-	values, err := configService.GetCurrentValues(app)
+	kmService := service.NewKeymapService(configService)
+	
+	conflicts, err := kmService.DetectConflicts(app)
 	if err != nil {
 		return err
-	}
-
-	// Extract keymaps
-	keymapMap := make(map[string][]string) // key -> []actions
-	var conflicts []string
-
-	for key, value := range values {
-		if strings.HasPrefix(key, "keybind") {
-			if strVal, ok := value.(string); ok && strVal != "" {
-				if strings.Contains(strVal, "=") {
-					parts := strings.SplitN(strVal, "=", 2)
-					keys := strings.TrimSpace(parts[0])
-					action := strings.TrimSpace(parts[1])
-
-					if actions, exists := keymapMap[keys]; exists {
-						// Conflict found
-						conflicts = append(conflicts, fmt.Sprintf("Keys '%s' mapped to: %s", keys, strings.Join(append(actions, action), ", ")))
-					} else {
-						keymapMap[keys] = []string{action}
-					}
-				}
-			}
-		}
 	}
 
 	if len(conflicts) == 0 {

@@ -7,6 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -14,10 +17,13 @@ import (
 func TestDeterministicSpinner(t *testing.T) {
 	t.Setenv("ZEROUI_TEST_MODE", "true")
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "ghostty")
+	model, err := NewTestModel(configService, "ghostty")
 	require.NoError(t, err)
 
 	// Enter loading state
@@ -34,10 +40,13 @@ func TestDeterministicSpinner(t *testing.T) {
 
 // TestStatusToast ensures transient status is appended and then expires
 func TestStatusToast(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	model.width = 100
@@ -59,10 +68,13 @@ func TestStatusToast(t *testing.T) {
 
 // TestRefreshDebounce ensures rapid refresh messages are debounced
 func TestRefreshDebounce(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// First refresh should set timestamp

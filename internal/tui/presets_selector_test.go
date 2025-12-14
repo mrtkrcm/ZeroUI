@@ -6,15 +6,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 )
 
 func TestPresetsSelectorFlow(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "ghostty")
+	model, err := NewTestModel(configService, "ghostty")
 	require.NoError(t, err)
 
 	// Simulate showing presets for ghostty

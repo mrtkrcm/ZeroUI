@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -44,9 +46,12 @@ presets:
 	loader, err := config.NewLoader()
 	require.NoError(t, err)
 	loader.SetConfigDir(tmpDir)
-	engine := toggle.NewEngineWithDeps(loader, nil)
+	
+	log := logger.Global()
+	engine := toggle.NewEngineWithDeps(loader, log)
+	configService := service.NewConfigService(engine, loader, log)
 
-	_, err = NewTestModel(engine, "ghostty")
+	_, err = NewTestModel(configService, "ghostty")
 	require.NoError(t, err)
 
 	// Apply preset directly via engine to ensure write path is exercised

@@ -15,6 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -26,7 +29,7 @@ const (
 
 // VisualRegressionTester handles visual regression testing for TUI
 type VisualRegressionTester struct {
-	engine            *toggle.Engine
+	configService     *service.ConfigService
 	baselineThreshold float64
 	pixelTolerance    int
 	generateImages    bool
@@ -69,9 +72,9 @@ const (
 )
 
 // NewVisualRegressionTester creates a visual regression testing system
-func NewVisualRegressionTester(engine *toggle.Engine) *VisualRegressionTester {
+func NewVisualRegressionTester(configService *service.ConfigService) *VisualRegressionTester {
 	return &VisualRegressionTester{
-		engine:            engine,
+		configService:     configService,
 		baselineThreshold: 0.98, // 98% similarity required
 		pixelTolerance:    5,    // Allow 5-pixel tolerance for anti-aliasing
 		generateImages:    os.Getenv("GENERATE_TUI_IMAGES") == "true",
@@ -90,10 +93,13 @@ func TestTUIVisualRegression(t *testing.T) {
 	if os.Getenv("GENERATE_TUI_IMAGES") != "true" {
 		t.Skip("Skipping visual regression tests (set GENERATE_TUI_IMAGES=true to enable)")
 	}
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	vrt := NewVisualRegressionTester(engine)
+	vrt := NewVisualRegressionTester(configService)
 
 	// Create necessary directories
 	dirs := []string{visualRegressionDir, baselineImagesDir, diffImagesDir}
@@ -213,7 +219,7 @@ type VisualTestScenario struct {
 // runVisualRegressionTest executes a single visual regression test
 func (vrt *VisualRegressionTester) runVisualRegressionTest(t *testing.T, scenario VisualTestScenario) {
 	// Create model using test helper
-	model, err := NewTestModel(vrt.engine, "")
+	model, err := NewTestModel(vrt.configService, "")
 	require.NoError(t, err)
 
 	// Configure model
@@ -616,10 +622,13 @@ func TestContinuousIntegration(t *testing.T) {
 	}
 
 	// CI-specific visual tests with stricter requirements
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Test standard CI terminal size
@@ -644,8 +653,12 @@ func TestContinuousIntegration(t *testing.T) {
 
 // BenchmarkTUIRendering benchmarks TUI rendering performance
 func BenchmarkTUIRendering(b *testing.B) {
-	engine, _ := toggle.NewEngine()
-	model, _ := NewTestModel(engine, "")
+	log := logger.Global()
+	configLoader, _ := config.NewReferenceEnhancedLoader()
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
+
+	model, _ := NewTestModel(configService, "")
 
 	model.width = 120
 	model.height = 40
@@ -661,8 +674,12 @@ func BenchmarkTUIRendering(b *testing.B) {
 
 // BenchmarkTUIInteraction benchmarks TUI interaction handling
 func BenchmarkTUIInteraction(b *testing.B) {
-	engine, _ := toggle.NewEngine()
-	model, _ := NewTestModel(engine, "")
+	log := logger.Global()
+	configLoader, _ := config.NewReferenceEnhancedLoader()
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
+
+	model, _ := NewTestModel(configService, "")
 
 	b.ResetTimer()
 	b.ReportAllocs()

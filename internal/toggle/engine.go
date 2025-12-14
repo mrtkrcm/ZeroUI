@@ -294,7 +294,247 @@ func (e *Engine) Cycle(appName, key string) error {
 	return e.runHooks(appConfig, "post-cycle")
 }
 
-// ApplyPreset applies a preset configuration
+// AppendConfiguration adds a value to a list-based configuration
+func (e *Engine) AppendConfiguration(appName, key, value string) error {
+	log := e.logger.WithApp(appName).WithField(key)
+
+	if viper.GetBool("verbose") {
+		log.Debug("Starting append operation", map[string]interface{}{
+			"value": value,
+		})
+	}
+
+	appConfig, err := e.loader.LoadAppConfig(appName)
+	if err != nil {
+		apps, _ := e.loader.ListApps()
+		return errors.NewAppNotFoundError(appName, apps)
+	}
+
+	_, exists := appConfig.Fields[key]
+	if !exists {
+		// Even if not defined in fields, we might want to allow appending if it's a known list type
+		// But for now strict mode:
+		var availableFields []string
+		for field := range appConfig.Fields {
+			availableFields = append(availableFields, field)
+		}
+		return errors.NewFieldNotFoundError(appName, key, availableFields)
+	}
+
+	// Load target config
+	targetConfig, err := e.loader.LoadTargetConfig(appConfig)
+	if err != nil {
+		return errors.Wrap(errors.ConfigParseError, "failed to load target config", err).
+			WithApp(appName).
+			WithSuggestions("Check if the config file exists and is readable")
+	}
+
+	// Get current value
+	currentVal := targetConfig.Get(key)
+	var newList []interface{}
+
+	if currentVal == nil {
+		newList = []interface{}{value}
+	} else if sliceVal, ok := currentVal.([]interface{}); ok {
+		// Check for duplicates
+		for _, item := range sliceVal {
+			if strItem, ok := item.(string); ok && strItem == value {
+				log.Info("Value already exists in configuration", map[string]interface{}{
+					"value": value,
+				})
+				return nil
+			}
+		}
+		newList = append(sliceVal, value)
+	} else if strVal, ok := currentVal.(string); ok {
+		// Convert single string to list if we are appending
+		if strVal == value {
+			log.Info("Value already exists in configuration", map[string]interface{}{
+				"value": value,
+			})
+			return nil
+		}
+		newList = []interface{}{strVal, value}
+	} else {
+		// Fallback for other types, try to make a list
+		newList = []interface{}{currentVal, value}
+	}
+
+	// Set the value
+	if err := targetConfig.Set(key, newList); err != nil {
+		return errors.Wrap(errors.ConfigWriteError, "failed to set config value", err).
+			WithApp(appName).WithField(key).WithValue(value)
+	}
+
+	if viper.GetBool("dry-run") {
+		log.Info("Would append configuration", map[string]interface{}{
+			"value": value,
+		})
+		return nil
+	}
+
+	// Create safe operation with automatic backup
+	configPath := e.expandPath(appConfig.Path)
+
+	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	if err != nil {
+		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
+			WithApp(appName)
+	}
+
+	// Save the config
+	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+		// Rollback on failure
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback changes", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
+			WithApp(appName).
+			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
+	}
+
+	// Commit the operation (remove backup)
+	if err := safeOp.Commit(); err != nil {
+		log.Error("Failed to cleanup backup", err)
+	}
+
+	// Cleanup old backups
+	if err := safeOp.Cleanup(5); err != nil {
+		log.Error("Failed to cleanup old backups", err)
+	}
+
+	log.Success("Configuration appended", map[string]interface{}{
+		"value": value,
+	})
+
+	// Run post-toggle hooks (reusing same hook type for now or add new one)
+	return e.runHooks(appConfig, "post-toggle")
+}
+
+// RemoveConfiguration removes a value from a list-based configuration
+func (e *Engine) RemoveConfiguration(appName, key, value string) error {
+	log := e.logger.WithApp(appName).WithField(key)
+
+	if viper.GetBool("verbose") {
+		log.Debug("Starting remove operation", map[string]interface{}{
+			"value": value,
+		})
+	}
+
+	appConfig, err := e.loader.LoadAppConfig(appName)
+	if err != nil {
+		apps, _ := e.loader.ListApps()
+		return errors.NewAppNotFoundError(appName, apps)
+	}
+
+	// Load target config
+	targetConfig, err := e.loader.LoadTargetConfig(appConfig)
+	if err != nil {
+		return errors.Wrap(errors.ConfigParseError, "failed to load target config", err).
+			WithApp(appName).
+			WithSuggestions("Check if the config file exists and is readable")
+	}
+
+	// Get current value
+	currentVal := targetConfig.Get(key)
+	if currentVal == nil {
+		log.Warn("Configuration key not found", nil)
+		return nil
+	}
+
+	var newList []interface{}
+	found := false
+
+	if sliceVal, ok := currentVal.([]interface{}); ok {
+		for _, item := range sliceVal {
+			strItem := fmt.Sprintf("%v", item)
+			// Check if this item is the one we want to remove
+			// We might need fuzzy matching? For now exact match or specific key match
+			// For keybinds: "ctrl+c=copy" vs "ctrl+c"
+			// If user passes "ctrl+c", we should remove "ctrl+c=..." or "ctrl+c"
+			if strItem == value || strings.HasPrefix(strItem, value+"=") {
+				found = true
+				continue
+			}
+			newList = append(newList, item)
+		}
+	} else if strVal, ok := currentVal.(string); ok {
+		if strVal == value || strings.HasPrefix(strVal, value+"=") {
+			found = true
+			// List becomes empty, or nil? koanf might handle nil differently
+			// keeping newList empty
+		} else {
+			newList = []interface{}{strVal}
+		}
+	}
+
+	if !found {
+		log.Warn("Value not found in configuration", map[string]interface{}{
+			"value": value,
+		})
+		return nil
+	}
+
+	// Set the value
+	if len(newList) == 0 {
+		// Remove key if empty? Or set to empty list?
+		// Setting to empty slice is safer for list types
+		if err := targetConfig.Set(key, []interface{}{}); err != nil {
+			return errors.Wrap(errors.ConfigWriteError, "failed to set config value", err).
+				WithApp(appName).WithField(key)
+		}
+	} else {
+		if err := targetConfig.Set(key, newList); err != nil {
+			return errors.Wrap(errors.ConfigWriteError, "failed to set config value", err).
+				WithApp(appName).WithField(key)
+		}
+	}
+
+	if viper.GetBool("dry-run") {
+		log.Info("Would remove configuration", map[string]interface{}{
+			"value": value,
+		})
+		return nil
+	}
+
+	// Create safe operation with automatic backup
+	configPath := e.expandPath(appConfig.Path)
+
+	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	if err != nil {
+		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
+			WithApp(appName)
+	}
+
+	// Save the config
+	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+		// Rollback on failure
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback changes", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
+			WithApp(appName).
+			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
+	}
+
+	// Commit the operation (remove backup)
+	if err := safeOp.Commit(); err != nil {
+		log.Error("Failed to cleanup backup", err)
+	}
+
+	// Cleanup old backups
+	if err := safeOp.Cleanup(5); err != nil {
+		log.Error("Failed to cleanup old backups", err)
+	}
+
+	log.Success("Configuration removed", map[string]interface{}{
+		"value": value,
+	})
+
+	// Run post-toggle hooks
+	return e.runHooks(appConfig, "post-toggle")
+}
+
 func (e *Engine) ApplyPreset(appName, presetName string) error {
 	log := e.logger.WithApp(appName).WithContext(map[string]interface{}{
 		"preset": presetName,

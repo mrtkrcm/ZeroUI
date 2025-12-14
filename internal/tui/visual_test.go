@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -25,8 +28,11 @@ func TestVisualRendering(t *testing.T) {
 	err := os.MkdirAll(visualTestDir, 0755)
 	require.NoError(t, err)
 
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Test cases for different screen sizes and states
 	testCases := []struct {
@@ -136,7 +142,7 @@ func TestVisualRendering(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			model, err := NewTestModel(engine, "")
+			model, err := NewTestModel(configService, "")
 			require.NoError(t, err)
 
 			// Set up the test case
@@ -173,8 +179,11 @@ func TestVisualRendering(t *testing.T) {
 
 // TestResponsiveLayout tests that all layouts adapt correctly to different sizes
 func TestResponsiveLayout(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
 	sizes := []struct {
 		name            string
@@ -191,7 +200,7 @@ func TestResponsiveLayout(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(size.name, func(t *testing.T) {
-			model, err := NewTestModel(engine, "")
+			model, err := NewTestModel(configService, "")
 			require.NoError(t, err)
 
 			// Test both modern and legacy grids
@@ -234,10 +243,13 @@ func TestResponsiveLayout(t *testing.T) {
 
 // TestAnimationsAndTransitions tests dynamic UI elements
 func TestAnimationsAndTransitions(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -305,10 +317,13 @@ func TestAnimationsAndTransitions(t *testing.T) {
 
 // TestPerformance benchmarks UI rendering performance
 func TestPerformance(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -345,10 +360,13 @@ func TestPerformance(t *testing.T) {
 
 // TestUIKeyboardNavigation tests navigation behavior in visual context
 func TestUIKeyboardNavigation(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	model.width = 120
@@ -403,10 +421,13 @@ func TestUIKeyboardNavigation(t *testing.T) {
 
 // TestErrorRecovery tests error handling and recovery
 func TestErrorRecovery(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	errorCases := []struct {
@@ -499,10 +520,13 @@ func TestVisualRegression(t *testing.T) {
 
 	// This test would compare current output with saved reference images
 	// For now, it just ensures we can generate all the visual outputs
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "")
+	model, err := NewTestModel(configService, "")
 	require.NoError(t, err)
 
 	// Generate reference snapshots for all major states

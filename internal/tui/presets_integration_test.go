@@ -7,14 +7,20 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
 func TestOpenPresetsAndSelect(t *testing.T) {
-	engine, err := toggle.NewEngine()
+	log := logger.Global()
+	configLoader, err := config.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
+	engine := toggle.NewEngineWithDeps(configLoader, log)
+	configService := service.NewConfigService(engine, configLoader, log)
 
-	model, err := NewTestModel(engine, "ghostty")
+	model, err := NewTestModel(configService, "ghostty")
 	require.NoError(t, err)
 
 	// Enter form view for ghostty

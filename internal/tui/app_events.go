@@ -99,7 +99,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.logger.LogPanic(r, "update_panic")
 			m.err = fmt.Errorf("update panic: %v", r)
 			// Try to recover to a safe state
-			m.state = ListView
+			m.SetState(ListView)
 			m.showingHelp = false
 		}
 	}()
@@ -231,7 +231,7 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 		m.logger.Debug("Help toggled", "showing", m.showingHelp)
 		m.invalidateCache()
 		if m.showingHelp {
-			m.state = HelpView
+			m.SetState(HelpView)
 		} else {
 			m.handleBack()
 		}
@@ -295,7 +295,7 @@ func (m *Model) handleStateKeys(msg tea.KeyMsg) tea.Cmd {
 				// If we're not already in the FormView, switch to it so presets
 				// are presented in the proper context.
 				if m.state != FormView {
-					m.state = FormView
+					m.SetState(FormView)
 				}
 				return nil
 			}
@@ -415,7 +415,7 @@ func (m *Model) handleBack() tea.Cmd {
 	switch m.state {
 	case FormView:
 		// Clean transition back to list
-		m.state = ListView
+		m.SetState(ListView)
 		m.currentApp = ""
 		m.configEditor = nil
 		m.presetSel = nil
@@ -429,16 +429,16 @@ func (m *Model) handleBack() tea.Cmd {
 	case HelpView:
 		// Navigate to appropriate previous state
 		if m.currentApp != "" {
-			m.state = FormView
+			m.SetState(FormView)
 		} else {
-			m.state = ListView
+			m.SetState(ListView)
 		}
 		m.showingHelp = false
 		m.invalidateCache()
 
 	case ProgressView:
 		// Cancel any ongoing operation and return to list
-		m.state = ListView
+		m.SetState(ListView)
 		m.isLoading = false
 		m.invalidateCache()
 
@@ -449,7 +449,7 @@ func (m *Model) handleBack() tea.Cmd {
 
 	default:
 		// Fallback to list view for any undefined state
-		m.state = ListView
+		m.SetState(ListView)
 		m.invalidateCache()
 	}
 
@@ -468,7 +468,7 @@ func (m *Model) handleAppSelected(appName string) tea.Cmd {
 		}
 	}
 
-	m.state = FormView
+	m.SetState(FormView)
 	m.invalidateCache()
 	return nil
 }
@@ -482,7 +482,7 @@ func (m *Model) handleAppSelection(msg app.AppSelectedMsg) (tea.Model, tea.Cmd) 
 func (m *Model) handleConfigSaved(msg core.ConfigSavedMsg) (tea.Model, tea.Cmd) {
 	m.logger.Info("Configuration saved", "app", msg.AppName)
 	// Return to app list
-	m.state = ListView
+	m.SetState(ListView)
 	m.currentApp = ""
 	m.configEditor = nil
 	m.invalidateCache()
@@ -548,7 +548,7 @@ func (m *Model) handleScanComplete(msg app.ScanCompleteMsg) (tea.Model, tea.Cmd)
 	}
 
 	// Transition to list view
-	m.state = ListView
+	m.SetState(ListView)
 	m.isLoading = false
 	m.invalidateCache()
 

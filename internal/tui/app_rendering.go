@@ -83,14 +83,9 @@ func (m *Model) View() string {
 // renderListView renders the application list view with enhanced UI integration
 func (m *Model) renderListView() string {
 	// Initialize UI manager if needed
-	if m.uiManager != nil && !m.uiManager.IsInitialized() {
-		m.uiManager.Initialize(m.width, m.height)
-	}
+	// (Removed uiManager init)
 
 	if m.appList == nil {
-		if m.uiManager != nil {
-			return m.uiManager.CreateErrorMessage("Application list not initialized")
-		}
 		return m.styles.Error.Render("Application list not initialized")
 	}
 
@@ -112,14 +107,8 @@ func (m *Model) renderListView() string {
 	}
 
 	var header string
-	if m.uiManager != nil {
-		header = m.uiManager.CreateHeader(
-			fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo),
-			"")
-	} else {
-		headerText := fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo)
-		header = lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render(headerText))
-	}
+	headerText := fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo)
+	header = lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render(headerText))
 
 	// Context-aware status bar with help hints
 	footer := m.renderStatusBar()
@@ -127,11 +116,7 @@ func (m *Model) renderListView() string {
 	// Status indicators for screenshot integration
 	var statusIndicator string
 	if m.screenshotComp != nil && m.screenshotComp.IsCapturing() {
-		if m.uiManager != nil {
-			statusIndicator = m.uiManager.CreateInfoMessage("Capturing screenshot...")
-		} else {
-			statusIndicator = lipgloss.NewStyle().Width(m.width).Render(m.styles.Info.Render("📸 Capturing screenshot..."))
-		}
+		statusIndicator = lipgloss.NewStyle().Width(m.width).Render(m.styles.Info.Render("📸 Capturing screenshot..."))
 	}
 
 	// Combine all elements with improved spacing and layout
@@ -181,11 +166,7 @@ func (m *Model) renderConfigView() string {
 	}
 
 	headerText := fmt.Sprintf("⚙️  Configure %s", m.currentApp)
-	if m.uiManager != nil {
-		headerText = m.uiManager.CreateHeader(headerText, "")
-	} else {
-		headerText = lipgloss.NewStyle().Width(m.width).Render(m.styles.Title.Render(headerText))
-	}
+	headerText = lipgloss.NewStyle().Width(m.width).Render(m.styles.Title.Render(headerText))
 
 	status := ""
 	if m.configEditor.HasUnsavedChanges() {

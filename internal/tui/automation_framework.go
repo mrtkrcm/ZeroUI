@@ -13,13 +13,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mrtkrcm/ZeroUI/internal/logging"
-	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/service"
 )
 
 // AutomationFramework provides comprehensive TUI testing automation
 type AutomationFramework struct {
-	engine     *toggle.Engine
-	testSuites map[string]*TestSuite
+	configService *service.ConfigService
+	testSuites    map[string]*TestSuite
 	results    *TestResults
 	config     *AutomationConfig
 	logger     *log.Logger
@@ -208,10 +208,10 @@ type TestMetrics struct {
 }
 
 // NewAutomationFramework creates a new TUI testing framework
-func NewAutomationFramework(engine *toggle.Engine) *AutomationFramework {
+func NewAutomationFramework(configService *service.ConfigService) *AutomationFramework {
 	return &AutomationFramework{
-		engine:     engine,
-		testSuites: make(map[string]*TestSuite),
+		configService: configService,
+		testSuites:    make(map[string]*TestSuite),
 		results: &TestResults{
 			SuiteResults: make(map[string]*SuiteResult),
 		},
@@ -407,7 +407,7 @@ func (af *AutomationFramework) executeTest(ctx context.Context, test *Automation
 
 	// Create model
 	logger, _ := logging.NewCharmLogger(logging.DefaultConfig())
-	model, err := NewModel(af.engine, "", logger)
+	model, err := NewModel(af.configService, "", logger)
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("Failed to create model: %v", err)
 		result.ExecutionTime = time.Since(startTime)
