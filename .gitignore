@@ -8,10 +8,19 @@ configtoggle
 zeroui
 zeroui-test
 ZeroUI
+ZeroUI-arm64
 analyze-usage
 cleanup-deps
 enhanced-analyzer
 full
+
+# Node modules
+node_modules/
+
+# Raycast extension
+raycast-extension/assets/
+raycast-extension/build/
+raycast-extension/.raycast/
 remove-deps-batch
 simple
 targeted-cleanup

@@ -1,4 +1,5 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Icon, List } from "@raycast/api";
+import { usePromise } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import { zeroui } from "./utils";
 
@@ -10,42 +11,41 @@ interface KeymapListProps {
 
 export default function KeymapListCommand(props: KeymapListProps) {
   const { arguments: args } = props;
-  const [keymaps, setKeymaps] = useState<{ keybind: string; action: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string>(args?.app || "");
   const [apps, setApps] = useState<string[]>([]);
 
+  // Load apps
+  const { data: appList, isLoading: isLoadingApps } = usePromise(async () => {
+    const list = await zeroui.listApps();
+    setApps(list);
+    return list;
+  }, []);
+
+  // Load keymaps if app is selected
+  const { data: keymaps, isLoading: isLoadingKeymaps } = usePromise(
+    async (app: string) => {
+      if (!app) return [];
+      return await zeroui.listKeymaps(app);
+    },
+    [selectedApp],
+    {
+      execute: !!selectedApp,
+    },
+  );
+
   useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const appList = await zeroui.listApps();
-        setApps(appList);
-
-        if (args?.app && appList.includes(args.app)) {
-          const keymapList = await zeroui.listKeymaps(args.app);
-          setKeymaps(keymapList);
-          setSelectedApp(args.app);
-        }
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    if (args?.app && appList?.includes(args.app)) {
+      setSelectedApp(args.app);
     }
+  }, [args, appList]);
 
-    loadData();
-  }, [args]);
+  const isLoading = isLoadingApps || isLoadingKeymaps;
 
   if (!selectedApp) {
     return (
       <List isLoading={isLoading} searchBarPlaceholder="Search applications...">
         <List.Section title="Select Application">
-          {apps.map((app) => (
+          {(apps || []).map((app) => (
             <List.Item
               key={app}
               title={app}
@@ -54,18 +54,9 @@ export default function KeymapListCommand(props: KeymapListProps) {
                 <ActionPanel>
                   <Action
                     title="View Keymaps"
-                    onAction={async () => {
-                      try {
-                        const keymapList = await zeroui.listKeymaps(app);
-                        setKeymaps(keymapList);
-                        setSelectedApp(app);
-                      } catch (err) {
-                        await showToast({
-                          style: Toast.Style.Failure,
-                          title: "Failed to Load Keymaps",
-                          message: err instanceof Error ? err.message : "Unknown error",
-                        });
-                      }
+                    onAction={() => {
+                      setSelectedApp(app);
+                      // keymaps will auto-load via usePromise dependency
                     }}
                   />
                 </ActionPanel>
@@ -79,8 +70,11 @@ export default function KeymapListCommand(props: KeymapListProps) {
 
   return (
     <List searchBarPlaceholder="Search keymaps...">
-      <List.Section title={`${selectedApp} Keymaps`} subtitle={`${keymaps.length} shortcuts`}>
-        {keymaps.map((item, index) => (
+      <List.Section
+        title={`${selectedApp} Keymaps`}
+        subtitle={`${keymaps?.length || 0} shortcuts`}
+      >
+        {(keymaps || []).map((item, index) => (
           <List.Item
             key={index}
             title={item.keybind}
@@ -88,14 +82,20 @@ export default function KeymapListCommand(props: KeymapListProps) {
             icon={Icon.Keyboard}
             actions={
               <ActionPanel>
-                <Action.CopyToClipboard title="Copy Keybind" content={item.keybind} />
-                <Action.CopyToClipboard title="Copy Action" content={item.action} />
+                <Action.CopyToClipboard
+                  title="Copy Keybind"
+                  content={item.keybind}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Action"
+                  content={item.action}
+                />
                 <Action
                   title="Back to Apps"
                   icon={Icon.ArrowLeft}
                   onAction={() => {
                     setSelectedApp("");
-                    setKeymaps([]);
+                    // keymaps cleared via dependency change
                   }}
                 />
               </ActionPanel>

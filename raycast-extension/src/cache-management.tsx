@@ -1,4 +1,11 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { useEffect, useState } from "react";
 import { zeroui } from "./utils";
 
@@ -78,7 +85,9 @@ export default function CacheManagementCommand() {
               title="Cache Size"
               subtitle={`${cacheInfo.size} entries`}
               icon={Icon.ArchiveBox}
-              accessories={[{ text: formatBytes(cacheInfo.size * 100), icon: Icon.Info }]}
+              accessories={[
+                { text: formatBytes(cacheInfo.size * 100), icon: Icon.Info },
+              ]}
             />
             <List.Item
               title="Cache Hits"
@@ -127,7 +136,10 @@ export default function CacheManagementCommand() {
           icon={Icon.Gear}
           actions={
             <ActionPanel>
-              <Action.OpenExtensionPreferences title="Open Preferences" icon={Icon.Gear} />
+              <Action.OpenExtensionPreferences
+                title="Open Preferences"
+                icon={Icon.Gear}
+              />
             </ActionPanel>
           }
         />

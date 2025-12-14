@@ -1,6 +1,7 @@
 import { getPreferenceValues } from "@raycast/api";
 import { exec } from "child_process";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { promisify } from "util";
 
@@ -45,7 +46,8 @@ export enum LogLevel {
 }
 
 export interface LogContext {
-  [key: string]: string | number | boolean | null | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
 export interface LogEntry {
@@ -62,7 +64,7 @@ interface CacheEntry {
 }
 
 export class ZeroUI {
-  private zerouiPath: string;
+  private zerouiPath: string = "";
   private timeout: number;
   private cache: Map<string, CacheEntry>;
   private enableCache: boolean;
@@ -95,15 +97,45 @@ export class ZeroUI {
     } else if (preferences.zerouiPath) {
       this.zerouiPath = preferences.zerouiPath;
     } else {
-      // Try multiple fallback locations
+      // Try multiple fallback locations with cross-platform support
       const fallbackPaths = [
+        // Development paths - check parent directories for the binary
+        path.resolve(__dirname, "../../../ZeroUI-arm64"), // ARM64 binary
+        path.resolve(__dirname, "../../../ZeroUI"), // Parent of raycast-extension
+        path.resolve(__dirname, "../../../zeroui"), // lowercase variant
+        path.resolve(__dirname, "../../ZeroUI"), // Two levels up
+        path.resolve(__dirname, "../ZeroUI"), // One level up
         path.resolve(__dirname, "../zeroui"), // Relative to built extension
         path.resolve(__dirname, "../../zeroui"), // One level up
+        path.resolve(__dirname, "../../../build/zeroui"), // Build directory from src
+        path.resolve(process.cwd(), "ZeroUI"), // CWD with capital
         path.resolve(process.cwd(), "zeroui"), // Current working directory
-        path.resolve(process.cwd(), "../build/zeroui"), // Build directory
-        path.resolve(process.cwd(), "build/zeroui"), // Build directory (alternative)
+        path.resolve(process.cwd(), "build/zeroui"), // Build directory
+        path.resolve(process.cwd(), "../build/zeroui"), // Parent build directory
+        path.resolve(process.cwd(), "../ZeroUI"), // Parent directory
+
+        // macOS paths
         "/usr/local/bin/zeroui", // System path
-        "/opt/homebrew/bin/zeroui", // Homebrew path
+        "/opt/homebrew/bin/zeroui", // Homebrew Intel
+        "/opt/homebrew/bin/zeroui", // Homebrew Apple Silicon (same as above)
+        path.join(os.homedir(), ".local/bin/zeroui"), // User local bin
+
+        // Linux paths
+        "/usr/bin/zeroui", // System bin
+        "/usr/local/bin/zeroui", // Local bin
+        "/snap/bin/zeroui", // Snap packages
+        "/var/lib/snapd/snap/bin/zeroui", // Alternative snap path
+        path.join(os.homedir(), ".local/bin/zeroui"), // User local bin
+        path.join(os.homedir(), "bin/zeroui"), // User bin
+
+        // Windows paths
+        path.join(
+          os.homedir(),
+          "AppData\\Local\\Microsoft\\WinGet\\Packages\\mrtkrcm.zeroui_Microsoft.Winget.Source_8wekyb3d8bbwe\\zeroui.exe",
+        ), // WinGet default
+        "C:\\Program Files\\ZeroUI\\zeroui.exe", // Program Files
+        path.join(os.homedir(), "scoop\\shims\\zeroui.exe"), // Scoop
+        path.join(os.homedir(), "scoop\\apps\\zeroui\\current\\zeroui.exe"), // Scoop apps
       ];
 
       // Find the first existing binary (must be a file, not directory)
@@ -120,7 +152,17 @@ export class ZeroUI {
       // If no binary found, use the default relative path (might work in development)
       if (!this.zerouiPath) {
         this.zerouiPath = path.resolve(__dirname, "../zeroui");
-        console.warn(`No ZeroUI binary found in fallback paths, using default: ${this.zerouiPath}`);
+        console.warn(
+          `ZeroUI binary not found in any of the ${fallbackPaths.length} fallback paths.`,
+        );
+        console.warn(
+          `Searched paths include system directories, user directories, and development paths.`,
+        );
+        console.warn(`Using fallback path (may not work): ${this.zerouiPath}`);
+        console.warn(
+          `Please ensure ZeroUI is installed or set the correct path in Raycast preferences.`,
+        );
+        console.warn(`Platform: ${process.platform}, Arch: ${process.arch}`);
       }
     }
 
@@ -232,12 +274,23 @@ export class ZeroUI {
     try {
       return await this.executeCommandOnce(command, args, useCache);
     } catch (error) {
-      const shouldRetry = retryCount < this.maxRetries && this.isRetryableError(error);
+      const shouldRetry =
+        retryCount < this.maxRetries && this.isRetryableError(error);
 
       if (shouldRetry) {
-        console.warn(`Command failed, retrying (${retryCount + 1}/${this.maxRetries}):`, error);
-        await new Promise((resolve) => setTimeout(resolve, this.retryDelay * (retryCount + 1)));
-        return this.executeCommandWithRetry(command, args, retryCount + 1, useCache);
+        console.warn(
+          `Command failed, retrying (${retryCount + 1}/${this.maxRetries}):`,
+          error,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.retryDelay * (retryCount + 1)),
+        );
+        return this.executeCommandWithRetry(
+          command,
+          args,
+          retryCount + 1,
+          useCache,
+        );
       }
 
       throw error;
@@ -306,23 +359,57 @@ export class ZeroUI {
     }
 
     try {
-      const fullCommand = `${this.zerouiPath} ${command} ${args.join(" ")}`.trim();
-      console.log(`Executing: ${fullCommand}`);
+      const fullCommand =
+        `${this.zerouiPath} ${command} ${args.join(" ")}`.trim();
+      // Determine CWD based on binary location to ensure it can find config files
+      // Use realpath to resolve symlinks (like /usr/local/bin/zeroui -> repo/ZeroUI)
+      let cwd = process.cwd();
+      try {
+        if (this.zerouiPath) {
+          const realBinPath = fs.realpathSync(this.zerouiPath);
+          cwd = path.dirname(realBinPath);
+        }
+      } catch (err) {
+        console.error("Failed to resolve binary path for CWD:", err);
+      }
+
+      console.log(`Executing: ${fullCommand} (CWD: ${cwd})`);
 
       const { stdout, stderr } = await execAsync(fullCommand, {
         timeout: this.timeout,
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-        cwd: path.resolve(__dirname, "../../"),
+        cwd: cwd,
       });
 
       const duration = Date.now() - startTime;
-      const hasError = stderr && stderr.trim().length > 0;
-      const output = stdout || stderr || "";
+
+      // Filter out debug/log lines from output (they start with timestamp like "2025-12-14T...")
+      // AND strip ANSI codes
+      const cleanText = (text: string): string => {
+        return (
+          text
+            .split("\n")
+            .filter(
+              (line) => !line.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+            )
+            .join("\n")
+            // eslint-disable-next-line no-control-regex
+            .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "") // Strip ANSI codes
+            .trim()
+        );
+      };
+
+      const cleanOutput = cleanText(stdout || "");
+      const cleanStderr = cleanText(stderr || "");
+
+      // Only treat as error if stderr has non-debug content
+      const hasError = cleanStderr.length > 0;
+      const output = cleanOutput || cleanStderr || "";
 
       const result: ZeroUIResult = {
         success: !hasError,
         output: output.trim(),
-        error: hasError ? stderr.trim() : undefined,
+        error: hasError ? cleanStderr : undefined,
         duration,
       };
 
@@ -335,7 +422,8 @@ export class ZeroUI {
     } catch (error: unknown) {
       console.error("ZeroUI command failed:", error);
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
 
       this.recordError({
         operation: command,
@@ -362,7 +450,12 @@ export class ZeroUI {
     this.debug(`Executing command: ${command}`, { args, useCache });
 
     try {
-      const result = await this.executeCommandWithRetry(command, args, 0, useCache);
+      const result = await this.executeCommandWithRetry(
+        command,
+        args,
+        0,
+        useCache,
+      );
       const totalDuration = Date.now() - startTime;
 
       if (result.success) {
@@ -384,7 +477,8 @@ export class ZeroUI {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       const totalDuration = Date.now() - startTime;
 
       this.error(`Command failed completely`, {
@@ -411,7 +505,8 @@ export class ZeroUI {
 
   getCacheStats(): CacheStats {
     const totalRequests = this.cacheHits + this.cacheMisses;
-    const hitRate = totalRequests > 0 ? (this.cacheHits / totalRequests) * 100 : 0;
+    const hitRate =
+      totalRequests > 0 ? (this.cacheHits / totalRequests) * 100 : 0;
 
     return {
       size: this.cache.size,
@@ -496,7 +591,9 @@ export class ZeroUI {
     }
 
     if (app.length > this.MAX_APP_NAME_LENGTH) {
-      throw new Error(`App name is too long (max ${this.MAX_APP_NAME_LENGTH} characters)`);
+      throw new Error(
+        `App name is too long (max ${this.MAX_APP_NAME_LENGTH} characters)`,
+      );
     }
 
     if (!this.APP_NAME_PATTERN.test(app)) {
@@ -516,7 +613,9 @@ export class ZeroUI {
     }
 
     if (key.length > this.MAX_KEY_LENGTH) {
-      throw new Error(`Configuration key is too long (max ${this.MAX_KEY_LENGTH} characters)`);
+      throw new Error(
+        `Configuration key is too long (max ${this.MAX_KEY_LENGTH} characters)`,
+      );
     }
 
     if (!this.CONFIG_KEY_PATTERN.test(key)) {
@@ -558,14 +657,19 @@ export class ZeroUI {
     const lines = result.output.split("\n");
     const apps: string[] = [];
 
+    this.debug(`Parsing ${lines.length} lines of output`);
+
     for (const line of lines) {
       const trimmed = line.trim();
 
-      if (trimmed && trimmed.includes("•")) {
-        // Extract app name from format like "  • ghostty"
-        const match = trimmed.match(/•\s*(\w+)/);
+      // Match bullet point (•), hyphen (-), or asterisk (*)
+      if (trimmed && trimmed.match(/^[•\-*]/)) {
+        // Extract app name from format like "  • ghostty" or "• my-app"
+        const match = trimmed.match(/^[•\-*]\s*([\w.-]+)/);
         if (match) {
           apps.push(match[1]);
+        } else {
+          this.debug(`Line contained bullet but failed regex: ${trimmed}`);
         }
       }
     }
@@ -610,7 +714,9 @@ export class ZeroUI {
     return values;
   }
 
-  async listChanged(app: string): Promise<{ key: string; value: string; default: string }[]> {
+  async listChanged(
+    app: string,
+  ): Promise<{ key: string; value: string; default: string }[]> {
     this.validateAppName(app);
 
     const result = await this.executeCommand("list changed", [app]);
@@ -653,7 +759,11 @@ export class ZeroUI {
 
     const sanitizedValue = this.sanitizeValue(value);
 
-    const result = await this.executeCommand("toggle", [app, key, sanitizedValue]);
+    const result = await this.executeCommand("toggle", [
+      app,
+      key,
+      sanitizedValue,
+    ]);
     if (!result.success) {
       this.recordError({
         operation: "toggleConfig",
@@ -667,7 +777,9 @@ export class ZeroUI {
     return result.output;
   }
 
-  async listKeymaps(app: string): Promise<{ keybind: string; action: string }[]> {
+  async listKeymaps(
+    app: string,
+  ): Promise<{ keybind: string; action: string }[]> {
     this.validateAppName(app);
 
     const result = await this.executeCommand("keymap list", [app]);

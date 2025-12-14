@@ -1,5 +1,5 @@
 import { Icon, MenuBarExtra, open } from "@raycast/api";
-import { useEffect, useState } from "react";
+import { useCachedPromise } from "@raycast/utils";
 import { zeroui } from "./utils";
 
 interface AppInfo {
@@ -9,17 +9,13 @@ interface AppInfo {
 }
 
 export default function MenuBarCommand() {
-  const [apps, setApps] = useState<AppInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [errorCount, setErrorCount] = useState(0);
-  const [lastError, setLastError] = useState<string | null>(null);
-
-  const fetchApps = async () => {
-    try {
-      setIsLoading(true);
-      setLastError(null);
-
+  const {
+    data: apps,
+    isLoading,
+    error,
+    revalidate,
+  } = useCachedPromise(
+    async () => {
       const appList = await zeroui.listApps();
 
       const appsWithStatus = await Promise.all(
@@ -33,7 +29,6 @@ export default function MenuBarCommand() {
             } as AppInfo;
           } catch (error) {
             console.warn(`Failed to fetch status for ${appName}:`, error);
-            setErrorCount((prev) => prev + 1);
             return {
               name: appName,
               status: "error" as const,
@@ -43,29 +38,22 @@ export default function MenuBarCommand() {
         }),
       );
 
-      setApps(appsWithStatus);
-      setLastUpdate(new Date());
-      setErrorCount(0); // Reset error count on successful fetch
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch applications";
-      console.error("Failed to fetch apps:", error);
-      setLastError(errorMessage);
-      setApps([]);
-      setErrorCount((prev) => prev + 1);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchApps();
-  }, []);
+      return appsWithStatus;
+    },
+    [],
+    {
+      initialData: [],
+      keepPreviousData: true,
+    },
+  );
 
   const getMenuBarTitle = () => {
-    if (isLoading) return "⏳";
+    if (isLoading && (!apps || apps.length === 0)) return "⏳";
 
-    const configuredCount = apps.filter((app) => app.status === "configured").length;
-    const totalCount = apps.length;
+    const configuredCount = (apps || []).filter(
+      (app) => app.status === "configured",
+    ).length;
+    const totalCount = apps?.length || 0;
 
     if (totalCount === 0) return "🔧";
     if (configuredCount === 0) return `🔧 ${totalCount}`;
@@ -73,13 +61,15 @@ export default function MenuBarCommand() {
   };
 
   const getMenuBarIcon = () => {
-    if (isLoading) return Icon.Clock;
-    if (lastError) return Icon.ExclamationMark;
+    if (isLoading && (!apps || apps.length === 0)) return Icon.Clock;
+    if (error) return Icon.ExclamationMark;
 
-    const hasConfigured = apps.some((app) => app.status === "configured");
-    const hasErrors = apps.some((app) => app.status === "error");
+    const hasConfigured = (apps || []).some(
+      (app) => app.status === "configured",
+    );
+    const hasErrors = (apps || []).some((app) => app.status === "error");
 
-    if (hasErrors && errorCount > 0) return Icon.ExclamationMark;
+    if (hasErrors) return Icon.ExclamationMark;
     if (hasConfigured) return Icon.Gear;
     return Icon.Cog;
   };
@@ -93,7 +83,7 @@ export default function MenuBarCommand() {
     <MenuBarExtra
       title={getMenuBarTitle()}
       icon={getMenuBarIcon()}
-      tooltip={`ZeroUI - ${apps.length} apps${lastError ? ` • Error: ${lastError}` : ""} (Updated: ${lastUpdate.toLocaleTimeString()})`}
+      tooltip={`ZeroUI - ${apps?.length || 0} apps${error ? ` • Error: ${error.message}` : ""}`}
     >
       {/* Header */}
       <MenuBarExtra.Item
@@ -105,7 +95,7 @@ export default function MenuBarCommand() {
       <MenuBarExtra.Separator />
 
       {/* Applications Section */}
-      {apps.length > 0 ? (
+      {apps && apps.length > 0 ? (
         <>
           <MenuBarExtra.Item title="Applications" />
           {apps.map((app) => (
@@ -152,7 +142,9 @@ export default function MenuBarCommand() {
         </>
       ) : (
         <MenuBarExtra.Item
-          title={isLoading ? "Loading applications..." : "No applications found"}
+          title={
+            isLoading ? "Loading applications..." : "No applications found"
+          }
           icon={isLoading ? Icon.Clock : Icon.ExclamationMark}
         />
       )}
@@ -180,17 +172,19 @@ export default function MenuBarCommand() {
         icon={Icon.ArrowClockwise}
         onAction={() => {
           zeroui.clearCache();
-          fetchApps();
+          revalidate();
         }}
         shortcut={{ modifiers: ["cmd"], key: "r" }}
       />
 
       {/* Cache Stats */}
-      <MenuBarExtra.Item title={`Cache: ${zeroui.getCacheStats().size} items`} icon={Icon.Info} />
-
-      {/* Status */}
       <MenuBarExtra.Item
-        title={`Last updated: ${lastUpdate.toLocaleTimeString()}`}
+        title={`Cache: ${zeroui.getCacheStats().size} items`}
+        icon={Icon.Info}
+      />
+
+      <MenuBarExtra.Item
+        title={isLoading ? "Updating..." : "Updated just now"}
         icon={Icon.Clock}
       />
     </MenuBarExtra>

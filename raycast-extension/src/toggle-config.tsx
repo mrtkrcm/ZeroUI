@@ -1,4 +1,13 @@
-import { Action, ActionPanel, Form, Icon, List, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Icon,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { useForm, usePromise } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import { zeroui } from "./utils";
 
@@ -12,48 +21,54 @@ interface ToggleConfigProps {
 
 export default function ToggleConfigCommand(props: ToggleConfigProps) {
   const { arguments: args } = props;
-  const [apps, setApps] = useState<string[]>([]);
   const [selectedApp, setSelectedApp] = useState<string>(args?.app || "");
-  const [configValues, setConfigValues] = useState<{ key: string; value: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [apps, setApps] = useState<string[]>([]);
+
+  // Load apps
+  const { data: appList, isLoading: isLoadingApps } = usePromise(async () => {
+    const list = await zeroui.listApps();
+    setApps(list);
+    return list;
+  }, []);
+
+  // Load config values if app is selected
+  const { data: configValues, isLoading: isLoadingConfig } = usePromise(
+    async (app: string) => {
+      if (!app) return [];
+      return await zeroui.listValues(app);
+    },
+    [selectedApp],
+    {
+      execute: !!selectedApp,
+    },
+  );
 
   useEffect(() => {
-    async function loadApps() {
-      try {
-        setIsLoading(true);
-        const appList = await zeroui.listApps();
-        setApps(appList);
-
-        // If app was provided in arguments, load its config
-        if (args?.app && appList.includes(args.app)) {
-          setSelectedApp(args.app);
-          const values = await zeroui.listValues(args.app);
-          setConfigValues(values);
-        }
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Apps",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    if (args?.app && appList?.includes(args.app)) {
+      setSelectedApp(args.app);
     }
+  }, [args, appList]);
 
-    loadApps();
-  }, [args]);
+  const isLoading = isLoadingApps || isLoadingConfig;
 
   // If we have all arguments, show the toggle form directly
   if (args?.app && args?.key && args?.value) {
-    return <ToggleForm app={args.app} key={args.key} value={args.value} />;
+    return (
+      <ToggleForm app={args.app} configKey={args.key} value={args.value} />
+    );
   }
 
   // If we have an app selected, show the config values
-  if (selectedApp && configValues.length > 0) {
+  if (selectedApp && configValues && configValues.length > 0) {
     return (
-      <List searchBarPlaceholder="Search configuration to toggle...">
-        <List.Section title={`${selectedApp} Configuration`} subtitle="Click to toggle">
+      <List
+        isLoading={isLoading}
+        searchBarPlaceholder="Search configuration to toggle..."
+      >
+        <List.Section
+          title={`${selectedApp} Configuration`}
+          subtitle="Click to toggle"
+        >
           {configValues.map((item) => (
             <List.Item
               key={item.key}
@@ -64,7 +79,13 @@ export default function ToggleConfigCommand(props: ToggleConfigProps) {
                 <ActionPanel>
                   <Action.Push
                     title="Toggle Value"
-                    target={<ToggleForm app={selectedApp} key={item.key} value={item.value} />}
+                    target={
+                      <ToggleForm
+                        app={selectedApp}
+                        configKey={item.key}
+                        value={item.value}
+                      />
+                    }
                     icon={Icon.Switch}
                   />
                   <Action.CopyToClipboard
@@ -77,7 +98,6 @@ export default function ToggleConfigCommand(props: ToggleConfigProps) {
                     icon={Icon.ArrowLeft}
                     onAction={() => {
                       setSelectedApp("");
-                      setConfigValues([]);
                     }}
                   />
                 </ActionPanel>
@@ -92,8 +112,11 @@ export default function ToggleConfigCommand(props: ToggleConfigProps) {
   // Show app selection
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search applications...">
-      <List.Section title="Select Application" subtitle="Choose app to configure">
-        {apps.map((app) => (
+      <List.Section
+        title="Select Application"
+        subtitle="Choose app to configure"
+      >
+        {(apps || []).map((app) => (
           <List.Item
             key={app}
             title={app}
@@ -104,18 +127,8 @@ export default function ToggleConfigCommand(props: ToggleConfigProps) {
                 <Action
                   title="Select App"
                   icon={Icon.CheckCircle}
-                  onAction={async () => {
-                    try {
-                      setSelectedApp(app);
-                      const values = await zeroui.listValues(app);
-                      setConfigValues(values);
-                    } catch (err) {
-                      await showToast({
-                        style: Toast.Style.Failure,
-                        title: "Failed to Load Config",
-                        message: err instanceof Error ? err.message : "Unknown error",
-                      });
-                    }
+                  onAction={() => {
+                    setSelectedApp(app);
                   }}
                 />
               </ActionPanel>
@@ -127,47 +140,51 @@ export default function ToggleConfigCommand(props: ToggleConfigProps) {
   );
 }
 
-function ToggleForm({ app, key, value }: { app: string; key: string; value: string }) {
-  const [newValue, setNewValue] = useState(value);
+function ToggleForm({
+  app,
+  configKey,
+  value,
+}: {
+  app: string;
+  configKey: string;
+  value: string;
+}) {
+  const { handleSubmit, itemProps } = useForm<{ newValue: string }>({
+    initialValues: {
+      newValue: value,
+    },
+    validation: {
+      newValue: (val) => (!val?.trim() ? "Value cannot be empty" : undefined),
+    },
+    onSubmit: async (values) => {
+      try {
+        await showToast({
+          style: Toast.Style.Animated,
+          title: "Toggling Configuration...",
+          message: `${configKey}: ${value} → ${values.newValue}`,
+        });
 
-  const handleSubmit = async (values: { newValue: string }) => {
-    if (!values.newValue.trim()) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Invalid Value",
-        message: "Please enter a value to toggle to",
-      });
-      return;
-    }
+        await zeroui.toggleConfig(app, configKey, values.newValue);
 
-    try {
-      await showToast({
-        style: Toast.Style.Animated,
-        title: "Toggling Configuration...",
-        message: `${key}: ${value} → ${values.newValue}`,
-      });
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Configuration Toggled",
+          message: `${configKey} updated successfully`,
+        });
 
-      await zeroui.toggleConfig(app, key, values.newValue);
-
-      await showToast({
-        style: Toast.Style.Success,
-        title: "Configuration Toggled",
-        message: `${key} updated successfully`,
-      });
-
-      // Close the form after successful toggle
-      setTimeout(() => {
-        // This will close the Raycast window
-        process.exit(0);
-      }, 1000);
-    } catch (err) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Toggle Failed",
-        message: err instanceof Error ? err.message : "Unknown error occurred",
-      });
-    }
-  };
+        setTimeout(() => {
+          process.exit(0);
+        }, 1000);
+      } catch (err) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Toggle Failed",
+          message:
+            err instanceof Error ? err.message : "Unknown error occurred",
+        });
+      }
+    },
+  });
 
   return (
     <Form
@@ -183,15 +200,12 @@ function ToggleForm({ app, key, value }: { app: string; key: string; value: stri
     >
       <Form.Description
         title="Toggle Configuration"
-        text={`Application: ${app}\nKey: ${key}\nCurrent Value: ${value}`}
+        text={`Application: ${app}\nKey: ${configKey}\nCurrent Value: ${value}`}
       />
       <Form.TextField
-        id="newValue"
         title="New Value"
         placeholder="Enter new value"
-        value={newValue}
-        onChange={setNewValue}
-        storeValue={true}
+        {...itemProps.newValue}
       />
       <Form.Description text="Enter the new value for this configuration setting." />
     </Form>

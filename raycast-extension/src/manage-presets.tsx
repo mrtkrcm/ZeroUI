@@ -1,35 +1,27 @@
-import { Action, ActionPanel, Form, Icon, List, showToast, Toast } from "@raycast/api";
-import { useEffect, useState } from "react";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Icon,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { usePromise } from "@raycast/utils";
 import { zeroui } from "./utils";
 
 export default function ManagePresetsCommand() {
-  const [apps, setApps] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadApps() {
-      try {
-        setIsLoading(true);
-        const appList = await zeroui.listApps();
-        setApps(appList);
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Apps",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadApps();
+  const { data: apps, isLoading } = usePromise(async () => {
+    return await zeroui.listApps();
   }, []);
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search applications...">
-      <List.Section title="Manage Configuration Presets" subtitle="Apply predefined configurations">
-        {apps.map((app) => (
+      <List.Section
+        title="Manage Configuration Presets"
+        subtitle="Apply predefined configurations"
+      >
+        {(apps || []).map((app) => (
           <List.Item
             key={app}
             title={app}
@@ -93,8 +85,6 @@ function ApplyPresetForm({ app, preset }: { app: string; preset: string }) {
         title: "Preset Application Failed",
         message: err instanceof Error ? err.message : "Unknown error occurred",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -115,7 +105,11 @@ function ApplyPresetForm({ app, preset }: { app: string; preset: string }) {
     <Form
       actions={
         <ActionPanel>
-          <Action title="Apply Preset" icon={Icon.CheckCircle} onAction={handleSubmit} />
+          <Action
+            title="Apply Preset"
+            icon={Icon.CheckCircle}
+            onAction={handleSubmit}
+          />
         </ActionPanel>
       }
     >

@@ -76,7 +76,7 @@ async function main() {
 
   // Test ZeroUI functionality
   output.push('🧪 ZeroUI FUNCTIONALITY TESTS:');
-  await runCommand('./zeroui --version 2>/dev/null || ./zeroui --help | head -3', 'ZeroUI version/help');
+  await runCommand('./zeroui version 2>/dev/null || ./zeroui --help | head -3', 'ZeroUI version/help');
   await runCommand('./zeroui list apps', 'List applications');
   await runCommand('./zeroui list values ghostty 2>/dev/null | head -5 || echo "Failed to list ghostty values"', 'Test ghostty config');
 

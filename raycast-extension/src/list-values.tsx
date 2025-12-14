@@ -1,4 +1,5 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Icon, List } from "@raycast/api";
+import { usePromise } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import { zeroui } from "./utils";
 
@@ -10,42 +11,41 @@ interface ListValuesProps {
 
 export default function ListValuesCommand(props: ListValuesProps) {
   const { arguments: args } = props;
-  const [values, setValues] = useState<{ key: string; value: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string>(args?.app || "");
   const [apps, setApps] = useState<string[]>([]);
 
+  // Load apps
+  const { data: appList, isLoading: isLoadingApps } = usePromise(async () => {
+    const list = await zeroui.listApps();
+    setApps(list);
+    return list;
+  }, []);
+
+  // Load values if app is selected
+  const { data: values, isLoading: isLoadingValues } = usePromise(
+    async (app: string) => {
+      if (!app) return [];
+      return await zeroui.listValues(app);
+    },
+    [selectedApp],
+    {
+      execute: !!selectedApp,
+    },
+  );
+
   useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const appList = await zeroui.listApps();
-        setApps(appList);
-
-        if (args?.app && appList.includes(args.app)) {
-          const configValues = await zeroui.listValues(args.app);
-          setValues(configValues);
-          setSelectedApp(args.app);
-        }
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    if (args?.app && appList?.includes(args.app)) {
+      setSelectedApp(args.app);
     }
+  }, [args, appList]);
 
-    loadData();
-  }, [args]);
+  const isLoading = isLoadingApps || isLoadingValues;
 
   if (!selectedApp) {
     return (
       <List isLoading={isLoading} searchBarPlaceholder="Search applications...">
         <List.Section title="Select Application">
-          {apps.map((app) => (
+          {(apps || []).map((app) => (
             <List.Item
               key={app}
               title={app}
@@ -54,18 +54,9 @@ export default function ListValuesCommand(props: ListValuesProps) {
                 <ActionPanel>
                   <Action
                     title="View Values"
-                    onAction={async () => {
-                      try {
-                        const configValues = await zeroui.listValues(app);
-                        setValues(configValues);
-                        setSelectedApp(app);
-                      } catch (err) {
-                        await showToast({
-                          style: Toast.Style.Failure,
-                          title: "Failed to Load Values",
-                          message: err instanceof Error ? err.message : "Unknown error",
-                        });
-                      }
+                    onAction={() => {
+                      setSelectedApp(app);
+                      // values will auto-load via usePromise dependency
                     }}
                   />
                 </ActionPanel>
@@ -81,9 +72,9 @@ export default function ListValuesCommand(props: ListValuesProps) {
     <List searchBarPlaceholder="Search configuration values...">
       <List.Section
         title={`${selectedApp} Configuration Values`}
-        subtitle={`${values.length} settings`}
+        subtitle={`${values?.length || 0} settings`}
       >
-        {values.map((item) => (
+        {(values || []).map((item) => (
           <List.Item
             key={item.key}
             title={item.key}
@@ -92,13 +83,16 @@ export default function ListValuesCommand(props: ListValuesProps) {
             actions={
               <ActionPanel>
                 <Action.CopyToClipboard title="Copy Key" content={item.key} />
-                <Action.CopyToClipboard title="Copy Value" content={item.value} />
+                <Action.CopyToClipboard
+                  title="Copy Value"
+                  content={item.value}
+                />
                 <Action
                   title="Back to Apps"
                   icon={Icon.ArrowLeft}
                   onAction={() => {
                     setSelectedApp("");
-                    setValues([]);
+                    // values cleared via dependency change
                   }}
                 />
               </ActionPanel>

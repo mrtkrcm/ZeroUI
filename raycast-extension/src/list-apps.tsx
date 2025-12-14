@@ -1,62 +1,36 @@
-import { Action, ActionPanel, Icon, List, open, showToast, Toast } from "@raycast/api";
-import { useCallback, useEffect, useState } from "react";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  List,
+  open,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { usePromise } from "@raycast/utils";
 import { LogLevel, zeroui } from "./utils";
 
 export default function ListAppsCommand() {
-  const [apps, setApps] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-
-  useEffect(() => {
-    loadApps();
-  }, []);
-
-  const loadApps = useCallback(
-    async (showSuccessToast = false) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const appList = await zeroui.listApps();
-        setApps(appList);
-        setLastRefresh(new Date());
-        setRetryCount(0); // Reset retry count on success
-
-        if (showSuccessToast) {
-          await showToast({
-            style: Toast.Style.Success,
-            title: "Apps Refreshed",
-            message: `Found ${appList.length} applications`,
-          });
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load applications";
-        setError(errorMessage);
-        setRetryCount((prev) => prev + 1);
-
-        // Show different messages based on retry count
-        if (retryCount < 2) {
-          await showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to Load Apps",
-            message: `${errorMessage}. Tap refresh to retry.`,
-          });
-        } else {
-          await showToast({
-            style: Toast.Style.Failure,
-            title: "Multiple Load Failures",
-            message: "Please check ZeroUI installation and try again.",
-          });
-        }
-
-        console.error("Failed to load apps:", err);
-      } finally {
-        setIsLoading(false);
-      }
+  const {
+    data: apps,
+    isLoading,
+    error,
+    revalidate,
+  } = usePromise(
+    async () => {
+      const appList = await zeroui.listApps();
+      return appList;
     },
-    [retryCount],
+    [],
+    {
+      onError: (error) => {
+        showToast({
+          style: Toast.Style.Failure,
+          title: "Failed to Load Apps",
+          message: error.message,
+        });
+      },
+    },
   );
 
   if (error) {
@@ -64,16 +38,15 @@ export default function ListAppsCommand() {
       <List>
         <List.Item
           title="Error Loading Applications"
-          subtitle={error}
+          subtitle={error.message}
           icon={Icon.ExclamationMark}
-          accessories={retryCount > 0 ? [{ text: `${retryCount} retries` }] : undefined}
           actions={
             <ActionPanel>
               <ActionPanel.Section>
                 <Action
                   title="Retry"
                   icon={Icon.ArrowClockwise}
-                  onAction={() => loadApps()}
+                  onAction={() => revalidate()}
                   shortcut={{ modifiers: ["cmd"], key: "r" }}
                 />
                 <Action
@@ -82,7 +55,7 @@ export default function ListAppsCommand() {
                   onAction={async () => {
                     zeroui.clearCache();
                     zeroui.clearErrorHistory();
-                    await loadApps();
+                    revalidate();
                   }}
                   shortcut={{ modifiers: ["cmd", "shift"], key: "r" }}
                 />
@@ -129,7 +102,7 @@ export default function ListAppsCommand() {
                 <Action
                   title="Refresh"
                   icon={Icon.ArrowClockwise}
-                  onAction={() => loadApps(true)}
+                  onAction={() => revalidate()}
                   shortcut={{ modifiers: ["cmd"], key: "r" }}
                 />
                 <Action
@@ -159,11 +132,26 @@ export default function ListAppsCommand() {
       filtering={true}
       throttle={true}
     >
+      <List.EmptyView
+        title="No Applications Found"
+        description="ZeroUI found no configured applications. Ensure your apps are configured in your ZeroUI configuration directory."
+        icon={Icon.MagnifyingGlass}
+        actions={
+          <ActionPanel>
+            <Action
+              title="Retry"
+              icon={Icon.ArrowClockwise}
+              onAction={() => revalidate()}
+              shortcut={{ modifiers: ["cmd"], key: "r" }}
+            />
+          </ActionPanel>
+        }
+      />
       <List.Section
         title="Available Applications"
-        subtitle={`${apps.length} apps${lastRefresh ? ` • Updated ${lastRefresh.toLocaleTimeString()}` : ""}`}
+        subtitle={`${apps?.length || 0} apps`}
       >
-        {apps.map((app) => (
+        {(apps || []).map((app) => (
           <List.Item
             key={app}
             title={app}
@@ -205,7 +193,7 @@ export default function ListAppsCommand() {
                     icon={Icon.ArrowClockwise}
                     onAction={async () => {
                       zeroui.clearCache();
-                      await loadApps(true);
+                      revalidate();
                     }}
                     shortcut={{ modifiers: ["cmd"], key: "r" }}
                   />
@@ -225,33 +213,17 @@ export default function ListAppsCommand() {
 }
 
 function AppConfigView({ app }: { app: string }) {
-  const [values, setValues] = useState<{ key: string; value: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadValues() {
-      try {
-        setIsLoading(true);
-        const configValues = await zeroui.listValues(app);
-        setValues(configValues);
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Config",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadValues();
+  const { data: values, isLoading } = usePromise(async () => {
+    return await zeroui.listValues(app);
   }, [app]);
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search configuration...">
-      <List.Section title={`${app} Configuration`} subtitle={`${values.length} settings`}>
-        {values.map((item) => (
+      <List.Section
+        title={`${app} Configuration`}
+        subtitle={`${values?.length || 0} settings`}
+      >
+        {(values || []).map((item) => (
           <List.Item
             key={item.key}
             title={item.key}
@@ -259,7 +231,11 @@ function AppConfigView({ app }: { app: string }) {
             icon={Icon.Dot}
             actions={
               <ActionPanel>
-                <Action.CopyToClipboard title="Copy Key" content={item.key} icon={Icon.Clipboard} />
+                <Action.CopyToClipboard
+                  title="Copy Key"
+                  content={item.key}
+                  icon={Icon.Clipboard}
+                />
                 <Action.CopyToClipboard
                   title="Copy Value"
                   content={item.value}
@@ -275,38 +251,24 @@ function AppConfigView({ app }: { app: string }) {
 }
 
 function AppChangedView({ app }: { app: string }) {
-  const [values, setValues] = useState<{ key: string; value: string; default: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadChanged() {
-      try {
-        setIsLoading(true);
-        const changedValues = await zeroui.listChanged(app);
-        setValues(changedValues);
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Changes",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadChanged();
+  const { data: values, isLoading } = usePromise(async () => {
+    return await zeroui.listChanged(app);
   }, [app]);
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search changed values...">
-      <List.Section title={`${app} Changed Values`} subtitle={`${values.length} modified`}>
-        {values.map((item) => (
+      <List.Section
+        title={`${app} Changed Values`}
+        subtitle={`${values?.length || 0} modified`}
+      >
+        {(values || []).map((item) => (
           <List.Item
             key={item.key}
             title={item.key}
             subtitle={`Current: ${item.value}`}
-            accessories={[{ text: `Default: ${item.default}`, icon: Icon.Info }]}
+            accessories={[
+              { text: `Default: ${item.default}`, icon: Icon.Info },
+            ]}
             icon={Icon.CheckCircle}
             actions={
               <ActionPanel>
@@ -330,33 +292,21 @@ function AppChangedView({ app }: { app: string }) {
 }
 
 function AppKeymapsView({ app }: { app: string }) {
-  const [keymaps, setKeymaps] = useState<{ keybind: string; action: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadKeymaps() {
-      try {
-        setIsLoading(true);
-        const keymapList = await zeroui.listKeymaps(app);
-        setKeymaps(keymapList);
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Keymaps",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadKeymaps();
+  const { data: keymaps, isLoading } = usePromise(async () => {
+    return await zeroui.listKeymaps(app);
   }, [app]);
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search keymaps..." filtering={true}>
-      <List.Section title={`${app} Keymaps`} subtitle={`${keymaps.length} shortcuts`}>
-        {keymaps.map((item, index) => (
+    <List
+      isLoading={isLoading}
+      searchBarPlaceholder="Search keymaps..."
+      filtering={true}
+    >
+      <List.Section
+        title={`${app} Keymaps`}
+        subtitle={`${keymaps?.length || 0} shortcuts`}
+      >
+        {(keymaps || []).map((item, index) => (
           <List.Item
             key={index}
             title={item.keybind}
@@ -387,27 +337,8 @@ function AppKeymapsView({ app }: { app: string }) {
 }
 
 function AppToggleView({ app }: { app: string }) {
-  const [values, setValues] = useState<{ key: string; value: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadValues() {
-      try {
-        setIsLoading(true);
-        const configValues = await zeroui.listValues(app);
-        setValues(configValues);
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load Config",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadValues();
+  const { data: values, isLoading } = usePromise(async () => {
+    return await zeroui.listValues(app);
   }, [app]);
 
   const handleToggle = async (key: string, currentValue: string) => {
@@ -436,8 +367,11 @@ function AppToggleView({ app }: { app: string }) {
       searchBarPlaceholder="Search configuration values..."
       filtering={true}
     >
-      <List.Section title={`${app} Configuration`} subtitle={`${values.length} settings`}>
-        {values.map((item) => (
+      <List.Section
+        title={`${app} Configuration`}
+        subtitle={`${values?.length || 0} settings`}
+      >
+        {(values || []).map((item) => (
           <List.Item
             key={item.key}
             title={item.key}

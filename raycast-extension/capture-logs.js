@@ -113,7 +113,7 @@ async function simulateExtensionStartup() {
     const { execSync } = require('child_process');
 
     try {
-      const versionOutput = execSync(`${zerouiPath} --version`, { encoding: 'utf8', timeout: 5000 });
+      const versionOutput = execSync(`${zerouiPath} version`, { encoding: 'utf8', timeout: 5000 });
       console.log('✅ ZeroUI version check successful:', versionOutput.trim());
     } catch (error) {
       console.error('❌ ZeroUI version check failed:', error.message);

@@ -1,4 +1,5 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Icon, List } from "@raycast/api";
+import { usePromise } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import { zeroui } from "./utils";
 
@@ -10,42 +11,41 @@ interface ListChangedProps {
 
 export default function ListChangedCommand(props: ListChangedProps) {
   const { arguments: args } = props;
-  const [values, setValues] = useState<{ key: string; value: string; default: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<string>(args?.app || "");
   const [apps, setApps] = useState<string[]>([]);
 
+  // Load apps
+  const { data: appList, isLoading: isLoadingApps } = usePromise(async () => {
+    const list = await zeroui.listApps();
+    setApps(list);
+    return list;
+  }, []);
+
+  // Load changed values if app is selected
+  const { data: values, isLoading: isLoadingValues } = usePromise(
+    async (app: string) => {
+      if (!app) return [];
+      return await zeroui.listChanged(app);
+    },
+    [selectedApp],
+    {
+      execute: !!selectedApp,
+    },
+  );
+
   useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const appList = await zeroui.listApps();
-        setApps(appList);
-
-        if (args?.app && appList.includes(args.app)) {
-          const changedValues = await zeroui.listChanged(args.app);
-          setValues(changedValues);
-          setSelectedApp(args.app);
-        }
-      } catch (err) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to Load",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    if (args?.app && appList?.includes(args.app)) {
+      setSelectedApp(args.app);
     }
+  }, [args, appList]);
 
-    loadData();
-  }, [args]);
+  const isLoading = isLoadingApps || isLoadingValues;
 
   if (!selectedApp) {
     return (
       <List isLoading={isLoading} searchBarPlaceholder="Search applications...">
         <List.Section title="Select Application">
-          {apps.map((app) => (
+          {(apps || []).map((app) => (
             <List.Item
               key={app}
               title={app}
@@ -54,18 +54,9 @@ export default function ListChangedCommand(props: ListChangedProps) {
                 <ActionPanel>
                   <Action
                     title="View Changed Values"
-                    onAction={async () => {
-                      try {
-                        const changedValues = await zeroui.listChanged(app);
-                        setValues(changedValues);
-                        setSelectedApp(app);
-                      } catch (err) {
-                        await showToast({
-                          style: Toast.Style.Failure,
-                          title: "Failed to Load Changed Values",
-                          message: err instanceof Error ? err.message : "Unknown error",
-                        });
-                      }
+                    onAction={() => {
+                      setSelectedApp(app);
+                      // values will auto-load via usePromise dependency
                     }}
                   />
                 </ActionPanel>
@@ -81,25 +72,33 @@ export default function ListChangedCommand(props: ListChangedProps) {
     <List searchBarPlaceholder="Search changed values...">
       <List.Section
         title={`${selectedApp} Changed Values`}
-        subtitle={`${values.length} modified settings`}
+        subtitle={`${values?.length || 0} modified settings`}
       >
-        {values.map((item) => (
+        {(values || []).map((item) => (
           <List.Item
             key={item.key}
             title={item.key}
             subtitle={`Current: ${item.value}`}
-            accessories={[{ text: `Default: ${item.default}`, icon: Icon.Info }]}
+            accessories={[
+              { text: `Default: ${item.default}`, icon: Icon.Info },
+            ]}
             icon={Icon.CheckCircle}
             actions={
               <ActionPanel>
-                <Action.CopyToClipboard title="Copy Current" content={item.value} />
-                <Action.CopyToClipboard title="Copy Default" content={item.default} />
+                <Action.CopyToClipboard
+                  title="Copy Current"
+                  content={item.value}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Default"
+                  content={item.default}
+                />
                 <Action
                   title="Back to Apps"
                   icon={Icon.ArrowLeft}
                   onAction={() => {
                     setSelectedApp("");
-                    setValues([]);
+                    // values cleared via dependency change
                   }}
                 />
               </ActionPanel>
