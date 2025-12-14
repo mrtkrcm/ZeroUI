@@ -32,6 +32,14 @@ Examples:
   zeroui cycle alacritty font
   zeroui ui ghostty
   zeroui preset vscode minimal`,
+	Example: `  zeroui
+  zeroui toggle ghostty theme dark
+  zeroui cycle alacritty font
+  zeroui ui ghostty
+  zeroui preset vscode minimal`,
+	Args:          cobra.NoArgs,
+	SilenceUsage:  true,
+	SilenceErrors: false,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If no subcommand is provided, launch the UI
 		if len(args) == 0 && cmd.Flags().NFlag() == 0 {

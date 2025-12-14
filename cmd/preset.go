@@ -22,6 +22,10 @@ Examples:
   zeroui preset vscode minimal
   zeroui preset alacritty high-contrast
   zeroui preset ghostty minimal --show-diff`,
+	Example: `  zeroui preset ghostty dark-mode
+  zeroui preset vscode minimal
+  zeroui preset alacritty high-contrast
+  zeroui preset ghostty minimal --show-diff`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]

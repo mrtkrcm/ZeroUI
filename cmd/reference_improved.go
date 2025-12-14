@@ -18,33 +18,45 @@ var (
 		Short: "Configuration reference (improved)",
 		Long: `Improved configuration reference system with clean, reliable data.
 Uses curated static configuration files instead of fragile web scraping.`,
+		Example: `  zeroui ref list
+  zeroui ref show ghostty
+  zeroui ref validate ghostty font_size 14
+  zeroui ref search zed theme`,
+		Args: cobra.NoArgs,
 	}
 
 	refListCmd = &cobra.Command{
-		Use:   "list",
-		Short: "List available applications",
-		RunE:  runRefList,
+		Use:     "list",
+		Short:   "List available applications",
+		Example: `  zeroui ref list`,
+		RunE:    runRefList,
 	}
 
 	refShowCmd = &cobra.Command{
 		Use:   "show [app] [setting]",
 		Short: "Show configuration details",
-		Args:  cobra.MinimumNArgs(1),
-		RunE:  runRefShow,
+		Example: `  zeroui ref show ghostty
+  zeroui ref show ghostty font_size`,
+		Args: cobra.MinimumNArgs(1),
+		RunE: runRefShow,
 	}
 
 	refValidateCmd = &cobra.Command{
 		Use:   "validate [app] [setting] [value]",
 		Short: "Validate a configuration value",
-		Args:  cobra.ExactArgs(3),
-		RunE:  runRefValidate,
+		Example: `  zeroui ref validate ghostty font_size 14
+  zeroui ref validate zed theme "Nord"`,
+		Args: cobra.ExactArgs(3),
+		RunE: runRefValidate,
 	}
 
 	refSearchCmd = &cobra.Command{
 		Use:   "search [app] [query]",
 		Short: "Search configuration settings",
-		Args:  cobra.ExactArgs(2),
-		RunE:  runRefSearch,
+		Example: `  zeroui ref search ghostty theme
+  zeroui ref search zed font`,
+		Args: cobra.ExactArgs(2),
+		RunE: runRefSearch,
 	}
 
 	// Styles for improved output

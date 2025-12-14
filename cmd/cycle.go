@@ -18,6 +18,9 @@ Examples:
   zeroui cycle ghostty theme
   zeroui cycle alacritty font
   zeroui cycle vscode colorTheme`,
+	Example: `  zeroui cycle ghostty theme
+  zeroui cycle alacritty font
+  zeroui cycle vscode colorTheme`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]

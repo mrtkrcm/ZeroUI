@@ -19,6 +19,9 @@ Examples:
   zeroui ui
   zeroui ui ghostty
   zeroui ui --app alacritty`,
+	Example: `  zeroui ui
+  zeroui ui ghostty
+  zeroui ui --app alacritty`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var app string

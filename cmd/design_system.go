@@ -30,6 +30,10 @@ Examples:
   zeroui design-system --interactive
   zeroui showcase`,
 	Aliases: []string{"showcase", "ds", "demo"},
+	Example: `  zeroui design-system
+  zeroui design-system --interactive
+  zeroui showcase`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		container := GetContainer()
 		if container == nil {

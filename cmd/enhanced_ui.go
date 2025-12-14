@@ -40,6 +40,10 @@ Examples:
   zeroui enhanced-ui --theme cyberpunk
   zeroui enhanced-ui --debug`,
 	Aliases: []string{"eui", "advanced-ui"},
+	Example: `  zeroui enhanced-ui
+  zeroui enhanced-ui --theme cyberpunk
+  zeroui enhanced-ui --debug`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flags
 		theme, _ := cmd.Flags().GetString("theme")
