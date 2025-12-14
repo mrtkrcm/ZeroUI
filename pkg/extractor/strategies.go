@@ -115,6 +115,50 @@ func NewBuiltinStrategy() *BuiltinStrategy {
 					"init.defaultBranch": {Name: "init.defaultBranch", Type: "string", Default: "main", Cat: "init"},
 				},
 			},
+			"lazygit": {
+				App:  "lazygit",
+				Path: "~/.config/lazygit/config.yml",
+				Type: "yaml",
+				Settings: map[string]Setting{
+					"gui.theme.activeBorderColor":   {Name: "gui.theme.activeBorderColor", Type: "array", Default: []string{"green", "bold"}, Cat: "appearance"},
+					"gui.theme.inactiveBorderColor": {Name: "gui.theme.inactiveBorderColor", Type: "array", Default: []string{"white"}, Cat: "appearance"},
+					"gui.showIcons":                 {Name: "gui.showIcons", Type: "boolean", Default: false, Cat: "appearance"},
+					"git.paging.colorArg":           {Name: "git.paging.colorArg", Type: "string", Default: "always", Cat: "git"},
+				},
+			},
+			"bat": {
+				App:  "bat",
+				Path: "~/.config/bat/config",
+				Type: "flags",
+				Settings: map[string]Setting{
+					"theme":       {Name: "theme", Type: "string", Default: "TwoDark", Cat: "appearance"},
+					"style":       {Name: "style", Type: "string", Default: "default", Cat: "appearance"},
+					"italic-text": {Name: "italic-text", Type: "string", Default: "always", Cat: "appearance"},
+					"paging":      {Name: "paging", Type: "string", Default: "auto", Cat: "general"},
+				},
+			},
+			"ripgrep": {
+				App:  "ripgrep",
+				Path: "~/.ripgreprc",
+				Type: "flags",
+				Settings: map[string]Setting{
+					"smart-case": {Name: "smart-case", Type: "boolean", Default: true, Cat: "search"},
+					"hidden":     {Name: "hidden", Type: "boolean", Default: false, Cat: "search"},
+					"colors":     {Name: "colors", Type: "string", Default: "line:none", Cat: "appearance"},
+					"glob":       {Name: "glob", Type: "array", Default: []string{"!*.git"}, Cat: "search"},
+				},
+			},
+			"rg": {
+				App:  "ripgrep",
+				Path: "~/.ripgreprc",
+				Type: "flags",
+				Settings: map[string]Setting{
+					"smart-case": {Name: "smart-case", Type: "boolean", Default: true, Cat: "search"},
+					"hidden":     {Name: "hidden", Type: "boolean", Default: false, Cat: "search"},
+					"colors":     {Name: "colors", Type: "string", Default: "line:none", Cat: "appearance"},
+					"glob":       {Name: "glob", Type: "array", Default: []string{"!*.git"}, Cat: "search"},
+				},
+			},
 		},
 	}
 }
@@ -248,10 +292,15 @@ func processSettingLine(cfg *Config, line string, sepIdx int, currentKey *string
 }
 
 func parseConfigFile(app string, r io.Reader) *Config {
+	format := detectFormat(app)
+	if format == "flags" {
+		return parseFlagFile(app, r)
+	}
+
 	cfg := &Config{
 		App:      app,
 		Path:     fmt.Sprintf("~/.config/%s/config", app),
-		Type:     detectFormat(app),
+		Type:     format,
 		Settings: make(map[string]Setting),
 	}
 
@@ -286,16 +335,91 @@ func parseConfigFile(app string, r io.Reader) *Config {
 	return cfg
 }
 
+func parseFlagFile(app string, r io.Reader) *Config {
+	cfg := &Config{
+		App:      app,
+		Path:     fmt.Sprintf("~/.config/%s/config", app),
+		Type:     "flags",
+		Settings: make(map[string]Setting),
+	}
+
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip comments and empty lines
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		if strings.HasPrefix(line, "--") {
+			line = strings.TrimPrefix(line, "--")
+			parts := strings.SplitN(line, "=", 2)
+			key := parts[0]
+			var value interface{}
+			rawVal := "true"
+			if len(parts) > 1 {
+				rawVal = parts[1]
+			}
+			value = parseValue(rawVal)
+
+			if existing, ok := cfg.Settings[key]; ok {
+				// Handle repeated flags by converting to array
+				// If existing default is already a slice, append
+				// If not, create a slice
+				var newValues []string
+
+				// Convert existing value to string for slice
+				existingStr := fmt.Sprintf("%v", existing.Default)
+
+				// If the type was already array, we need to handle it properly
+				// But parseValue returns a single value unless it had commas.
+				// Here we are handling repeated keys.
+
+				if existing.Type == "array" {
+					if slice, ok := existing.Default.([]string); ok {
+						newValues = append(slice, rawVal)
+					} else {
+						// Should not happen if we maintain type consistency,
+						// but let's be safe.
+						newValues = []string{existingStr, rawVal}
+					}
+				} else {
+					newValues = []string{existingStr, rawVal}
+				}
+
+				cfg.Settings[key] = Setting{
+					Name:    key,
+					Type:    "array",
+					Default: newValues,
+					Cat:     existing.Cat,
+				}
+			} else {
+				cfg.Settings[key] = Setting{
+					Name:    key,
+					Type:    inferType(rawVal),
+					Default: value,
+					Cat:     inferCategory(key),
+				}
+			}
+		}
+	}
+
+	return cfg
+}
+
 func detectFormat(app string) string {
 	switch app {
 	case "zed", "vscode":
 		return "json"
-	case "alacritty", "starship":
+	case "alacritty", "starship", "lazygit":
 		return "yaml"
 	case "wezterm":
 		return "lua"
 	case "git":
 		return "ini"
+	case "bat", "ripgrep", "rg":
+		return "flags"
 	default:
 		return "custom"
 	}

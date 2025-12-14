@@ -38,7 +38,8 @@ Examples:
 			app = appFlag
 		}
 
-		tuiApp, err := tui.NewApp(app)
+		container := GetContainer()
+		tuiApp, err := tui.NewApp(container, app)
 		if err != nil {
 			return fmt.Errorf("failed to create TUI app: %w", err)
 		}
