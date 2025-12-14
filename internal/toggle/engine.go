@@ -1,11 +1,17 @@
 package toggle
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
@@ -23,17 +29,13 @@ type ConfigLoader interface {
 	SaveTargetConfig(appConfig *config.AppConfig, k *koanf.Koanf) error
 }
 
-// Engine handles configuration toggling operations (refactored for better separation of concerns)
+// Engine handles configuration toggling operations
 type Engine struct {
-	// Core services
-	configOp   *ConfigOperator
-	fieldVal   *FieldValidator
-	valueConv  *ValueConverter
-	hookRunner *HookRunner
-	logger     *logger.Logger
-
-	// Legacy interface compatibility
-	loader ConfigLoader // Keep for interface compatibility
+	loader    ConfigLoader
+	logger    *logger.Logger
+	homeDir   string                     // Cache for home directory
+	pathCache *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
+	pathMutex sync.RWMutex               // Thread-safe access to pathCache
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -46,35 +48,48 @@ func NewEngine() (*Engine, error) {
 		if basicErr != nil {
 			return nil, fmt.Errorf("failed to create config loader: %w", basicErr)
 		}
-		return NewEngineWithDeps(basicLoader, logger.Global()), nil
+		// Use basic loader as ConfigLoader interface
+		var loader ConfigLoader = basicLoader
+		homeDir, _ := os.UserHomeDir()
+		pathCache, _ := lru.New[string, string](1000)
+		return &Engine{
+			loader:    loader,
+			logger:    logger.Global(),
+			homeDir:   homeDir,
+			pathCache: pathCache,
+		}, nil
 	}
 
-	return NewEngineWithDeps(enhancedLoader, logger.Global()), nil
+	// Use enhanced loader as ConfigLoader interface
+	var loader ConfigLoader = enhancedLoader
+	homeDir, _ := os.UserHomeDir()
+	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
+	return &Engine{
+		loader:    loader,
+		logger:    logger.Global(), // Use global logger for backwards compatibility
+		homeDir:   homeDir,
+		pathCache: pathCache,
+	}, nil
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
 func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
-	if log == nil {
-		log = logger.New(logger.DefaultConfig())
-	}
-
-	// Initialize service components
-	configOp := NewConfigOperator(configLoader)
-	fieldVal := NewFieldValidator()
-	valueConv := NewValueConverter()
-	hookRunner := NewHookRunner(log)
-
+	homeDir, _ := os.UserHomeDir()
+	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
-		configOp:   configOp,
-		fieldVal:   fieldVal,
-		valueConv:  valueConv,
-		hookRunner: hookRunner,
-		logger:     log,
-		loader:     configLoader, // Keep for interface compatibility
+		loader: configLoader,
+		logger: func() *logger.Logger {
+			if log != nil {
+				return log
+			}
+			return logger.New(logger.DefaultConfig())
+		}(),
+		homeDir:   homeDir,
+		pathCache: pathCache,
 	}
 }
 
-// Toggle sets a specific configuration key to a value (refactored to use services)
+// Toggle sets a specific configuration key to a value
 func (e *Engine) Toggle(appName, key, value string) error {
 	log := e.logger.WithApp(appName).WithField(key)
 
@@ -84,81 +99,103 @@ func (e *Engine) Toggle(appName, key, value string) error {
 		})
 	}
 
-	// 1. Load and validate app config
-	appConfig, err := e.configOp.LoadAppConfig(appName)
+	appConfig, err := e.loader.LoadAppConfig(appName)
 	if err != nil {
-		return err // Error already wrapped by configOp
+		// Check if it's an app not found error
+		apps, _ := e.loader.ListApps()
+		return errors.NewAppNotFoundError(appName, apps)
 	}
 
-	// 2. Validate field exists
-	if err := e.fieldVal.ValidateFieldExists(appConfig, key); err != nil {
-		return err
+	fieldConfig, exists := appConfig.Fields[key]
+	if !exists {
+		var availableFields []string
+		for field := range appConfig.Fields {
+			availableFields = append(availableFields, field)
+		}
+		return errors.NewFieldNotFoundError(appName, key, availableFields)
 	}
 
-	// 3. Validate field value
-	if err := e.fieldVal.ValidateFieldValue(appConfig, key, value); err != nil {
-		return err
+	// Validate the value if choices are defined
+	if len(fieldConfig.Values) > 0 {
+		valid := false
+		for _, validValue := range fieldConfig.Values {
+			if validValue == value {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return errors.NewInvalidValueError(appName, key, value, fieldConfig.Values)
+		}
 	}
 
-	// 4. Get field config and convert value
-	fieldConfig, err := e.fieldVal.GetFieldConfig(appConfig, key)
-	if err != nil {
-		return err
-	}
-
-	convertedValue, err := e.valueConv.ConvertValue(value, fieldConfig)
+	// Convert value to appropriate type
+	convertedValue, err := e.convertValue(value, fieldConfig.Type)
 	if err != nil {
 		return errors.Wrap(errors.FieldInvalidType, "failed to convert value", err).
 			WithApp(appName).WithField(key).WithValue(value)
 	}
 
-	// 5. Load target config and set value
-	targetConfig, err := e.configOp.LoadTargetConfig(appConfig)
+	// Load target config
+	targetConfig, err := e.loader.LoadTargetConfig(appConfig)
 	if err != nil {
-		return err // Error already wrapped by configOp
+		return errors.Wrap(errors.ConfigParseError, "failed to load target config", err).
+			WithApp(appName).
+			WithSuggestions("Check if the config file exists and is readable")
 	}
 
-	// Store original config for diff calculation
-	originalConfig := targetConfig.All()
-
-	// Set the value using config operator
-	if err := e.configOp.SetConfigValue(targetConfig, key, convertedValue, appName); err != nil {
-		return err // Error already wrapped by configOp
+	// Set the value
+	if err := targetConfig.Set(key, convertedValue); err != nil {
+		return errors.Wrap(errors.ConfigWriteError, "failed to set config value", err).
+			WithApp(appName).WithField(key).WithValue(value)
 	}
-
-	// Calculate diff for preview
-	differ := configextractor.NewConfigDiffer()
-	newConfig := targetConfig.All()
-	diff := differ.DiffConfigurations(originalConfig, newConfig)
 
 	if viper.GetBool("dry-run") {
 		log.Info("Would set configuration", map[string]interface{}{
 			"converted_value": convertedValue,
-			"changes":         diff.Summary(),
 		})
-
-		// Show diff in verbose mode
-		if viper.GetBool("verbose") {
-			fmt.Println("\nConfiguration changes preview:")
-			fmt.Print(diff.FormatDiff())
-		}
 		return nil
 	}
 
-	// 6. Save configuration safely
-	if err := e.configOp.SaveConfigSafely(appConfig, targetConfig); err != nil {
-		return err // Error already wrapped by configOp
+	// Create safe operation with automatic backup
+	configPath := e.expandPath(appConfig.Path)
+
+	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	if err != nil {
+		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
+			WithApp(appName)
+	}
+
+	// Save the config
+	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+		// Rollback on failure
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback changes", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
+			WithApp(appName).
+			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
+	}
+
+	// Commit the operation (remove backup)
+	if err := safeOp.Commit(); err != nil {
+		log.Error("Failed to cleanup backup", err)
+	}
+
+	// Cleanup old backups
+	if err := safeOp.Cleanup(5); err != nil {
+		log.Error("Failed to cleanup old backups", err)
 	}
 
 	log.Success("Configuration updated", map[string]interface{}{
 		"value": value,
 	})
 
-	// 7. Run post-toggle hooks
-	return e.hookRunner.RunHooks(appConfig, "post-toggle")
+	// Run post-toggle hooks
+	return e.runHooks(appConfig, "post-toggle")
 }
 
-// Cycle moves to the next value in a field's value list (refactored to use services)
+// Cycle moves to the next value in a field's value list
 func (e *Engine) Cycle(appName, key string) error {
 	log := e.logger.WithApp(appName).WithField(key)
 
@@ -166,47 +203,49 @@ func (e *Engine) Cycle(appName, key string) error {
 		log.Debug("Starting cycle operation")
 	}
 
-	// 1. Load and validate app config
-	appConfig, err := e.configOp.LoadAppConfig(appName)
+	appConfig, err := e.loader.LoadAppConfig(appName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load app config: %w", err)
 	}
 
-	// 2. Validate field exists and get field config
-	fieldConfig, err := e.fieldVal.GetFieldConfig(appConfig, key)
-	if err != nil {
-		return err
+	fieldConfig, exists := appConfig.Fields[key]
+	if !exists {
+		return fmt.Errorf("field %s not found for app %s", key, appName)
 	}
 
 	if len(fieldConfig.Values) == 0 {
-		return errors.New(errors.FieldInvalidType, "field "+key+" has no predefined values to cycle through")
+		return fmt.Errorf("field %s has no predefined values to cycle through", key)
 	}
 
-	// 3. Load current config to get current value
-	targetConfig, err := e.configOp.LoadTargetConfig(appConfig)
+	// Load current config to get current value
+	targetConfig, err := e.loader.LoadTargetConfig(appConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load target config: %w", err)
 	}
 
 	currentValue := targetConfig.String(key)
 
-	// 4. Get next value using value converter
-	nextValue, err := e.valueConv.GetNextValue(fieldConfig, currentValue)
-	if err != nil {
-		return err
+	// Find current value index
+	currentIndex := -1
+	for i, value := range fieldConfig.Values {
+		if value == currentValue {
+			currentIndex = i
+			break
+		}
 	}
 
-	// 5. Convert value to appropriate type
-	convertedValue, err := e.valueConv.ConvertValue(nextValue, fieldConfig)
+	// Get next value (wrap around)
+	nextIndex := (currentIndex + 1) % len(fieldConfig.Values)
+	nextValue := fieldConfig.Values[nextIndex]
+
+	// Convert value to appropriate type
+	convertedValue, err := e.convertValue(nextValue, fieldConfig.Type)
 	if err != nil {
-		return errors.Wrap(errors.FieldInvalidType, "failed to convert cycle value", err).
-			WithApp(appName).WithField(key)
+		return fmt.Errorf("failed to convert value: %w", err)
 	}
 
-	// 6. Set the value using config operator
-	if err := e.configOp.SetConfigValue(targetConfig, key, convertedValue, appName); err != nil {
-		return err
-	}
+	// Set the value
+	_ = targetConfig.Set(key, convertedValue)
 
 	if viper.GetBool("dry-run") {
 		log.Info("Would cycle configuration", map[string]interface{}{
@@ -216,9 +255,34 @@ func (e *Engine) Cycle(appName, key string) error {
 		return nil
 	}
 
-	// 7. Save configuration safely
-	if err := e.configOp.SaveConfigSafely(appConfig, targetConfig); err != nil {
-		return err
+	// Create safe operation with automatic backup
+	configPath := e.expandPath(appConfig.Path)
+
+	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	if err != nil {
+		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
+			WithApp(appName)
+	}
+
+	// Save the config
+	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+		// Rollback on failure
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback changes", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
+			WithApp(appName).
+			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
+	}
+
+	// Commit the operation (remove backup)
+	if err := safeOp.Commit(); err != nil {
+		log.Error("Failed to cleanup backup", err)
+	}
+
+	// Cleanup old backups
+	if err := safeOp.Cleanup(5); err != nil {
+		log.Error("Failed to cleanup old backups", err)
 	}
 
 	log.Success("Configuration cycled", map[string]interface{}{
@@ -226,8 +290,8 @@ func (e *Engine) Cycle(appName, key string) error {
 		"to":   nextValue,
 	})
 
-	// 8. Run post-cycle hooks
-	return e.hookRunner.RunHooks(appConfig, "post-cycle")
+	// Run post-toggle hooks
+	return e.runHooks(appConfig, "post-cycle")
 }
 
 // ApplyPreset applies a preset configuration
@@ -261,9 +325,6 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		return fmt.Errorf("failed to load target config: %w", err)
 	}
 
-	// Store original config for diff calculation
-	originalConfig := targetConfig.All()
-
 	// Apply all values from the preset
 	for key, value := range preset.Values {
 		fieldConfig, exists := appConfig.Fields[key]
@@ -287,28 +348,41 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		_ = targetConfig.Set(key, convertedValue)
 	}
 
-	// Calculate diff for preview
-	differ := configextractor.NewConfigDiffer()
-	newConfig := targetConfig.All()
-	diff := differ.DiffConfigurations(originalConfig, newConfig)
-
 	if viper.GetBool("dry-run") {
 		log.Info("Would apply preset", map[string]interface{}{
-			"values":  preset.Values,
-			"changes": diff.Summary(),
+			"values": preset.Values,
 		})
-
-		// Show diff in verbose mode
-		if viper.GetBool("verbose") {
-			fmt.Println("\nPreset application preview:")
-			fmt.Print(diff.FormatDiff())
-		}
 		return nil
+	}
+
+	// Create safe operation with automatic backup
+	configPath := e.expandPath(appConfig.Path)
+
+	safeOp, err := recovery.NewSafeOperation(configPath, appName)
+	if err != nil {
+		return errors.Wrap(errors.SystemFileError, "failed to create backup", err).
+			WithApp(appName)
 	}
 
 	// Save the config
 	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
+		// Rollback on failure
+		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
+			log.Error("Failed to rollback changes", rollbackErr)
+		}
+		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
+			WithApp(appName).
+			WithSuggestions("Check file permissions and disk space", "Configuration has been rolled back")
+	}
+
+	// Commit the operation (remove backup)
+	if err := safeOp.Commit(); err != nil {
+		log.Error("Failed to cleanup backup", err)
+	}
+
+	// Cleanup old backups
+	if err := safeOp.Cleanup(5); err != nil {
+		log.Error("Failed to cleanup old backups", err)
 	}
 
 	log.Success("Preset applied successfully")
@@ -320,6 +394,66 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 
 	// Run post-preset hooks
 	return e.runHooks(appConfig, "post-preset")
+}
+
+// ShowPresetDiff shows the configuration changes that would be made by applying a preset
+func (e *Engine) ShowPresetDiff(appName, presetName string) error {
+	appConfig, err := e.loader.LoadAppConfig(appName)
+	if err != nil {
+		apps, _ := e.loader.ListApps()
+		return errors.NewAppNotFoundError(appName, apps)
+	}
+
+	preset, exists := appConfig.Presets[presetName]
+	if !exists {
+		var availablePresets []string
+		for name := range appConfig.Presets {
+			availablePresets = append(availablePresets, name)
+		}
+		return errors.NewPresetNotFoundError(appName, presetName, availablePresets)
+	}
+
+	// Load current config
+	currentConfig, err := e.loader.LoadTargetConfig(appConfig)
+	if err != nil {
+		return fmt.Errorf("failed to load current config: %w", err)
+	}
+
+	// Create a copy of current config and apply preset changes
+	modifiedConfig := *currentConfig
+	for key, value := range preset.Values {
+		fieldConfig, exists := appConfig.Fields[key]
+		if !exists {
+			if viper.GetBool("verbose") {
+				fmt.Printf("Warning: Field %s not found in app config, applying anyway\n", key)
+			}
+		}
+
+		// Convert value to appropriate type if field config exists
+		convertedValue := value
+		if exists {
+			convertedValue, err = e.convertValue(fmt.Sprintf("%v", value), fieldConfig.Type)
+			if err != nil {
+				return fmt.Errorf("failed to convert value for %s: %w", key, err)
+			}
+		}
+
+		_ = modifiedConfig.Set(key, convertedValue)
+	}
+
+	// Calculate diff
+	differ := configextractor.NewConfigDiffer()
+	diff := differ.DiffConfigurations(currentConfig.All(), modifiedConfig.All())
+
+	if diff.HasChanges() {
+		fmt.Printf("Configuration changes for preset '%s' on app '%s':\n", presetName, appName)
+		fmt.Println(diff.FormatDiff())
+		fmt.Printf("Summary: %s\n", diff.Summary())
+	} else {
+		fmt.Printf("No changes would be made by applying preset '%s' to app '%s'\n", presetName, appName)
+	}
+
+	return nil
 }
 
 // GetApps returns all available applications for programmatic use
@@ -414,15 +548,78 @@ func (e *Engine) ListKeys(appName string) error {
 }
 
 // convertValue converts a string value to the appropriate type
-// Deprecated: convertValue has been moved to ValueConverter service
 func (e *Engine) convertValue(value, fieldType string) (interface{}, error) {
-	fieldConfig := &config.FieldConfig{Type: fieldType}
-	return e.valueConv.ConvertValue(value, fieldConfig)
+	switch fieldType {
+	case "boolean":
+		return strconv.ParseBool(value)
+	case "number":
+		// Try int first, then float
+		if intVal, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return intVal, nil
+		}
+		return strconv.ParseFloat(value, 64)
+	case "string", "choice":
+		return value, nil
+	default:
+		// Default to string
+		return value, nil
+	}
 }
 
-// Deprecated: runHooks has been moved to HookRunner service
+// runHooks executes post-action hooks
 func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
-	return e.hookRunner.RunHooks(appConfig, hookType)
+	hookCmd, exists := appConfig.Hooks[hookType]
+	if !exists {
+		return nil
+	}
+
+	log := e.logger.WithApp(appConfig.Name).WithContext(map[string]interface{}{
+		"hook_type": hookType,
+		"command":   hookCmd,
+	})
+
+	if viper.GetBool("verbose") {
+		log.Debug("Running hook")
+	}
+
+	// Set environment variables safely
+	if err := e.setEnvironmentVariables(appConfig.Env); err != nil {
+		return fmt.Errorf("failed to set environment variables: %w", err)
+	}
+
+	// Execute the hook command
+	parts := strings.Fields(hookCmd)
+	if len(parts) == 0 {
+		return nil
+	}
+
+	// Security validation: Check if command is allowed
+	if err := e.validateHookCommand(hookCmd); err != nil {
+		log.Error("Hook command validation failed", err)
+		return fmt.Errorf("hook validation failed: %w", err)
+	}
+
+	// Use filepath.Clean to prevent path traversal
+	commandPath := filepath.Clean(parts[0])
+
+	// Create command with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, commandPath, parts[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Set working directory to a safe location
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		cmd.Dir = homeDir
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("hook %s failed: %w", hookType, err)
+	}
+
+	return nil
 }
 
 // GetAppConfig returns the configuration metadata for an app (for TUI use)
@@ -453,16 +650,12 @@ func (e *Engine) validateHookCommand(hookCmd string) error {
 		return fmt.Errorf("empty hook command")
 	}
 
-	// Check for dangerous characters and patterns - expanded list
+	// Check for dangerous characters and patterns
 	dangerousPatterns := []string{
-		"|", "&&", "||", ";", "`", "$", "$(", "${", // Shell operators and command substitution
-		"rm -rf", "rm -f", ">/dev/null", "2>&1", // Dangerous operations
-		"curl", "wget", "nc", "telnet", "ssh", "scp", // Network operations
-		"sudo", "su -", "chmod +x", "chown", "setuid", // Privilege escalation
-		"../", "./", "~", "/etc/", "/usr/", "/var/", // Path traversal attempts
-		"eval", "exec", "source", "bash -c", "sh -c", // Code execution
-		">&", "<&", ">>", "<<", // Redirection operators
-		"*", "?", "[", "]", // Glob patterns that could be dangerous
+		"|", "&&", "||", ";", "`", "$", // Shell operators
+		"rm -rf", "rm -f", ">/dev/null", // Dangerous operations
+		"curl", "wget", "nc", "telnet", // Network operations
+		"sudo", "su -", "chmod +x", // Privilege escalation
 	}
 
 	lowerCmd := strings.ToLower(hookCmd)
@@ -472,35 +665,20 @@ func (e *Engine) validateHookCommand(hookCmd string) error {
 		}
 	}
 
-	// Additional validation: no control characters
-	for _, r := range hookCmd {
-		if r < 32 && r != 9 && r != 10 && r != 13 { // Allow tab, newline, carriage return
-			return fmt.Errorf("hook command contains control character")
-		}
-	}
-
 	// Allow-list approach: only allow certain safe commands
 	parts := strings.Fields(hookCmd)
 	if len(parts) == 0 {
 		return fmt.Errorf("empty hook command")
 	}
 
-	// Strict allow-list - only essential safe commands
 	allowedCommands := []string{
 		"echo", "printf", "cat", "head", "tail", "wc",
 		"grep", "sed", "awk", "sort", "uniq",
-		"touch", "mkdir", "ls", "pwd",
+		"touch", "mkdir", "cp", "mv", "ls",
 		"notify-send", "osascript", // Notification commands
-		"date", "sleep", // Time-related safe commands
 	}
 
-	// Extract just the command name, handle absolute paths
 	command := filepath.Base(parts[0])
-	// Also check if it's trying to use a path
-	if strings.Contains(parts[0], "/") && parts[0] != command {
-		return fmt.Errorf("hook command cannot use absolute or relative paths")
-	}
-
 	for _, allowed := range allowedCommands {
 		if command == allowed {
 			return nil
@@ -543,36 +721,28 @@ func (e *Engine) setEnvironmentVariables(envVars map[string]string) error {
 	return nil
 }
 
-// Deprecated: expandPath has been moved to ConfigOperator service
+// expandPath efficiently expands ~ to home directory with thread-safe LRU caching
 func (e *Engine) expandPath(path string) string {
-	return e.configOp.expandPath(path)
-}
+	// Check cache first with read lock
+	e.pathMutex.RLock()
+	if expanded, exists := e.pathCache.Get(path); exists {
+		e.pathMutex.RUnlock()
+		return expanded
+	}
+	e.pathMutex.RUnlock()
 
-// ghosttyValidatorAdapter adapts the ghostty validation system to the recovery ConfigValidator interface
-type ghosttyValidatorAdapter struct {
-	appName string
-	engine  *Engine
-}
-
-// ValidateConfig validates the configuration using ghostty-specific validation rules
-func (v *ghosttyValidatorAdapter) ValidateConfig(config map[string]interface{}) recovery.ValidationResult {
-	// For ghostty configs, use the schema validator
-	if strings.ToLower(v.appName) == "ghostty" {
-		validator := configextractor.NewGhosttySchemaValidator()
-		result := validator.ValidateConfig(config)
-
-		// Convert the result format
-		var errors []string
-		if !result.Valid {
-			errors = result.Errors
-		}
-
-		return recovery.ValidationResult{
-			Valid:  result.Valid,
-			Errors: errors,
-		}
+	// Expand path
+	var expanded string
+	if strings.HasPrefix(path, "~") {
+		expanded = strings.Replace(path, "~", e.homeDir, 1)
+	} else {
+		expanded = path
 	}
 
-	// For other apps, use basic validation (could be extended)
-	return recovery.ValidationResult{Valid: true}
+	// Cache the result with write lock
+	e.pathMutex.Lock()
+	e.pathCache.Add(path, expanded)
+	e.pathMutex.Unlock()
+
+	return expanded
 }

@@ -6,18 +6,6 @@ import (
 	"sync"
 )
 
-// Pool thresholds for when pooling becomes beneficial
-//
-// Performance analysis shows that sync.Pool overhead is only beneficial
-// for larger objects or high-contention scenarios. For small objects,
-// direct allocation is faster.
-const (
-	// Minimum map size where pooling provides benefit
-	minMapSizeForPool = 8
-	// Minimum string builder size where pooling provides benefit  
-	minBuilderSizeForPool = 512
-)
-
 // BufferPool manages a pool of reusable byte buffers
 var BufferPool = sync.Pool{
 	New: func() interface{} {
@@ -99,21 +87,13 @@ func PutBuffer(buf *bytes.Buffer) {
 }
 
 // GetStringBuilder gets a string builder from the pool
-// For small strings, direct allocation is faster than pooling
 func GetStringBuilder() *strings.Builder {
-	return &strings.Builder{}
-}
-
-// GetStringBuilderPooled gets a larger string builder from the pool
-// Use this for building large strings (>512 bytes)
-func GetStringBuilderPooled() *strings.Builder {
 	sb := StringBuilderPool.Get().(*strings.Builder)
 	sb.Reset()
 	return sb
 }
 
 // PutStringBuilder returns a string builder to the pool
-// Only use this with builders obtained from GetStringBuilderPooled
 func PutStringBuilder(sb *strings.Builder) {
 	if sb == nil {
 		return
@@ -129,18 +109,25 @@ func PutStringBuilder(sb *strings.Builder) {
 // GetStringInterfaceMap gets a map[string]interface{} from the pool
 func GetStringInterfaceMap() map[string]interface{} {
 	m := MapPool.StringInterface.Get().(map[string]interface{})
-	// Map is cleared in PutStringInterfaceMap before returning to pool
+	// Clear the map
+	for k := range m {
+		delete(m, k)
+	}
 	return m
 }
 
 // PutStringInterfaceMap returns a map to the pool
 func PutStringInterfaceMap(m map[string]interface{}) {
-	if m == nil || len(m) > 1024 {
+	if m == nil {
 		return
 	}
-	// Clear the map efficiently using Go 1.21+ clear() builtin
-	if len(m) > 0 {
-		clear(m)
+	// Only return maps that aren't too large
+	if len(m) > 1024 {
+		return
+	}
+	// Clear the map
+	for k := range m {
+		delete(m, k)
 	}
 	MapPool.StringInterface.Put(m)
 }
@@ -148,44 +135,51 @@ func PutStringInterfaceMap(m map[string]interface{}) {
 // GetStringStringMap gets a map[string]string from the pool
 func GetStringStringMap() map[string]string {
 	m := MapPool.StringString.Get().(map[string]string)
-	// Map is cleared in PutStringStringMap before returning to pool
+	// Clear the map
+	for k := range m {
+		delete(m, k)
+	}
 	return m
 }
 
 // PutStringStringMap returns a map to the pool
 func PutStringStringMap(m map[string]string) {
-	if m == nil || len(m) > 1024 {
+	if m == nil {
 		return
 	}
-	// Clear the map efficiently using Go 1.21+ clear() builtin
-	if len(m) > 0 {
-		clear(m)
+	// Only return maps that aren't too large
+	if len(m) > 1024 {
+		return
+	}
+	// Clear the map
+	for k := range m {
+		delete(m, k)
 	}
 	MapPool.StringString.Put(m)
 }
 
 // GetStringBoolMap gets a map[string]bool from the pool
-// For small maps, direct allocation is faster than pooling
 func GetStringBoolMap() map[string]bool {
-	return make(map[string]bool)
-}
-
-// GetStringBoolMapPooled gets a larger map[string]bool from the pool
-// Use this for maps that will contain many items
-func GetStringBoolMapPooled() map[string]bool {
 	m := MapPool.StringBool.Get().(map[string]bool)
+	// Clear the map
+	for k := range m {
+		delete(m, k)
+	}
 	return m
 }
 
 // PutStringBoolMap returns a map[string]bool to the pool
-// Only use this with maps obtained from GetStringBoolMapPooled
 func PutStringBoolMap(m map[string]bool) {
-	if m == nil || len(m) > 1024 {
+	if m == nil {
 		return
 	}
-	// Clear the map efficiently using Go 1.21+ clear() builtin
-	if len(m) > 0 {
-		clear(m)
+	// Only return maps that aren't too large
+	if len(m) > 1024 {
+		return
+	}
+	// Clear the map
+	for k := range m {
+		delete(m, k)
 	}
 	MapPool.StringBool.Put(m)
 }

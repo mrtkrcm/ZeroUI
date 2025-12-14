@@ -4,6 +4,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// AvailableThemes holds all predefined themes
+var AvailableThemes = []Theme{
+	ModernTheme,
+	DraculaTheme,
+}
+
+// currentThemeIndex tracks the currently active theme
+var currentThemeIndex = 0
+
 // Styles holds all the style definitions for the UI
 type Styles struct {
 	Base     lipgloss.Style
@@ -80,6 +89,12 @@ type Theme struct {
 	// Additional fields for backward compatibility
 	BgSubtle string
 	FgMuted  string
+
+	// Test compatibility fields
+	Name    string
+	Primary *lipgloss.Color
+	BgBase  *lipgloss.Color
+	FgBase  *lipgloss.Color
 }
 
 // ModernTheme provides a beautiful, accessible color scheme
@@ -112,6 +127,12 @@ var ModernTheme = Theme{
 	// Backward compatibility fields
 	BgSubtle: "#1e1e2e",
 	FgMuted:  "#6272a4",
+
+	// Test compatibility fields
+	Name:    "Modern",
+	Primary: func() *lipgloss.Color { c := lipgloss.Color("#bd93f9"); return &c }(),
+	BgBase:  func() *lipgloss.Color { c := lipgloss.Color("#0c0c0c"); return &c }(),
+	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#f8f8f2"); return &c }(),
 }
 
 // DraculaTheme - Alternative theme for variety
@@ -144,11 +165,59 @@ var DraculaTheme = Theme{
 	// Backward compatibility fields
 	BgSubtle: "#44475a",
 	FgMuted:  "#6272a4",
+
+	// Test compatibility fields
+	Name:    "Dracula",
+	Primary: func() *lipgloss.Color { c := lipgloss.Color("#bd93f9"); return &c }(),
+	BgBase:  func() *lipgloss.Color { c := lipgloss.Color("#282a36"); return &c }(),
+	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#f8f8f2"); return &c }(),
 }
 
 // GetTheme returns the current theme (could be configurable)
 func GetTheme() Theme {
-	return ModernTheme
+	return AvailableThemes[currentThemeIndex]
+}
+
+// AllThemes returns all available themes
+func AllThemes() []Theme {
+	return AvailableThemes
+}
+
+// GetThemeNames returns the names of all available themes
+func GetThemeNames() []string {
+	names := make([]string, len(AvailableThemes))
+	for i, theme := range AvailableThemes {
+		names[i] = GetThemeName(theme)
+	}
+	return names
+}
+
+// GetThemeName returns a human-readable name for a theme
+func GetThemeName(theme Theme) string {
+	// For now, use simple names based on colors
+	if theme.Background == ModernTheme.Background {
+		return "Modern"
+	}
+	if theme.Background == DraculaTheme.Background {
+		return "Dracula"
+	}
+	return "Unknown"
+}
+
+// SetTheme sets the current theme
+func SetTheme(theme Theme) {
+	for i, t := range AvailableThemes {
+		if GetThemeName(t) == GetThemeName(theme) {
+			currentThemeIndex = i
+			break
+		}
+	}
+}
+
+// CycleTheme cycles to the next theme and returns it
+func CycleTheme() Theme {
+	currentThemeIndex = (currentThemeIndex + 1) % len(AvailableThemes)
+	return GetTheme()
 }
 
 // Style definitions for common UI elements
@@ -496,13 +565,7 @@ func ColorToHex(color lipgloss.Color) string {
 
 // GetCurrentThemeName returns the name of the current theme
 func GetCurrentThemeName() string {
-	return "Modern"
-}
-
-// CycleTheme cycles to the next available theme
-func CycleTheme() {
-	// For now, just keep the modern theme
-	// In a real implementation, this would cycle through available themes
+	return GetThemeName(GetTheme())
 }
 
 // BuildStyles builds the complete style set from the theme (for backward compatibility)

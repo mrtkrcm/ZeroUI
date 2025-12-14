@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -114,10 +115,8 @@ func TestFullscreenLayout(t *testing.T) {
 	assert.LessOrEqual(t, len(lines), 40, "Should not exceed terminal height")
 
 	for _, line := range lines {
-		// Strip ANSI codes for length check
-		cleanLine := stripAnsi(line)
-		// Allow 15 characters tolerance for rendering edge cases and emoji/unicode
-		assert.LessOrEqual(t, len(cleanLine), 135, "Lines should not exceed terminal width")
+		// Check display width, accounting for wide characters and emojis
+		assert.LessOrEqual(t, lipgloss.Width(line), 135, "Lines should not exceed terminal width")
 	}
 }
 

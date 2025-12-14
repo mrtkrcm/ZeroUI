@@ -113,7 +113,7 @@ func (m *Model) renderListView() string {
 			"")
 	} else {
 		headerText := fmt.Sprintf("🎯 ZeroUI - Application Manager (%d apps)%s", appCount, statusInfo)
-		header = m.styles.Title.Render(headerText)
+		header = lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render(headerText))
 	}
 
 	// Enhanced footer with contextual information using UI manager
@@ -125,14 +125,14 @@ func (m *Model) renderListView() string {
 		if m.uiManager != nil {
 			footer = m.uiManager.CreateFooter(footerText, "", "")
 		} else {
-			footer = m.styles.Help.Render(footerText)
+			footer = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
 		}
 	} else {
 		footerText := fmt.Sprintf("↑/↓: Navigate • Enter: Select • /: Filter • ?: Help • q: Quit (%d)", appCount)
 		if m.uiManager != nil {
 			footer = m.uiManager.CreateFooter(footerText, "", "")
 		} else {
-			footer = m.styles.Help.Render(footerText)
+			footer = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
 		}
 	}
 
@@ -142,7 +142,7 @@ func (m *Model) renderListView() string {
 		if m.uiManager != nil {
 			statusIndicator = m.uiManager.CreateInfoMessage("Capturing screenshot...")
 		} else {
-			statusIndicator = m.styles.Info.Render("📸 Capturing screenshot...")
+			statusIndicator = lipgloss.NewStyle().Width(m.width).Render(m.styles.Info.Render("📸 Capturing screenshot..."))
 		}
 	}
 
@@ -162,7 +162,7 @@ func (m *Model) renderListView() string {
 
 	// Ensure proper width constraints and centering
 	finalContent := lipgloss.NewStyle().
-		MaxWidth(m.width).
+		Width(m.width).
 		Align(lipgloss.Left).
 		Render(content)
 
@@ -196,12 +196,12 @@ func (m *Model) renderConfigView() string {
 	if m.uiManager != nil {
 		headerText = m.uiManager.CreateHeader(headerText, "")
 	} else {
-		headerText = m.styles.Title.Render(headerText)
+		headerText = lipgloss.NewStyle().Width(m.width).Render(m.styles.Title.Render(headerText))
 	}
 
 	status := ""
 	if m.configEditor.HasUnsavedChanges() {
-		status = m.styles.Warning.Render("Unsaved changes • Press Ctrl+S to save")
+		status = lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Warning.Render("Unsaved changes • Press Ctrl+S to save"))
 	}
 
 	configView := m.configEditor.View()
@@ -209,7 +209,7 @@ func (m *Model) renderConfigView() string {
 	if m.uiManager != nil {
 		footerText = m.uiManager.CreateFooter(footerText, "", "")
 	} else {
-		footerText = m.styles.Help.Render(footerText)
+		footerText = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
 	}
 
 	elements := []string{headerText, ""}
@@ -224,7 +224,7 @@ func (m *Model) renderConfigView() string {
 	)
 
 	return lipgloss.NewStyle().
-		MaxWidth(m.width).
+		Width(m.width).
 		Align(lipgloss.Left).
 		Render(content)
 }
@@ -242,10 +242,10 @@ func (m *Model) renderHelpView() string {
 	helpView := m.helpSystem.View()
 
 	// Add header
-	header := m.styles.Title.Render("📚 Help")
+	header := lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render("📚 Help"))
 
 	// Add footer
-	footer := m.styles.Help.Render("Esc: Back • q: Quit")
+	footer := lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Help.Render("Esc: Back • q: Quit"))
 
 	// Combine
 	content := lipgloss.JoinVertical(
@@ -258,7 +258,7 @@ func (m *Model) renderHelpView() string {
 	)
 
 	// Ensure help content is constrained to terminal width before placement
-	wrapped := lipgloss.NewStyle().MaxWidth(m.width).Render(content)
+	wrapped := lipgloss.NewStyle().Width(m.width).Render(content)
 	return lipgloss.Place(
 		m.width,
 		m.height,

@@ -24,7 +24,6 @@ import (
 type Loader struct {
 	configDir     string
 	yamlValidator *security.YAMLValidator
-	pathValidator *security.PathValidator
 
 	// Performance optimization: LRU cache for app configs
 	appConfigCache *lru.Cache[string, *AppConfig]
@@ -59,7 +58,6 @@ func NewLoader() (*Loader, error) {
 		}
 
 		yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
-		pathValidator := security.NewPathValidator(configDir)
 		appCache, err := lru.New[string, *AppConfig](1000)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create app config cache: %w", err)
@@ -67,7 +65,6 @@ func NewLoader() (*Loader, error) {
 		return &Loader{
 			configDir:      configDir,
 			yamlValidator:  yamlValidator,
-			pathValidator:  pathValidator,
 			appConfigCache: appCache,
 			bufferPool: sync.Pool{
 				New: func() interface{} { return make([]byte, 0, 4096) },
@@ -90,9 +87,6 @@ func NewLoader() (*Loader, error) {
 
 	// Initialize YAML validator with security limits
 	yamlValidator := security.NewYAMLValidator(security.DefaultYAMLLimits())
-	
-	// Initialize path validator with allowed config directories
-	pathValidator := security.NewPathValidator(configDir, home)
 
 	// Initialize LRU cache with 1000 entry limit
 	appCache, err := lru.New[string, *AppConfig](1000)
@@ -103,7 +97,6 @@ func NewLoader() (*Loader, error) {
 	return &Loader{
 		configDir:      configDir,
 		yamlValidator:  yamlValidator,
-		pathValidator:  pathValidator,
 		appConfigCache: appCache,
 		bufferPool: sync.Pool{
 			New: func() interface{} { return make([]byte, 0, 4096) },
@@ -171,17 +164,7 @@ func (l *Loader) LoadAppConfig(appName string) (*AppConfig, error) {
 	l.cacheMutex.RUnlock()
 
 	// Cache miss - load from disk
-	// Validate app name for security
-	if err := l.pathValidator.ValidatePath(appName); err != nil {
-		return nil, fmt.Errorf("invalid app name: %w", err)
-	}
-	
 	configPath := filepath.Join(l.configDir, "apps", appName+".yaml")
-	
-	// Validate the resulting config path
-	if err := l.pathValidator.ValidatePath(configPath); err != nil {
-		return nil, fmt.Errorf("invalid config path: %w", err)
-	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("app config not found: %s", appName)
@@ -255,11 +238,6 @@ func (l *Loader) LoadTargetConfig(appConfig *AppConfig) (*koanf.Koanf, error) {
 		} else {
 			configPath = filepath.Join(home, trimmed)
 		}
-	}
-	
-	// Validate the resolved config path for security
-	if err := l.pathValidator.ValidatePath(configPath); err != nil {
-		return nil, fmt.Errorf("invalid target config path '%s': %w", configPath, err)
 	}
 
 	k := koanf.New(".")
@@ -341,7 +319,7 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		data, err = k.Marshal(toml.Parser())
 	case "custom":
 		// For custom formats, handle separately
-		if err := l.saveCustomFormatWithTemp(tempFile.TempPath, k); err != nil {
+		if err := l.saveCustomFormatWithTemp(tempFile.TempPath, k, configPath); err != nil {
 			tempManager.Rollback(tempFile)
 			return fmt.Errorf("failed to save custom format: %w", err)
 		}
@@ -420,22 +398,8 @@ func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
 }
 
 // saveCustomFormatWithTemp handles saving custom formats to a temporary file.
-func (l *Loader) saveCustomFormatWithTemp(tempPath string, k *koanf.Koanf) error {
-	// For now, write directly to temp path
-	// This would be enhanced for specific custom formats
-	data := make(map[string]interface{})
-	for _, key := range k.Keys() {
-		data[key] = k.Get(key)
-	}
-
-	// Write as simple key=value format for custom configs
-	var lines []string
-	for key, value := range data {
-		lines = append(lines, fmt.Sprintf("%s = %v", key, value))
-	}
-
-	content := strings.Join(lines, "\n")
-	return os.WriteFile(tempPath, []byte(content), 0o644)
+func (l *Loader) saveCustomFormatWithTemp(tempPath string, k *koanf.Koanf, originalPath string) error {
+	return WriteGhosttyConfig(tempPath, k, originalPath)
 }
 
 // initFileWatcher initializes the file watcher for cache invalidation.

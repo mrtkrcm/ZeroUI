@@ -24,7 +24,7 @@ type ConfigOperator struct {
 func NewConfigOperator(loader ConfigLoader) *ConfigOperator {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000)
-	
+
 	return &ConfigOperator{
 		loader:    loader,
 		homeDir:   homeDir,
