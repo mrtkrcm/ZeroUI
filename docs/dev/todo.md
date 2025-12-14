@@ -66,6 +66,93 @@ ZeroUI is a stable, production-ready configuration management tool with comprehe
 
 ---
 
+## Next Steps: Improvements & Stabilizations
+
+### High Priority - Features from Closed PRs
+
+#### 1. Structured Logger Interface (from PR #3)
+**Goal**: Implement request-scoped logging with contextual tracing
+
+```go
+// Target API
+type Logger interface {
+    Info(msg string, fields ...Field)
+    Error(msg string, err error, fields ...Field)
+    With(fields ...Field) Logger
+    WithRequest(requestID string) Logger
+}
+
+type Field struct {
+    Key   string
+    Value interface{}
+}
+
+// Context helpers
+func FromContext(ctx context.Context) Logger
+func ContextWithLogger(ctx context.Context, l Logger) context.Context
+```
+
+**Implementation steps**:
+- [ ] Create `Logger` interface in `internal/logger/`
+- [ ] Add `Field` struct for structured logging
+- [ ] Implement context helpers (FromContext, ContextWithLogger)
+- [ ] Add command tracing to root.go (without breaking current architecture)
+- [ ] Update existing logger usages incrementally
+
+#### 2. Runtime Config Loader (from PR #5)
+**Goal**: Unified config management with precedence handling
+
+```go
+// Target API
+type Config struct {
+    ConfigFile   string
+    ConfigDir    string
+    LogLevel     string
+    LogFormat    string
+    DefaultTheme string
+    Verbose      bool
+    DryRun       bool
+}
+
+type Loader struct { v *viper.Viper }
+
+func NewLoader(v *viper.Viper) *Loader
+func (l *Loader) Load(cfgFile string, flags *pflag.FlagSet) (*Config, error)
+```
+
+**Implementation steps**:
+- [ ] Create `internal/runtimeconfig/` package
+- [ ] Implement config loader with precedence: flags > env > file > defaults
+- [ ] Add validation for config values
+- [ ] Wire into cmd/root.go init (preserve current ExecuteContext pattern)
+- [ ] Add theme utilities to `internal/tui/styles/theme.go`
+
+### Medium Priority - Stabilization
+
+#### 3. Test Coverage Improvements
+- [ ] Add integration tests for signal handling (real signals, not mocked)
+- [ ] Add visual regression tests for new CLI examples output
+- [ ] Ensure all cmd/*.go files have corresponding test coverage
+
+#### 4. CLI Help Consistency
+- [ ] Audit all commands for consistent Example: formatting
+- [ ] Ensure all commands properly validate Args
+- [ ] Add shell completion support
+
+### Low Priority - Technical Debt
+
+#### 5. Code Quality
+- [ ] Remove unused keymap functions in cmd/list.go (currently placeholder implementations)
+- [ ] Consolidate duplicate keybind validation logic
+- [ ] Add godoc comments to exported functions
+
+#### 6. Documentation
+- [ ] Update CLAUDE.md with new signal handling features
+- [ ] Document cleanup hook pattern for plugins
+- [ ] Add examples for runtime config customization
+
+---
+
 ## Archived: Original PR Analysis
 
 ---
