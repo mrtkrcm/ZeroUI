@@ -31,10 +31,15 @@ type Styles struct {
 	Info     lipgloss.Style
 
 	// Additional fields for backward compatibility
-	Title           lipgloss.Style
-	Help            lipgloss.Style
-	Muted           lipgloss.Style
-	Text            lipgloss.Style
+	// Deprecated: Use HeaderTitleStyle or similar specific styles
+	Title lipgloss.Style
+	// Deprecated: Use HelpStyle
+	Help lipgloss.Style
+	// Deprecated: Use TextMuted color or similar
+	Muted lipgloss.Style
+	// Deprecated: Use TextPrimary color or similar
+	Text lipgloss.Style
+	// Deprecated: Use HeaderSubtitleStyle
 	Subtitle        lipgloss.Style
 	ApplicationList ApplicationListStyles
 }
@@ -90,8 +95,10 @@ type Theme struct {
 	LinkHover string
 
 	// Additional fields for backward compatibility
+	// Deprecated: Use Surface or SurfaceHover
 	BgSubtle string
-	FgMuted  string
+	// Deprecated: Use TextMuted
+	FgMuted string
 
 	// Test compatibility fields
 	Name    string

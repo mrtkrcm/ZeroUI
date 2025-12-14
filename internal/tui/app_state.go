@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -44,9 +43,6 @@ type Model struct {
 	componentManager *ui.ComponentManager
 	screenshotComp   *ui.ScreenshotComponent
 	confirmDialog    *ui.ConfirmDialog
-
-	// UI implementation selection
-	uiSelector *UISelector
 
 	// UI state
 	keyMap      keybindings.AppKeyMap
@@ -207,19 +203,9 @@ func (m *Model) loadAppConfigForForm(appName string) error {
 	targetPath := appConfig.Path
 	if targetPath == "" {
 		// Try to find config file
-		home, _ := os.UserHomeDir()
-		possiblePaths := []string{
-			filepath.Join(home, ".config", appName, "config.yml"),
-			filepath.Join(home, fmt.Sprintf(".%s", appName), "config"),
-			filepath.Join(home, fmt.Sprintf(".%src", appName)),
-		}
-
-		for _, path := range possiblePaths {
-			if _, err := os.Stat(path); err == nil {
-				targetPath = path
-				m.logger.Info("Found config file", "app", appName, "path", path)
-				break
-			}
+		if foundPath := util.FindConfigPath(appName); foundPath != "" {
+			targetPath = foundPath
+			m.logger.Info("Found config file", "app", appName, "path", targetPath)
 		}
 	}
 
