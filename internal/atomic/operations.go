@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/knadh/koanf/v2"
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
 )
 

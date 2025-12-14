@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/knadh/koanf/v2"
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // mockConfigLoader is a mock implementation of ConfigLoader for testing

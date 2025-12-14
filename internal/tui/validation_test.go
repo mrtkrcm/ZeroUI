@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
-	"github.com/mrtkrcm/ZeroUI/internal/logging"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )

@@ -13,7 +13,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/v2"
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
@@ -23,10 +23,10 @@ import (
 
 // ConfigLoader interface to support both basic and reference-enhanced loaders
 type ConfigLoader interface {
-	LoadAppConfig(appName string) (*config.AppConfig, error)
+	LoadAppConfig(appName string) (*appconfig.AppConfig, error)
 	ListApps() ([]string, error)
-	LoadTargetConfig(appConfig *config.AppConfig) (*koanf.Koanf, error)
-	SaveTargetConfig(appConfig *config.AppConfig, k *koanf.Koanf) error
+	LoadTargetConfig(appConfig *appconfig.AppConfig) (*koanf.Koanf, error)
+	SaveTargetConfig(appConfig *appconfig.AppConfig, k *koanf.Koanf) error
 }
 
 // Engine handles configuration toggling operations
@@ -41,10 +41,10 @@ type Engine struct {
 // NewEngine creates a new toggle engine (backwards compatibility)
 func NewEngine() (*Engine, error) {
 	// Use reference-enhanced loader for better config coverage
-	enhancedLoader, err := config.NewReferenceEnhancedLoader()
+	enhancedLoader, err := appconfig.NewReferenceEnhancedLoader()
 	if err != nil {
 		// Fallback to basic loader if reference-enhanced fails
-		basicLoader, basicErr := config.NewLoader()
+		basicLoader, basicErr := appconfig.NewLoader()
 		if basicErr != nil {
 			return nil, fmt.Errorf("failed to create config loader: %w", basicErr)
 		}
@@ -807,7 +807,7 @@ func (e *Engine) convertValue(value, fieldType string) (interface{}, error) {
 }
 
 // runHooks executes post-action hooks
-func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
+func (e *Engine) runHooks(appConfig *appconfig.AppConfig, hookType string) error {
 	hookCmd, exists := appConfig.Hooks[hookType]
 	if !exists {
 		return nil
@@ -863,7 +863,7 @@ func (e *Engine) runHooks(appConfig *config.AppConfig, hookType string) error {
 }
 
 // GetAppConfig returns the configuration metadata for an app (for TUI use)
-func (e *Engine) GetAppConfig(appName string) (*config.AppConfig, error) {
+func (e *Engine) GetAppConfig(appName string) (*appconfig.AppConfig, error) {
 	return e.loader.LoadAppConfig(appName)
 }
 

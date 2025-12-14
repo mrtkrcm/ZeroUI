@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 )
 
@@ -24,7 +24,7 @@ func setupTestEngine(t testing.TB) (*Engine, string, func()) {
 
 	// Create test app config
 	testConfig := `name: test-app
-path: ~/.config/test-app/config.json
+path: ~/.config/test-app/appconfig.json
 format: json
 description: Test application
 
@@ -78,7 +78,7 @@ hooks:
 		t.Fatalf("Failed to create target dir: %v", err)
 	}
 
-	targetConfigPath := filepath.Join(targetDir, "config.json")
+	targetConfigPath := filepath.Join(targetDir, "appconfig.json")
 	targetConfig := `{
   "theme": "dark",
   "font-size": 14,
@@ -139,7 +139,7 @@ hooks:
 	}
 
 	// Create loader and engine
-	loader := &config.Loader{}
+	loader := &appconfig.Loader{}
 	loader.SetConfigDir(tmpDir) // Assume we add this method
 
 	engine, err := NewEngine()
@@ -474,7 +474,7 @@ func TestEngine_RunHooks(t *testing.T) {
 	// Create app config with hooks
 	appsDir := filepath.Join(tmpDir, "apps")
 	configWithHooks := `name: hook-test
-path: ` + filepath.Join(tmpDir, "hook-config.json") + `
+path: ` + filepath.Join(tmpDir, "hook-appconfig.json") + `
 format: json
 
 fields:
@@ -504,7 +504,7 @@ env:
 
 	// Create target config
 	targetConfig := `{"theme": "dark"}`
-	targetPath := filepath.Join(tmpDir, "hook-config.json")
+	targetPath := filepath.Join(tmpDir, "hook-appconfig.json")
 	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write hook target config: %v", err)
 	}
@@ -528,7 +528,7 @@ env:
 	// Test hook with invalid command
 	t.Run("Invalid hook command", func(t *testing.T) {
 		configWithBadHook := `name: bad-hook-test
-path: ` + filepath.Join(tmpDir, "bad-hook-config.json") + `
+path: ` + filepath.Join(tmpDir, "bad-hook-appconfig.json") + `
 format: json
 
 fields:
@@ -547,7 +547,7 @@ hooks:
 		}
 
 		badTargetConfig := `{"theme": "dark"}`
-		badTargetPath := filepath.Join(tmpDir, "bad-hook-config.json")
+		badTargetPath := filepath.Join(tmpDir, "bad-hook-appconfig.json")
 		if err := os.WriteFile(badTargetPath, []byte(badTargetConfig), 0644); err != nil {
 			t.Fatalf("Failed to write bad hook target config: %v", err)
 		}
@@ -613,7 +613,7 @@ func TestEngine_CycleEdgeCases(t *testing.T) {
 	// Create app with single-value field
 	appsDir := filepath.Join(tmpDir, "apps")
 	singleValueConfig := `name: single-value-test
-path: ` + filepath.Join(tmpDir, "single-config.json") + `
+path: ` + filepath.Join(tmpDir, "single-appconfig.json") + `
 format: json
 
 fields:
@@ -634,7 +634,7 @@ fields:
 
 	// Create target config
 	targetConfig := `{"single-choice": "only-option", "no-values": "some-value"}`
-	targetPath := filepath.Join(tmpDir, "single-config.json")
+	targetPath := filepath.Join(tmpDir, "single-appconfig.json")
 	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write single target config: %v", err)
 	}
@@ -664,7 +664,7 @@ func TestEngine_PresetEdgeCases(t *testing.T) {
 	// Create app with preset that has unknown fields
 	appsDir := filepath.Join(tmpDir, "apps")
 	unknownFieldConfig := `name: unknown-field-test
-path: ` + filepath.Join(tmpDir, "unknown-config.json") + `
+path: ` + filepath.Join(tmpDir, "unknown-appconfig.json") + `
 format: json
 
 fields:
@@ -690,7 +690,7 @@ presets:
 
 	// Create target config
 	targetConfig := `{"theme": "dark"}`
-	targetPath := filepath.Join(tmpDir, "unknown-config.json")
+	targetPath := filepath.Join(tmpDir, "unknown-appconfig.json")
 	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
 		t.Fatalf("Failed to write unknown target config: %v", err)
 	}

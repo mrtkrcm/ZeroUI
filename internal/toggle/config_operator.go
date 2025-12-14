@@ -7,7 +7,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/knadh/koanf/v2"
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/spf13/viper"
 )
@@ -33,7 +33,7 @@ func NewConfigOperator(loader ConfigLoader) *ConfigOperator {
 }
 
 // LoadAppConfig loads an application configuration
-func (co *ConfigOperator) LoadAppConfig(appName string) (*config.AppConfig, error) {
+func (co *ConfigOperator) LoadAppConfig(appName string) (*appconfig.AppConfig, error) {
 	appConfig, err := co.loader.LoadAppConfig(appName)
 	if err != nil {
 		// Check if it's an app not found error
@@ -44,7 +44,7 @@ func (co *ConfigOperator) LoadAppConfig(appName string) (*config.AppConfig, erro
 }
 
 // LoadTargetConfig loads the target configuration file
-func (co *ConfigOperator) LoadTargetConfig(appConfig *config.AppConfig) (*koanf.Koanf, error) {
+func (co *ConfigOperator) LoadTargetConfig(appConfig *appconfig.AppConfig) (*koanf.Koanf, error) {
 	targetConfig, err := co.loader.LoadTargetConfig(appConfig)
 	if err != nil {
 		return nil, errors.Wrap(errors.ConfigParseError, "failed to load target config", err).
@@ -64,7 +64,7 @@ func (co *ConfigOperator) SetConfigValue(targetConfig *koanf.Koanf, key string, 
 }
 
 // SaveConfigSafely saves configuration with backup and validation
-func (co *ConfigOperator) SaveConfigSafely(appConfig *config.AppConfig, targetConfig *koanf.Koanf) error {
+func (co *ConfigOperator) SaveConfigSafely(appConfig *appconfig.AppConfig, targetConfig *koanf.Koanf) error {
 	if viper.GetBool("dry-run") {
 		return nil // Don't actually save in dry-run mode
 	}

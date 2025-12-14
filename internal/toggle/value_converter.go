@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 )
 
@@ -17,7 +17,7 @@ func NewValueConverter() *ValueConverter {
 }
 
 // ConvertValue converts a string value to the appropriate type
-func (vc *ValueConverter) ConvertValue(value string, fieldConfig *config.FieldConfig) (interface{}, error) {
+func (vc *ValueConverter) ConvertValue(value string, fieldConfig *appconfig.FieldConfig) (interface{}, error) {
 	return vc.convertValueByType(value, fieldConfig.Type)
 }
 
@@ -70,7 +70,7 @@ func (vc *ValueConverter) convertToFloat(value string) (float64, error) {
 }
 
 // GetNextValue returns the next value in a field's cycle
-func (vc *ValueConverter) GetNextValue(fieldConfig *config.FieldConfig, currentValue string) (string, error) {
+func (vc *ValueConverter) GetNextValue(fieldConfig *appconfig.FieldConfig, currentValue string) (string, error) {
 	if len(fieldConfig.Values) == 0 {
 		return "", errors.New(errors.FieldInvalidType, "field has no predefined values to cycle through")
 	}

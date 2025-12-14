@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // ScannerState represents the scanner's current state
@@ -45,7 +45,7 @@ type AppScannerV2 struct {
 	height int
 
 	// Configuration
-	registry *config.AppsRegistry
+	registry *appconfig.AppsRegistry
 
 	// Thread safety
 	mu sync.RWMutex
@@ -280,7 +280,7 @@ func (s *AppScannerV2) viewIdle() string {
 func (s *AppScannerV2) scan() tea.Cmd {
 	return func() tea.Msg {
 		// Load registry
-		registry, err := config.LoadAppsRegistry()
+		registry, err := appconfig.LoadAppsRegistry()
 		if err != nil {
 			return scanErrorMsg{error: fmt.Errorf("failed to load registry: %w", err)}
 		}

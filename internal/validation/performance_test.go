@@ -3,7 +3,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // TestOptimizedVsUnoptimizedValidation verifies the performance improvement

@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"github.com/mrtkrcm/ZeroUI/internal/logging"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 )

@@ -3,7 +3,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/mrtkrcm/ZeroUI/internal/config"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // BenchmarkSuperOptimizedValidation tests validation with a very simple schema

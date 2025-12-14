@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
-	"github.com/mrtkrcm/ZeroUI/internal/logging"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 )
 

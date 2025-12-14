@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mrtkrcm/ZeroUI/internal/tui/registry"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 )
 
@@ -337,37 +337,43 @@ func (m *ApplicationListModel) SetApplications(apps []ApplicationInfo) {
 
 // RefreshFromRegistry loads applications from the TUI registry and updates the list
 func (m *ApplicationListModel) RefreshFromRegistry() {
-	// Get application statuses from registry
-	statuses := registry.GetAppStatuses()
+	// Load registry from appconfig
+	reg, err := appconfig.LoadAppsRegistry()
+	if err != nil {
+		// Handle error gracefully or log it
+		return
+	}
 
-	// Convert to ApplicationInfo format
-	apps := make([]ApplicationInfo, 0, len(statuses))
-	for _, status := range statuses {
-		// Only include applications that are installed and have configs
-		if status.IsInstalled && status.ConfigExists {
+	allApps := reg.GetAllApps()
+	apps := make([]ApplicationInfo, 0, len(allApps))
+
+	for _, appDef := range allApps {
+		// Check app status
+		configExists, configPath := reg.CheckAppStatus(appDef.Name)
+
+		// For now, assume installed if config exists or just display all known apps
+		// To match previous behavior of filtering, we can check if config exists
+		if configExists {
 			apps = append(apps, ApplicationInfo{
-				Name:        status.Definition.Name,
-				Description: fmt.Sprintf("%s application", status.Definition.Category),
-				Status:      getStatusString(status),
-				ConfigPath:  status.Definition.ConfigPath,
+				Name:        appDef.Name,
+				Description: fmt.Sprintf("%s application", appDef.Category),
+				Status:      "Ready", // Simplified status for now
+				ConfigPath:  configPath,
 			})
-		}
+		} else {
+            // Also include apps that we know about even if not configured,
+            // so users can see what's possible
+			apps = append(apps, ApplicationInfo{
+				Name:        appDef.Name,
+				Description: fmt.Sprintf("%s application", appDef.Category),
+				Status:      "Not Configured",
+				ConfigPath:  "",
+			})
+        }
 	}
 
 	// Update the list
 	m.SetApplications(apps)
-}
-
-// getStatusString converts registry status to display string
-func getStatusString(status registry.AppStatus) string {
-	if status.IsInstalled && status.ConfigExists {
-		return "Ready"
-	} else if status.IsInstalled {
-		return "No Config"
-	} else if status.ConfigExists {
-		return "Not Installed"
-	}
-	return "Unknown"
 }
 
 // GetSelectedApp returns the currently selected application
