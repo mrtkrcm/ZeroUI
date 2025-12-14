@@ -2,6 +2,7 @@ package styles
 
 import (
 	"github.com/charmbracelet/lipgloss"
+	"strings"
 )
 
 // Styles holds all the style definitions for the UI
@@ -47,6 +48,8 @@ type ApplicationListStyles struct {
 
 // Theme defines the visual design system for ZeroUI
 type Theme struct {
+	Name string
+
 	// Base colors
 	Background string
 	Foreground string
@@ -84,6 +87,8 @@ type Theme struct {
 
 // ModernTheme provides a beautiful, accessible color scheme
 var ModernTheme = Theme{
+	Name: "Modern",
+
 	Background: "#0c0c0c", // Deep dark
 	Foreground: "#f8f8f2", // Off-white
 	Accent:     "#bd93f9", // Purple
@@ -116,6 +121,8 @@ var ModernTheme = Theme{
 
 // DraculaTheme - Alternative theme for variety
 var DraculaTheme = Theme{
+	Name: "Dracula",
+
 	Background: "#282a36",
 	Foreground: "#f8f8f2",
 	Accent:     "#bd93f9",
@@ -146,9 +153,44 @@ var DraculaTheme = Theme{
 	FgMuted:  "#6272a4",
 }
 
+var (
+	availableThemes   = []Theme{ModernTheme, DraculaTheme}
+	currentTheme      = ModernTheme
+	currentThemeIndex int
+)
+
 // GetTheme returns the current theme (could be configurable)
 func GetTheme() Theme {
-	return ModernTheme
+	return currentTheme
+}
+
+// AllThemes returns the list of available themes.
+func AllThemes() []Theme {
+	return availableThemes
+}
+
+// SetTheme updates the active theme.
+func SetTheme(theme Theme) Theme {
+	currentTheme = theme
+	for idx, candidate := range availableThemes {
+		if candidate.Name == theme.Name {
+			currentThemeIndex = idx
+			break
+		}
+	}
+	return currentTheme
+}
+
+// SetThemeByName switches the theme when the name matches a known theme.
+func SetThemeByName(name string) (Theme, bool) {
+	for idx, theme := range availableThemes {
+		if strings.EqualFold(theme.Name, name) {
+			currentThemeIndex = idx
+			currentTheme = theme
+			return currentTheme, true
+		}
+	}
+	return currentTheme, false
 }
 
 // Style definitions for common UI elements
@@ -494,15 +536,28 @@ func ColorToHex(color lipgloss.Color) string {
 	return "#ffffff"
 }
 
+// GetThemeNames returns the names of all available themes.
+func GetThemeNames() []string {
+	names := make([]string, len(availableThemes))
+	for i, theme := range availableThemes {
+		names[i] = theme.Name
+	}
+	return names
+}
+
 // GetCurrentThemeName returns the name of the current theme
 func GetCurrentThemeName() string {
-	return "Modern"
+	return currentTheme.Name
 }
 
 // CycleTheme cycles to the next available theme
-func CycleTheme() {
-	// For now, just keep the modern theme
-	// In a real implementation, this would cycle through available themes
+func CycleTheme() Theme {
+	if len(availableThemes) == 0 {
+		return currentTheme
+	}
+	currentThemeIndex = (currentThemeIndex + 1) % len(availableThemes)
+	currentTheme = availableThemes[currentThemeIndex]
+	return currentTheme
 }
 
 // BuildStyles builds the complete style set from the theme (for backward compatibility)

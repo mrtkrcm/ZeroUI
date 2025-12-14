@@ -7,7 +7,9 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/runtimeconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
@@ -16,6 +18,8 @@ import (
 var (
 	cfgFile      string
 	appContainer *container.Container
+	runtimeCfg   *runtimeconfig.Config
+	configLoader *runtimeconfig.Loader
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -63,28 +67,13 @@ func Execute() {
 
 // ExecuteWithContext executes the root command with context support for graceful shutdown
 func ExecuteWithContext(ctx context.Context) {
-	// Initialize dependency container
-	containerConfig := &container.Config{
-		LogLevel:  "info",
-		LogFormat: "console",
-	}
-
-	var err error
-	appContainer, err = container.New(containerConfig)
-	if err != nil {
-		logger.Fatal("Failed to initialize application container", err)
-	}
-
-	defer func() {
-		if err := appContainer.Close(); err != nil {
-			logger.Error("Failed to close application container", err)
-		}
-	}()
-
 	// Set the context on the root command for propagation to subcommands
 	rootCmd.SetContext(ctx)
 
-	err = rootCmd.ExecuteContext(ctx)
+	err := rootCmd.ExecuteContext(ctx)
+	if appContainer != nil {
+		_ = appContainer.Close()
+	}
 	if err != nil {
 		// Check if error is due to context cancellation (graceful shutdown)
 		if ctx.Err() == context.Canceled {
@@ -96,41 +85,42 @@ func ExecuteWithContext(ctx context.Context) {
 }
 
 func init() {
+	configLoader = runtimeconfig.NewLoader(viper.GetViper())
 	cobra.OnInitialize(initConfig)
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/zeroui/config.yaml)")
+	rootCmd.PersistentFlags().String("config-dir", runtimeconfig.DefaultConfigDir(), "directory containing ZeroUI application definitions")
+	rootCmd.PersistentFlags().String("log-level", logger.DefaultConfig().Level, "log level (trace, debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().String("log-format", logger.DefaultConfig().Format, "log format (console or json)")
+	rootCmd.PersistentFlags().String("default-theme", "Modern", "default theme used by the TUI")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolP("dry-run", "n", false, "show what would be changed without making changes")
-
-	// Bind flags to viper
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("dry-run", rootCmd.PersistentFlags().Lookup("dry-run"))
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".zeroui" (without extension).
-		viper.AddConfigPath(home + "/.config/zeroui")
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("config")
+	cfg, err := configLoader.Load(cfgFile, rootCmd.PersistentFlags())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	runtimeCfg = cfg
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		if viper.GetBool("verbose") {
-			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-		}
+	containerConfig := &container.Config{
+		LogLevel:  cfg.LogLevel,
+		LogFormat: cfg.LogFormat,
+	}
+
+	appContainer, err = container.New(containerConfig)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to initialize application container:", err)
+		os.Exit(1)
+	}
+
+	if _, ok := styles.SetThemeByName(cfg.DefaultTheme); !ok {
+		fmt.Fprintf(os.Stderr, "Unknown theme %q; falling back to %s\n", cfg.DefaultTheme, styles.GetCurrentThemeName())
 	}
 }
 
