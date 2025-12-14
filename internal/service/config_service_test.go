@@ -52,7 +52,7 @@ fields:
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, toggle.RuntimeConfig{})
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
@@ -99,7 +99,7 @@ func TestConfigService_ErrorHandling(t *testing.T) {
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, toggle.RuntimeConfig{})
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
@@ -151,7 +151,7 @@ fields:
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, toggle.RuntimeConfig{})
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 

@@ -44,7 +44,7 @@ presets:
 	loader, err := config.NewLoader()
 	require.NoError(t, err)
 	loader.SetConfigDir(tmpDir)
-	engine := toggle.NewEngineWithDeps(loader, nil)
+	engine := toggle.NewEngineWithDeps(loader, nil, toggle.RuntimeConfig{})
 
 	_, err = NewTestModel(engine, "ghostty")
 	require.NoError(t, err)

@@ -9,7 +9,6 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
-	"github.com/spf13/viper"
 )
 
 // ConfigOperator handles core config read/write operations
@@ -18,17 +17,19 @@ type ConfigOperator struct {
 	homeDir   string
 	pathCache *lru.Cache[string, string]
 	pathMutex sync.RWMutex
+	dryRun    bool
 }
 
 // NewConfigOperator creates a new config operator
-func NewConfigOperator(loader ConfigLoader) *ConfigOperator {
+func NewConfigOperator(loader ConfigLoader, dryRun bool) *ConfigOperator {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000)
-	
+
 	return &ConfigOperator{
 		loader:    loader,
 		homeDir:   homeDir,
 		pathCache: pathCache,
+		dryRun:    dryRun,
 	}
 }
 
@@ -65,7 +66,7 @@ func (co *ConfigOperator) SetConfigValue(targetConfig *koanf.Koanf, key string, 
 
 // SaveConfigSafely saves configuration with backup and validation
 func (co *ConfigOperator) SaveConfigSafely(appConfig *config.AppConfig, targetConfig *koanf.Koanf) error {
-	if viper.GetBool("dry-run") {
+	if co.dryRun {
 		return nil // Don't actually save in dry-run mode
 	}
 

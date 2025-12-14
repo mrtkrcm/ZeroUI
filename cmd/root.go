@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
@@ -17,6 +18,8 @@ var (
 	cfgFile      string
 	appContainer *container.Container
 )
+
+type commandStartTimeKey struct{}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -33,6 +36,15 @@ Examples:
   zeroui ui ghostty
   zeroui preset vscode minimal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		requestLogger := logger.FromContext(cmd.Context())
+		if requestLogger == nil && appContainer != nil {
+			requestLogger = appContainer.Logger()
+		}
+
+		if requestLogger != nil {
+			requestLogger = requestLogger.WithRequest(cmd.CommandPath())
+		}
+
 		// If no subcommand is provided, launch the UI
 		if len(args) == 0 && cmd.Flags().NFlag() == 0 {
 			// Avoid launching interactive TUI in non-interactive environments (CI/tests)
@@ -42,13 +54,30 @@ Examples:
 				return cmd.Help()
 			}
 
+			sessionLogger := requestLogger
+			if sessionLogger == nil {
+				sessionLogger = logger.New(logger.DefaultConfig())
+			}
+
+			sessionLogger = sessionLogger.With(
+				logger.Field{Key: "interaction", Value: "tui"},
+				logger.Field{Key: "interactive", Value: true},
+			)
+
+			sessionLogger.Info("Starting TUI session")
 			// Launch the UI without a specific app (show grid)
 			// Import the functionality directly instead of calling uiCmd
 			tuiApp, err := tui.NewApp("")
 			if err != nil {
 				return fmt.Errorf("failed to create TUI app: %w", err)
 			}
-			return tuiApp.RunWithContext(cmd.Context())
+			err = tuiApp.RunWithContext(cmd.Context())
+			if err == nil {
+				sessionLogger.Info("TUI session finished")
+			} else {
+				sessionLogger.Error("TUI session finished with error", err)
+			}
+			return err
 		}
 		// Show help if arguments are provided but no valid subcommand
 		return cmd.Help()
@@ -63,23 +92,34 @@ func Execute() {
 
 // ExecuteWithContext executes the root command with context support for graceful shutdown
 func ExecuteWithContext(ctx context.Context) {
-	// Initialize dependency container
-	containerConfig := &container.Config{
-		LogLevel:  "info",
-		LogFormat: "console",
+	logCfg := logger.DefaultConfig()
+	if level := viper.GetString("log.level"); level != "" {
+		logCfg.Level = level
 	}
+	if format := viper.GetString("log.format"); format != "" {
+		logCfg.Format = format
+	}
+	logCfg.Verbose = viper.GetBool("verbose")
+	logCfg.DryRun = viper.GetBool("dry-run")
+	logCfg.Output = os.Stderr
+	logCfg.Session = fmt.Sprintf("cli-%d", time.Now().UnixNano())
+
+	// Initialize dependency container
+	containerConfig := &container.Config{Logger: logCfg}
 
 	var err error
 	appContainer, err = container.New(containerConfig)
 	if err != nil {
-		logger.Fatal("Failed to initialize application container", err)
+		logger.New(logCfg).Fatal("Failed to initialize application container", err)
 	}
 
 	defer func() {
 		if err := appContainer.Close(); err != nil {
-			logger.Error("Failed to close application container", err)
+			appContainer.Logger().Error("Failed to close application container", err)
 		}
 	}()
+
+	attachCommandTracing(rootCmd, appContainer.Logger())
 
 	// Set the context on the root command for propagation to subcommands
 	rootCmd.SetContext(ctx)
@@ -88,10 +128,62 @@ func ExecuteWithContext(ctx context.Context) {
 	if err != nil {
 		// Check if error is due to context cancellation (graceful shutdown)
 		if ctx.Err() == context.Canceled {
-			logger.Info("Application shutdown requested")
+			appContainer.Logger().Info("Application shutdown requested")
 			os.Exit(0)
 		}
 		os.Exit(1)
+	}
+}
+
+func attachCommandTracing(cmd *cobra.Command, base logger.Logger) {
+	if base == nil {
+		base = logger.New(logger.DefaultConfig())
+	}
+
+	for _, child := range cmd.Commands() {
+		attachCommandTracing(child, base)
+	}
+
+	originalPre := cmd.PersistentPreRunE
+	originalPost := cmd.PersistentPostRun
+
+	cmd.PersistentPreRunE = func(c *cobra.Command, args []string) error {
+		scoped := base.With(
+			logger.Field{Key: "command", Value: c.CommandPath()},
+		).WithRequest(fmt.Sprintf("req-%d", time.Now().UnixNano()))
+		ctx := logger.ContextWithLogger(c.Context(), scoped)
+		ctx = context.WithValue(ctx, commandStartTimeKey{}, time.Now())
+		c.SetContext(ctx)
+		scoped.Info("command started", logger.Field{Key: "args", Value: args})
+
+		if originalPre != nil {
+			if err := originalPre(c, args); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	cmd.PersistentPostRun = func(c *cobra.Command, args []string) {
+		scoped := logger.FromContext(c.Context())
+		if scoped == nil {
+			scoped = base
+		}
+
+		start, _ := c.Context().Value(commandStartTimeKey{}).(time.Time)
+		fields := []logger.Field{
+			{Key: "command", Value: c.CommandPath()},
+		}
+		if !start.IsZero() {
+			fields = append(fields, logger.Field{Key: "duration_ms", Value: time.Since(start).Milliseconds()})
+		}
+
+		scoped.Info("command finished", fields...)
+
+		if originalPost != nil {
+			originalPost(c, args)
+		}
 	}
 }
 

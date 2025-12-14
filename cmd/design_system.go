@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -42,11 +43,14 @@ Examples:
 		}
 
 		// Create the design system showcase TUI
-		showcase := tui.NewDesignSystemShowcase(container.Logger(), interactive)
+		log := logger.FromContext(cmd.Context())
+		if log == nil {
+			log = container.Logger()
+		}
 
-		container.Logger().Info("Starting design system showcase", map[string]interface{}{
-			"interactive": interactive,
-		})
+		showcase := tui.NewDesignSystemShowcase(log, interactive)
+
+		log.Info("Starting design system showcase", logger.Field{Key: "interactive", Value: interactive})
 
 		return showcase.Run()
 	},

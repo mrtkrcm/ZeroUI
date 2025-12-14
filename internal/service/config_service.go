@@ -19,11 +19,11 @@ type ConfigLoader interface {
 type ConfigService struct {
 	engine *toggle.Engine
 	loader ConfigLoader
-	logger *logger.Logger
+	logger logger.Logger
 }
 
 // NewConfigService creates a new config service
-func NewConfigService(engine *toggle.Engine, loader ConfigLoader, log *logger.Logger) *ConfigService {
+func NewConfigService(engine *toggle.Engine, loader ConfigLoader, log logger.Logger) *ConfigService {
 	return &ConfigService{
 		engine: engine,
 		loader: loader,
@@ -34,9 +34,7 @@ func NewConfigService(engine *toggle.Engine, loader ConfigLoader, log *logger.Lo
 // ToggleConfiguration sets a configuration value
 func (s *ConfigService) ToggleConfiguration(app, key, value string) error {
 	log := s.logger.WithApp(app).WithField(key)
-	log.Info("Toggling configuration", map[string]interface{}{
-		"value": value,
-	})
+	log.Info("Toggling configuration", logger.Field{Key: "value", Value: value})
 
 	return s.engine.Toggle(app, key, value)
 }
@@ -51,9 +49,7 @@ func (s *ConfigService) CycleConfiguration(app, key string) error {
 
 // ApplyPreset applies a preset configuration
 func (s *ConfigService) ApplyPreset(app, presetName string) error {
-	log := s.logger.WithApp(app).WithContext(map[string]interface{}{
-		"preset": presetName,
-	})
+	log := s.logger.WithApp(app).With(logger.Field{Key: "preset", Value: presetName})
 	log.Info("Applying preset")
 
 	return s.engine.ApplyPreset(app, presetName)
@@ -68,10 +64,10 @@ func (s *ConfigService) ListApplications() ([]string, error) {
 		return nil, fmt.Errorf("failed to list applications: %w", err)
 	}
 
-	s.logger.Debug("Found applications", map[string]interface{}{
-		"count": len(apps),
-		"apps":  apps,
-	})
+	s.logger.Debug("Found applications",
+		logger.Field{Key: "count", Value: len(apps)},
+		logger.Field{Key: "apps", Value: apps},
+	)
 
 	return apps, nil
 }
@@ -90,10 +86,10 @@ func (s *ConfigService) GetApplicationConfig(app string) (*config.AppConfig, err
 		return nil, fmt.Errorf("failed to load app config: %w", err)
 	}
 
-	log.Debug("Loaded application configuration", map[string]interface{}{
-		"fields_count":  len(appConfig.Fields),
-		"presets_count": len(appConfig.Presets),
-	})
+	log.Debug("Loaded application configuration",
+		logger.Field{Key: "fields_count", Value: len(appConfig.Fields)},
+		logger.Field{Key: "presets_count", Value: len(appConfig.Presets)},
+	)
 
 	return appConfig, nil
 }
@@ -109,9 +105,7 @@ func (s *ConfigService) GetCurrentValues(app string) (map[string]interface{}, er
 // ValidateConfiguration validates that a configuration change is valid
 func (s *ConfigService) ValidateConfiguration(app, key, value string) error {
 	log := s.logger.WithApp(app).WithField(key)
-	log.Debug("Validating configuration", map[string]interface{}{
-		"value": value,
-	})
+	log.Debug("Validating configuration", logger.Field{Key: "value", Value: value})
 
 	appConfig, err := s.GetApplicationConfig(app)
 	if err != nil {
@@ -155,9 +149,7 @@ func (s *ConfigService) ListPresets(app string) (map[string]config.PresetConfig,
 		return nil, err
 	}
 
-	log.Debug("Found presets", map[string]interface{}{
-		"count": len(appConfig.Presets),
-	})
+	log.Debug("Found presets", logger.Field{Key: "count", Value: len(appConfig.Presets)})
 
 	return appConfig.Presets, nil
 }
@@ -172,9 +164,7 @@ func (s *ConfigService) ListFields(app string) (map[string]config.FieldConfig, e
 		return nil, err
 	}
 
-	log.Debug("Found fields", map[string]interface{}{
-		"count": len(appConfig.Fields),
-	})
+	log.Debug("Found fields", logger.Field{Key: "count", Value: len(appConfig.Fields)})
 
 	return appConfig.Fields, nil
 }

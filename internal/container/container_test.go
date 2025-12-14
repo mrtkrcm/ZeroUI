@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/test/helpers"
 )
 
@@ -15,12 +16,12 @@ func TestMain(m *testing.M) {
 func TestDefaultConfig(t *testing.T) {
 	config := DefaultConfig()
 
-	if config.LogLevel != "info" {
-		t.Errorf("Expected default log level to be 'info', got '%s'", config.LogLevel)
+	if config.Logger.Level != "info" {
+		t.Errorf("Expected default log level to be 'info', got '%s'", config.Logger.Level)
 	}
 
-	if config.LogFormat != "console" {
-		t.Errorf("Expected default log format to be 'console', got '%s'", config.LogFormat)
+	if config.Logger.Format != "console" {
+		t.Errorf("Expected default log format to be 'console', got '%s'", config.Logger.Format)
 	}
 }
 
@@ -55,8 +56,10 @@ func TestNewContainer(t *testing.T) {
 
 func TestNewContainerWithConfig(t *testing.T) {
 	config := &Config{
-		LogLevel:  "debug",
-		LogFormat: "json",
+		Logger: &logger.Config{
+			Level:  "debug",
+			Format: "json",
+		},
 	}
 
 	container, err := New(config)

@@ -12,7 +12,6 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
 	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
-	"github.com/spf13/viper"
 )
 
 // ConfigLoader interface to support both basic and reference-enhanced loaders
@@ -30,10 +29,17 @@ type Engine struct {
 	fieldVal   *FieldValidator
 	valueConv  *ValueConverter
 	hookRunner *HookRunner
-	logger     *logger.Logger
+	logger     logger.Logger
+	runtime    RuntimeConfig
 
 	// Legacy interface compatibility
 	loader ConfigLoader // Keep for interface compatibility
+}
+
+// RuntimeConfig captures CLI-configured execution preferences.
+type RuntimeConfig struct {
+	Verbose bool
+	DryRun  bool
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -46,23 +52,23 @@ func NewEngine() (*Engine, error) {
 		if basicErr != nil {
 			return nil, fmt.Errorf("failed to create config loader: %w", basicErr)
 		}
-		return NewEngineWithDeps(basicLoader, logger.Global()), nil
+		return NewEngineWithDeps(basicLoader, logger.New(logger.DefaultConfig()), RuntimeConfig{}), nil
 	}
 
-	return NewEngineWithDeps(enhancedLoader, logger.Global()), nil
+	return NewEngineWithDeps(enhancedLoader, logger.New(logger.DefaultConfig()), RuntimeConfig{}), nil
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
-func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
+func NewEngineWithDeps(configLoader ConfigLoader, log logger.Logger, runtime RuntimeConfig) *Engine {
 	if log == nil {
 		log = logger.New(logger.DefaultConfig())
 	}
 
 	// Initialize service components
-	configOp := NewConfigOperator(configLoader)
+	configOp := NewConfigOperator(configLoader, runtime.DryRun)
 	fieldVal := NewFieldValidator()
 	valueConv := NewValueConverter()
-	hookRunner := NewHookRunner(log)
+	hookRunner := NewHookRunner(log, runtime.Verbose)
 
 	return &Engine{
 		configOp:   configOp,
@@ -70,6 +76,7 @@ func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
 		valueConv:  valueConv,
 		hookRunner: hookRunner,
 		logger:     log,
+		runtime:    runtime,
 		loader:     configLoader, // Keep for interface compatibility
 	}
 }
@@ -78,10 +85,8 @@ func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
 func (e *Engine) Toggle(appName, key, value string) error {
 	log := e.logger.WithApp(appName).WithField(key)
 
-	if viper.GetBool("verbose") {
-		log.Debug("Starting toggle operation", map[string]interface{}{
-			"value": value,
-		})
+	if e.runtime.Verbose {
+		log.Debug("Starting toggle operation", logger.Field{Key: "value", Value: value})
 	}
 
 	// 1. Load and validate app config
@@ -131,14 +136,14 @@ func (e *Engine) Toggle(appName, key, value string) error {
 	newConfig := targetConfig.All()
 	diff := differ.DiffConfigurations(originalConfig, newConfig)
 
-	if viper.GetBool("dry-run") {
-		log.Info("Would set configuration", map[string]interface{}{
-			"converted_value": convertedValue,
-			"changes":         diff.Summary(),
-		})
+	if e.runtime.DryRun {
+		log.Info("Would set configuration",
+			logger.Field{Key: "converted_value", Value: convertedValue},
+			logger.Field{Key: "changes", Value: diff.Summary()},
+		)
 
 		// Show diff in verbose mode
-		if viper.GetBool("verbose") {
+		if e.runtime.Verbose {
 			fmt.Println("\nConfiguration changes preview:")
 			fmt.Print(diff.FormatDiff())
 		}
@@ -150,9 +155,7 @@ func (e *Engine) Toggle(appName, key, value string) error {
 		return err // Error already wrapped by configOp
 	}
 
-	log.Success("Configuration updated", map[string]interface{}{
-		"value": value,
-	})
+	log.Success("Configuration updated", logger.Field{Key: "value", Value: value})
 
 	// 7. Run post-toggle hooks
 	return e.hookRunner.RunHooks(appConfig, "post-toggle")
@@ -162,7 +165,7 @@ func (e *Engine) Toggle(appName, key, value string) error {
 func (e *Engine) Cycle(appName, key string) error {
 	log := e.logger.WithApp(appName).WithField(key)
 
-	if viper.GetBool("verbose") {
+	if e.runtime.Verbose {
 		log.Debug("Starting cycle operation")
 	}
 
@@ -208,11 +211,11 @@ func (e *Engine) Cycle(appName, key string) error {
 		return err
 	}
 
-	if viper.GetBool("dry-run") {
-		log.Info("Would cycle configuration", map[string]interface{}{
-			"from": currentValue,
-			"to":   nextValue,
-		})
+	if e.runtime.DryRun {
+		log.Info("Would cycle configuration",
+			logger.Field{Key: "from", Value: currentValue},
+			logger.Field{Key: "to", Value: nextValue},
+		)
 		return nil
 	}
 
@@ -221,10 +224,10 @@ func (e *Engine) Cycle(appName, key string) error {
 		return err
 	}
 
-	log.Success("Configuration cycled", map[string]interface{}{
-		"from": currentValue,
-		"to":   nextValue,
-	})
+	log.Success("Configuration cycled",
+		logger.Field{Key: "from", Value: currentValue},
+		logger.Field{Key: "to", Value: nextValue},
+	)
 
 	// 8. Run post-cycle hooks
 	return e.hookRunner.RunHooks(appConfig, "post-cycle")
@@ -232,11 +235,9 @@ func (e *Engine) Cycle(appName, key string) error {
 
 // ApplyPreset applies a preset configuration
 func (e *Engine) ApplyPreset(appName, presetName string) error {
-	log := e.logger.WithApp(appName).WithContext(map[string]interface{}{
-		"preset": presetName,
-	})
+	log := e.logger.WithApp(appName).With(logger.Field{Key: "preset", Value: presetName})
 
-	if viper.GetBool("verbose") {
+	if e.runtime.Verbose {
 		log.Debug("Starting preset application")
 	}
 
@@ -268,10 +269,8 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 	for key, value := range preset.Values {
 		fieldConfig, exists := appConfig.Fields[key]
 		if !exists {
-			if viper.GetBool("verbose") {
-				log.Warn("Field not found in app config, applying anyway", nil, map[string]interface{}{
-					"field": key,
-				})
+			if e.runtime.Verbose {
+				log.Warn("Field not found in app config, applying anyway", logger.Field{Key: "field", Value: key})
 			}
 		}
 
@@ -292,14 +291,14 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 	newConfig := targetConfig.All()
 	diff := differ.DiffConfigurations(originalConfig, newConfig)
 
-	if viper.GetBool("dry-run") {
-		log.Info("Would apply preset", map[string]interface{}{
-			"values":  preset.Values,
-			"changes": diff.Summary(),
-		})
+	if e.runtime.DryRun {
+		log.Info("Would apply preset",
+			logger.Field{Key: "values", Value: preset.Values},
+			logger.Field{Key: "changes", Value: diff.Summary()},
+		)
 
 		// Show diff in verbose mode
-		if viper.GetBool("verbose") {
+		if e.runtime.Verbose {
 			fmt.Println("\nPreset application preview:")
 			fmt.Print(diff.FormatDiff())
 		}
@@ -312,10 +311,8 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 	}
 
 	log.Success("Preset applied successfully")
-	if viper.GetBool("verbose") {
-		log.Debug("Preset values applied", map[string]interface{}{
-			"values": preset.Values,
-		})
+	if e.runtime.Verbose {
+		log.Debug("Preset values applied", logger.Field{Key: "values", Value: preset.Values})
 	}
 
 	// Run post-preset hooks

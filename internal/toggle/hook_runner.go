@@ -11,18 +11,19 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
-	"github.com/spf13/viper"
 )
 
 // HookRunner handles hook execution with security validation
 type HookRunner struct {
-	logger *logger.Logger
+	logger  logger.Logger
+	verbose bool
 }
 
 // NewHookRunner creates a new hook runner
-func NewHookRunner(log *logger.Logger) *HookRunner {
+func NewHookRunner(log logger.Logger, verbose bool) *HookRunner {
 	return &HookRunner{
-		logger: log,
+		logger:  log,
+		verbose: verbose,
 	}
 }
 
@@ -33,12 +34,12 @@ func (hr *HookRunner) RunHooks(appConfig *config.AppConfig, hookType string) err
 		return nil // No hook defined, not an error
 	}
 
-	log := hr.logger.WithApp(appConfig.Name).WithContext(map[string]interface{}{
-		"hook_type": hookType,
-		"command":   hookCmd,
-	})
+	log := hr.logger.WithApp(appConfig.Name).With(
+		logger.Field{Key: "hook_type", Value: hookType},
+		logger.Field{Key: "command", Value: hookCmd},
+	)
 
-	if viper.GetBool("verbose") {
+	if hr.verbose {
 		log.Debug("Running hook")
 	}
 
@@ -52,7 +53,7 @@ func (hr *HookRunner) RunHooks(appConfig *config.AppConfig, hookType string) err
 }
 
 // executeHookCommand executes a hook command with security checks
-func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log *logger.Logger) error {
+func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log logger.Logger) error {
 	// Parse command into parts
 	parts := strings.Fields(hookCmd)
 	if len(parts) == 0 {
@@ -67,7 +68,7 @@ func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log *logger.L
 
 	// Security: Use only the command name, not any path
 	commandName := filepath.Base(parts[0])
-	
+
 	// Resolve command from system PATH only (prevents path traversal)
 	commandPath, err := exec.LookPath(commandName)
 	if err != nil {
@@ -79,16 +80,16 @@ func (hr *HookRunner) executeHookCommand(hookCmd, hookType string, log *logger.L
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, commandPath, parts[1:]...)
-	
+
 	// Security: Restrict command capabilities
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = nil // Prevent interactive input
-	
+
 	// Set working directory to a safe, temporary location
 	tempDir := os.TempDir()
 	cmd.Dir = tempDir
-	
+
 	// Clear environment to prevent environment variable attacks
 	cmd.Env = []string{
 		"PATH=" + os.Getenv("PATH"),

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
@@ -8,190 +9,217 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Logger provides structured logging functionality
-type Logger struct {
-	logger zerolog.Logger
+type contextKey string
+
+// Field represents a structured log field with optional redaction.
+type Field struct {
+	Key    string
+	Value  interface{}
+	Redact bool
 }
 
-// Config holds logger configuration
+// Logger defines structured logging capabilities with contextual scoping.
+type Logger interface {
+	With(fields ...Field) Logger
+	WithApp(app string) Logger
+	WithField(key string) Logger
+	WithRedacted(key string, value interface{}) Logger
+	WithRequest(name string) Logger
+
+	Debug(msg string, fields ...Field)
+	Info(msg string, fields ...Field)
+	Warn(msg string, fields ...Field)
+	Error(msg string, err error, fields ...Field)
+	Fatal(msg string, err error, fields ...Field)
+	Success(msg string, fields ...Field)
+}
+
+// Config holds logger configuration sourced from CLI flags and config.
 type Config struct {
-	Level      string
-	Format     string // json, console
-	Output     io.Writer
-	TimeFormat string
+	Level         string
+	Format        string // json, console
+	Output        io.Writer
+	TimeFormat    string
+	Verbose       bool
+	DryRun        bool
+	EnableTracing bool
+	Session       string
 }
 
-// DefaultConfig returns a default logger configuration
+// DefaultConfig returns a default logger configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Level:      "info",
-		Format:     "console",
-		Output:     os.Stdout,
-		TimeFormat: time.RFC3339,
+		Level:         "info",
+		Format:        "console",
+		Output:        os.Stderr,
+		TimeFormat:    time.RFC3339,
+		EnableTracing: true,
 	}
 }
 
-// New creates a new logger with the given configuration
-func New(config *Config) *Logger {
+// New creates a new logger with the given configuration.
+func New(config *Config) Logger {
 	if config == nil {
 		config = DefaultConfig()
 	}
 
-	// Set global log level
-	level, err := zerolog.ParseLevel(config.Level)
-	if err != nil {
-		level = zerolog.InfoLevel
+	cfg := *config
+	if cfg.Output == nil {
+		cfg.Output = os.Stderr
 	}
-	zerolog.SetGlobalLevel(level)
 
-	// Configure output format
-	var logger zerolog.Logger
-	if config.Format == "console" {
+	level := parseLevel(cfg.Level, cfg.Verbose)
+
+	var base zerolog.Logger
+	if cfg.Format == "console" {
 		output := zerolog.ConsoleWriter{
-			Out:        config.Output,
-			TimeFormat: config.TimeFormat,
+			Out:        cfg.Output,
+			TimeFormat: cfg.TimeFormat,
 		}
-		logger = zerolog.New(output).With().Timestamp().Logger()
+		base = zerolog.New(output).With().Timestamp().Logger()
 	} else {
-		logger = zerolog.New(config.Output).With().Timestamp().Logger()
+		base = zerolog.New(cfg.Output).With().Timestamp().Logger()
 	}
 
-	return &Logger{
+	builder := base.Level(level).With()
+	if cfg.DryRun {
+		builder = builder.Bool("dry_run", true)
+	}
+	if cfg.Session != "" {
+		builder = builder.Str("session", cfg.Session)
+	}
+
+	logger := builder.Logger()
+	if cfg.EnableTracing {
+		logger = logger.Hook(tracingHook{session: cfg.Session})
+	}
+
+	return &zerologLogger{
 		logger: logger,
+		cfg:    cfg,
 	}
 }
 
-// WithContext adds contextual fields to the logger
-func (l *Logger) WithContext(fields map[string]interface{}) *Logger {
+// ContextWithLogger embeds a logger in a context for request-scoped logging.
+func ContextWithLogger(ctx context.Context, log Logger) context.Context {
+	return context.WithValue(ctx, contextKey("logger"), log)
+}
+
+// FromContext extracts a logger from context if available.
+func FromContext(ctx context.Context) Logger {
+	if ctx == nil {
+		return nil
+	}
+	if log, ok := ctx.Value(contextKey("logger")).(Logger); ok {
+		return log
+	}
+	return nil
+}
+
+type zerologLogger struct {
+	logger zerolog.Logger
+	cfg    Config
+}
+
+func (l *zerologLogger) With(fields ...Field) Logger {
 	ctx := l.logger.With()
-	for key, value := range fields {
-		ctx = ctx.Interface(key, value)
+	for _, field := range fields {
+		ctx = appendField(ctx, field)
 	}
-	return &Logger{
+	return &zerologLogger{
 		logger: ctx.Logger(),
+		cfg:    l.cfg,
 	}
 }
 
-// WithApp adds app context to the logger
-func (l *Logger) WithApp(app string) *Logger {
-	return &Logger{
-		logger: l.logger.With().Str("app", app).Logger(),
-	}
+func (l *zerologLogger) WithApp(app string) Logger {
+	return l.With(Field{Key: "app", Value: app})
 }
 
-// WithField adds a field context to the logger
-func (l *Logger) WithField(field string) *Logger {
-	return &Logger{
-		logger: l.logger.With().Str("field", field).Logger(),
-	}
+func (l *zerologLogger) WithField(key string) Logger {
+	return l.With(Field{Key: "field", Value: key})
 }
 
-// Debug logs a debug message
-func (l *Logger) Debug(msg string, fields ...map[string]interface{}) {
-	event := l.logger.Debug()
-	l.addFields(event, fields...)
-	event.Msg(msg)
+func (l *zerologLogger) WithRedacted(key string, value interface{}) Logger {
+	return l.With(Field{Key: key, Value: value, Redact: true})
 }
 
-// Info logs an info message
-func (l *Logger) Info(msg string, fields ...map[string]interface{}) {
-	event := l.logger.Info()
-	l.addFields(event, fields...)
-	event.Msg(msg)
+func (l *zerologLogger) WithRequest(name string) Logger {
+	return l.With(Field{Key: "request", Value: name})
 }
 
-// Warn logs a warning message
-func (l *Logger) Warn(msg string, fields ...map[string]interface{}) {
-	event := l.logger.Warn()
-	l.addFields(event, fields...)
-	event.Msg(msg)
+func (l *zerologLogger) Debug(msg string, fields ...Field) {
+	l.writeEvent(l.logger.Debug(), msg, fields...)
 }
 
-// Error logs an error message
-func (l *Logger) Error(msg string, err error, fields ...map[string]interface{}) {
+func (l *zerologLogger) Info(msg string, fields ...Field) {
+	l.writeEvent(l.logger.Info(), msg, fields...)
+}
+
+func (l *zerologLogger) Warn(msg string, fields ...Field) {
+	l.writeEvent(l.logger.Warn(), msg, fields...)
+}
+
+func (l *zerologLogger) Error(msg string, err error, fields ...Field) {
 	event := l.logger.Error()
 	if err != nil {
 		event = event.Err(err)
 	}
-	l.addFields(event, fields...)
-	event.Msg(msg)
+	l.writeEvent(event, msg, fields...)
 }
 
-// Fatal logs a fatal message and exits
-func (l *Logger) Fatal(msg string, err error, fields ...map[string]interface{}) {
+func (l *zerologLogger) Fatal(msg string, err error, fields ...Field) {
 	event := l.logger.Fatal()
 	if err != nil {
 		event = event.Err(err)
 	}
-	l.addFields(event, fields...)
+	l.writeEvent(event, msg, fields...)
+}
+
+func (l *zerologLogger) Success(msg string, fields ...Field) {
+	l.Info("✓ "+msg, fields...)
+}
+
+func (l *zerologLogger) writeEvent(event *zerolog.Event, msg string, fields ...Field) {
+	for _, field := range fields {
+		event = appendFieldToEvent(event, field)
+	}
 	event.Msg(msg)
 }
 
-// Success logs a success message with a green checkmark
-func (l *Logger) Success(msg string, fields ...map[string]interface{}) {
-	event := l.logger.Info()
-	l.addFields(event, fields...)
-	event.Msg("✓ " + msg)
-}
-
-// addFields adds fields to a log event
-func (l *Logger) addFields(event *zerolog.Event, fields ...map[string]interface{}) {
-	for _, fieldMap := range fields {
-		for key, value := range fieldMap {
-			event = event.Interface(key, value)
-		}
+func parseLevel(level string, verbose bool) zerolog.Level {
+	if verbose {
+		return zerolog.DebugLevel
 	}
-}
-
-// Global logger instance
-var global *Logger
-
-// InitGlobal initializes the global logger
-func InitGlobal(config *Config) {
-	global = New(config)
-}
-
-// Global returns the global logger instance
-func Global() *Logger {
-	if global == nil {
-		global = New(DefaultConfig())
+	parsed, err := zerolog.ParseLevel(level)
+	if err != nil {
+		return zerolog.InfoLevel
 	}
-	return global
+	return parsed
 }
 
-// Convenience functions for global logger
-func Debug(msg string, fields ...map[string]interface{}) {
-	Global().Debug(msg, fields...)
+func appendField(ctx zerolog.Context, field Field) zerolog.Context {
+	if field.Redact {
+		return ctx.Str(field.Key, "[REDACTED]")
+	}
+	return ctx.Interface(field.Key, field.Value)
 }
 
-func Info(msg string, fields ...map[string]interface{}) {
-	Global().Info(msg, fields...)
+func appendFieldToEvent(event *zerolog.Event, field Field) *zerolog.Event {
+	if field.Redact {
+		return event.Str(field.Key, "[REDACTED]")
+	}
+	return event.Interface(field.Key, field.Value)
 }
 
-func Warn(msg string, fields ...map[string]interface{}) {
-	Global().Warn(msg, fields...)
+// tracingHook attaches tracing metadata to log events.
+type tracingHook struct {
+	session string
 }
 
-func Error(msg string, err error, fields ...map[string]interface{}) {
-	Global().Error(msg, err, fields...)
-}
-
-func Fatal(msg string, err error, fields ...map[string]interface{}) {
-	Global().Fatal(msg, err, fields...)
-}
-
-func Success(msg string, fields ...map[string]interface{}) {
-	Global().Success(msg, fields...)
-}
-
-func WithApp(app string) *Logger {
-	return Global().WithApp(app)
-}
-
-func WithField(field string) *Logger {
-	return Global().WithField(field)
-}
-
-func WithContext(fields map[string]interface{}) *Logger {
-	return Global().WithContext(fields)
+func (h tracingHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	if h.session != "" {
+		e.Str("trace_session", h.session)
+	}
+	e.Str("trace_phase", "event")
 }

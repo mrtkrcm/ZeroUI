@@ -28,13 +28,13 @@ import (
 
 // DesignSystemShowcase represents the design system showcase application
 type DesignSystemShowcase struct {
-	logger      *logger.Logger
+	logger      logger.Logger
 	interactive bool
 	program     *tea.Program
 }
 
 // NewDesignSystemShowcase creates a new design system showcase
-func NewDesignSystemShowcase(log *logger.Logger, interactive bool) *DesignSystemShowcase {
+func NewDesignSystemShowcase(log logger.Logger, interactive bool) *DesignSystemShowcase {
 	return &DesignSystemShowcase{
 		logger:      log,
 		interactive: interactive,
@@ -71,7 +71,7 @@ const (
 
 // DesignSystemModel represents the design system showcase model
 type DesignSystemModel struct {
-	logger      *logger.Logger
+	logger      logger.Logger
 	interactive bool
 
 	// Modular components
@@ -106,7 +106,7 @@ type DesignSystemModel struct {
 type ShowcaseItem = showcase.ShowcaseItem
 
 // newDesignSystemModel creates a new design system showcase model
-func newDesignSystemModel(log *logger.Logger, interactive bool) *DesignSystemModel {
+func newDesignSystemModel(log logger.Logger, interactive bool) *DesignSystemModel {
 	// Initialize modular components
 	renderer := showcase.NewShowcaseRenderer()
 	layoutCalc := showcase.NewLayoutCalculator()

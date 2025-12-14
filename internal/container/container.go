@@ -12,7 +12,7 @@ import (
 
 // Container holds all application dependencies
 type Container struct {
-	logger        *logger.Logger
+	logger        logger.Logger
 	configLoader  *config.ReferenceEnhancedLoader
 	toggleEngine  *toggle.Engine
 	configService *service.ConfigService
@@ -20,15 +20,13 @@ type Container struct {
 
 // Config holds container configuration
 type Config struct {
-	LogLevel  string
-	LogFormat string
+	Logger *logger.Config
 }
 
 // DefaultConfig returns default container configuration
 func DefaultConfig() *Config {
 	return &Config{
-		LogLevel:  "info",
-		LogFormat: "console",
+		Logger: logger.DefaultConfig(),
 	}
 }
 
@@ -41,15 +39,14 @@ func New(cfg *Config) (*Container, error) {
 	c := &Container{}
 
 	// Initialize logger first
-	loggerConfig := &logger.Config{
-		Level:  cfg.LogLevel,
-		Format: cfg.LogFormat,
-		Output: os.Stderr, // Use stderr for logging to avoid interfering with TUI
+	loggerConfig := cfg.Logger
+	if loggerConfig == nil {
+		loggerConfig = logger.DefaultConfig()
+	}
+	if loggerConfig.Output == nil {
+		loggerConfig.Output = os.Stderr // Use stderr for logging to avoid interfering with TUI
 	}
 	c.logger = logger.New(loggerConfig)
-
-	// Initialize global logger for convenience
-	logger.InitGlobal(loggerConfig)
 
 	// Initialize enhanced config loader with reference integration
 	configLoader, err := config.NewReferenceEnhancedLoader()
@@ -58,8 +55,13 @@ func New(cfg *Config) (*Container, error) {
 	}
 	c.configLoader = configLoader
 
+	runtimeCfg := toggle.RuntimeConfig{
+		Verbose: loggerConfig.Verbose,
+		DryRun:  loggerConfig.DryRun,
+	}
+
 	// Initialize toggle engine with dependency injection
-	c.toggleEngine = toggle.NewEngineWithDeps(configLoader, c.logger)
+	c.toggleEngine = toggle.NewEngineWithDeps(configLoader, c.logger, runtimeCfg)
 
 	// Initialize config service with all dependencies
 	c.configService = service.NewConfigService(c.toggleEngine, configLoader, c.logger)
@@ -68,7 +70,7 @@ func New(cfg *Config) (*Container, error) {
 }
 
 // Logger returns the logger instance
-func (c *Container) Logger() *logger.Logger {
+func (c *Container) Logger() logger.Logger {
 	return c.logger
 }
 
