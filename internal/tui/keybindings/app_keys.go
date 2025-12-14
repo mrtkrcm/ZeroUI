@@ -42,6 +42,13 @@ type AppKeyMap struct {
 	SubmitForm key.Binding
 	CancelForm key.Binding
 
+	// Edit operations
+	Undo key.Binding
+	Redo key.Binding
+
+	// Theme
+	ThemeCycle key.Binding
+
 	// Advanced
 	Debug    key.Binding
 	Settings key.Binding
@@ -164,6 +171,22 @@ func NewAppKeyMap() AppKeyMap {
 			key.WithHelp("esc/ctrl+c", "cancel form"),
 		),
 
+		// Edit operations
+		Undo: key.NewBinding(
+			key.WithKeys("ctrl+z", "u"),
+			key.WithHelp("ctrl+z/u", "undo"),
+		),
+		Redo: key.NewBinding(
+			key.WithKeys("ctrl+y", "ctrl+shift+z"),
+			key.WithHelp("ctrl+y", "redo"),
+		),
+
+		// Theme
+		ThemeCycle: key.NewBinding(
+			key.WithKeys("ctrl+t"),
+			key.WithHelp("ctrl+t", "cycle theme"),
+		),
+
 		// Advanced
 		Debug: key.NewBinding(
 			key.WithKeys("ctrl+shift+d"),
@@ -193,6 +216,9 @@ func (k AppKeyMap) FullHelp() [][]key.Binding {
 		// Actions
 		{k.Select, k.Edit, k.Refresh, k.Save},
 		{k.Search, k.Filter, k.Reset, k.Cancel},
+
+		// Edit operations
+		{k.Undo, k.Redo, k.ThemeCycle},
 
 		// UI Controls
 		{k.Help, k.ToggleMode, k.TogglePreview, k.Settings},

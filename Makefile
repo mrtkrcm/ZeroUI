@@ -187,13 +187,32 @@ profile: benchmark
 ## lint: Run linters
 lint:
 	@echo "$(BLUE)🔍 Running linters...$(NC)"
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run --config .golangci.yml; \
+	@start_time=$$(date +%s); \
+	if command -v golangci-lint >/dev/null 2>&1; then \
+		if [ -f .lint-cache ] && [ $$(find . -name "*.go" -newer .lint-cache 2>/dev/null | wc -l) -eq 0 ]; then \
+			echo "$(YELLOW)⚡ Using cached lint results$(NC)"; \
+		else \
+			golangci-lint run --config .golangci.yml && touch .lint-cache; \
+		fi; \
 	else \
 		echo "$(RED)❌ golangci-lint not found. Install it with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest$(NC)"; \
 		exit 1; \
-	fi
-	@echo "$(GREEN)✅ Linting completed$(NC)"
+	fi; \
+	end_time=$$(date +%s); \
+	echo "$(GREEN)✅ Linting completed in $$((end_time - start_time))s$(NC)"
+
+## lint-fast: Run fast linters (for development)
+lint-fast:
+	@echo "$(BLUE)⚡ Running fast linters...$(NC)"
+	@start_time=$$(date +%s); \
+	if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --config .golangci-fast.yml; \
+	else \
+		echo "$(RED)❌ golangci-lint not found. Install it with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest$(NC)"; \
+		exit 1; \
+	fi; \
+	end_time=$$(date +%s); \
+	echo "$(GREEN)✅ Fast linting completed in $$((end_time - start_time))s$(NC)"
 
 ## fmt: Format code
 fmt:
@@ -205,30 +224,94 @@ fmt:
 ## security: Run security checks
 security:
 	@echo "$(BLUE)🔒 Running security checks...$(NC)"
-	@if command -v gosec >/dev/null 2>&1; then \
-		gosec -fmt sarif -out gosec-report.sarif -stdout ./...; \
+	@start_time=$$(date +%s); \
+	failed=0; \
+	if command -v gosec >/dev/null 2>&1; then \
+		if [ -f .security-cache ] && [ $$(find . -name "*.go" -newer .security-cache 2>/dev/null | wc -l) -eq 0 ]; then \
+			echo "$(YELLOW)⚡ Using cached security results$(NC)"; \
+		else \
+			gosec -fmt sarif -out gosec-report.sarif -stdout ./... && touch .security-cache; \
+		fi; \
 	else \
 		echo "$(YELLOW)⚠️  gosec not found. Install it with: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest$(NC)"; \
-	fi
-	@if command -v nancy >/dev/null 2>&1; then \
-		go list -json -deps ./... | nancy sleuth; \
+		failed=1; \
+	fi; \
+	if command -v nancy >/dev/null 2>&1; then \
+		go list -json -deps ./... | nancy sleuth || failed=1; \
 	else \
 		echo "$(YELLOW)⚠️  nancy not found. Install it with: go install github.com/sonatypecommunity/nancy@latest$(NC)"; \
+	fi; \
+	end_time=$$(date +%s); \
+	if [ $$failed -eq 1 ]; then \
+		echo "$(YELLOW)⚠️  Security checks completed with warnings in $$((end_time - start_time))s$(NC)"; \
+	else \
+		echo "$(GREEN)✅ Security checks completed in $$((end_time - start_time))s$(NC)"; \
 	fi
-	@echo "$(GREEN)✅ Security checks completed$(NC)"
+
+## security-fast: Run fast security checks (skip nancy for speed)
+security-fast:
+	@echo "$(BLUE)🔒 Running fast security checks...$(NC)"
+	@start_time=$$(date +%s); \
+	if command -v gosec >/dev/null 2>&1; then \
+		if [ -f .security-fast-cache ] && [ $$(find . -name "*.go" -newer .security-fast-cache 2>/dev/null | wc -l) -eq 0 ]; then \
+			echo "$(YELLOW)⚡ Using cached fast security results$(NC)"; \
+		else \
+			gosec -fmt sarif -out gosec-report.sarif -stdout ./... && touch .security-fast-cache; \
+		fi; \
+	else \
+		echo "$(YELLOW)⚠️  gosec not found. Install it with: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest$(NC)"; \
+	fi; \
+	end_time=$$(date +%s); \
+	echo "$(GREEN)✅ Fast security checks completed in $$((end_time - start_time))s$(NC)"
 
 ## vuln: Check for known vulnerabilities
 vuln:
 	@echo "$(BLUE)🔍 Checking for vulnerabilities...$(NC)"
-	@if command -v govulncheck >/dev/null 2>&1; then \
-		govulncheck ./...; \
+	@start_time=$$(date +%s); \
+	if command -v govulncheck >/dev/null 2>&1; then \
+		if [ -f .vuln-cache ] && [ $$(find go.mod go.sum -newer .vuln-cache 2>/dev/null | wc -l) -eq 0 ]; then \
+			echo "$(YELLOW)⚡ Using cached vulnerability results$(NC)"; \
+		else \
+			govulncheck ./... && touch .vuln-cache; \
+		fi; \
 	else \
 		echo "$(YELLOW)⚠️  govulncheck not found. Install it with: go install golang.org/x/vuln/cmd/govulncheck@latest$(NC)"; \
-	fi
-	@echo "$(GREEN)✅ Vulnerability check completed$(NC)"
+	fi; \
+	end_time=$$(date +%s); \
+	echo "$(GREEN)✅ Vulnerability check completed in $$((end_time - start_time))s$(NC)"
 
 ## check: Run all quality checks
 check: lint test security vuln
+
+## check-fast: Run fast quality checks (for development)
+check-fast: lint-fast test-fast security-fast vuln
+
+## check-ci: Run CI-optimized checks (fast, deterministic)
+check-ci: lint test-deterministic security-fast vuln
+
+## check-parallel: Run quality checks in parallel (experimental)
+check-parallel:
+	@echo "$(BLUE)🔄 Running quality checks in parallel...$(NC)"
+	@start_time=$$(date +%s); \
+	failed=0; \
+	($(MAKE) lint || failed=1) & \
+	($(MAKE) test || failed=1) & \
+	($(MAKE) security || failed=1) & \
+	($(MAKE) vuln || failed=1) & \
+	wait; \
+	end_time=$$(date +%s); \
+	if [ $$failed -eq 1 ]; then \
+		echo "$(YELLOW)⚠️  Parallel checks completed with failures in $$((end_time - start_time))s$(NC)"; \
+		exit 1; \
+	else \
+		echo "$(GREEN)✅ Parallel checks completed in $$((end_time - start_time))s$(NC)"; \
+	fi
+
+## check-clean-cache: Clean all check caches
+check-clean-cache:
+	@echo "$(BLUE)🧹 Cleaning check caches...$(NC)"
+	@rm -f .lint-cache .security-cache .security-fast-cache .vuln-cache
+	@echo "$(GREEN)✅ Check caches cleaned$(NC)"
 
 ## docs: Generate documentation
 docs:
@@ -246,6 +329,7 @@ clean:
 	@rm -rf $(BUILD_DIR)
 	@rm -rf $(COVERAGE_DIR)
 	@rm -f gosec-report.sarif
+	@rm -f .lint-cache .security-cache .security-fast-cache .vuln-cache
 	@go clean -cache -testcache -modcache
 	@echo "$(GREEN)✅ Cleaned$(NC)"
 

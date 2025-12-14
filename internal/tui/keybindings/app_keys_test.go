@@ -58,7 +58,7 @@ func TestAppKeyMap_FullHelp(t *testing.T) {
 	fullHelp := keyMap.FullHelp()
 
 	// Should return multiple rows of help
-	assert.Len(t, fullHelp, 6)
+	assert.Len(t, fullHelp, 7)
 
 	// Each row should have key bindings
 	for i, row := range fullHelp {

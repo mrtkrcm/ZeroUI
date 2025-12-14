@@ -69,6 +69,11 @@ func (m *Model) View() string {
 		content = statusLine + "\n" + content
 	}
 
+	// Add confirmation dialog overlay if visible
+	if m.confirmDialog != nil && m.confirmDialog.IsVisible() {
+		content = m.renderDialogOverlay(content, m.confirmDialog.View())
+	}
+
 	// Return the styled content directly for proper terminal rendering
 	// Cache for performance but don't strip ANSI codes as that breaks rendering
 	m.cacheView(content)
@@ -116,25 +121,8 @@ func (m *Model) renderListView() string {
 		header = lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render(headerText))
 	}
 
-	// Enhanced footer with contextual information using UI manager
-	var footer string
-	if m.appList.IsFiltered() {
-		filteredCount := len(m.appList.VisibleItems())
-		footerText := fmt.Sprintf("↑/↓: Navigate • Enter: Select • /: Clear Filter (%d/%d) • ?: Help • q: Quit",
-			filteredCount, appCount)
-		if m.uiManager != nil {
-			footer = m.uiManager.CreateFooter(footerText, "", "")
-		} else {
-			footer = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
-		}
-	} else {
-		footerText := fmt.Sprintf("↑/↓: Navigate • Enter: Select • /: Filter • ?: Help • q: Quit (%d)", appCount)
-		if m.uiManager != nil {
-			footer = m.uiManager.CreateFooter(footerText, "", "")
-		} else {
-			footer = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
-		}
-	}
+	// Context-aware status bar with help hints
+	footer := m.renderStatusBar()
 
 	// Status indicators for screenshot integration
 	var statusIndicator string
@@ -205,18 +193,13 @@ func (m *Model) renderConfigView() string {
 	}
 
 	configView := m.configEditor.View()
-	footerText := "Esc: Back • Ctrl+S: Save • q: Quit"
-	if m.uiManager != nil {
-		footerText = m.uiManager.CreateFooter(footerText, "", "")
-	} else {
-		footerText = lipgloss.NewStyle().Width(m.width).Render(m.styles.Help.Render(footerText))
-	}
+	footer := m.renderStatusBar()
 
 	elements := []string{headerText, ""}
 	if status != "" {
 		elements = append(elements, status, "")
 	}
-	elements = append(elements, configView, "", footerText)
+	elements = append(elements, configView, "", footer)
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Top,
@@ -244,8 +227,8 @@ func (m *Model) renderHelpView() string {
 	// Add header
 	header := lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Title.Render("📚 Help"))
 
-	// Add footer
-	footer := lipgloss.NewStyle().MaxWidth(m.width).Render(m.styles.Help.Render("Esc: Back • q: Quit"))
+	// Context-aware status bar with help hints
+	footer := m.renderStatusBar()
 
 	// Combine
 	content := lipgloss.JoinVertical(
@@ -406,6 +389,88 @@ func (m *Model) safeViewRender(renderFn func() string, componentName string) str
 	result := renderFn()
 
 	return result
+}
+
+// renderDialogOverlay renders a modal dialog overlay on top of content
+func (m *Model) renderDialogOverlay(content, dialog string) string {
+	// Place the dialog in the center
+	centeredDialog := lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Center,
+		dialog,
+	)
+
+	return centeredDialog
+}
+
+// renderStatusBar renders a context-aware status bar with help hints
+func (m *Model) renderStatusBar() string {
+	var hints []string
+	var leftInfo string
+
+	switch m.state {
+	case ListView:
+		appCount := 0
+		if m.appList != nil {
+			appCount = m.appList.GetItemCount()
+		}
+		leftInfo = fmt.Sprintf("Apps: %d", appCount)
+		if m.appList != nil && m.appList.IsFiltered() {
+			filteredCount := len(m.appList.VisibleItems())
+			hints = []string{"?: Help", "Enter: Select", "/: Clear Filter", "q: Quit"}
+			leftInfo = fmt.Sprintf("Filtered: %d/%d", filteredCount, appCount)
+		} else {
+			hints = []string{"?: Help", "Enter: Select", "/: Search", "q: Quit"}
+		}
+	case FormView:
+		if m.configEditor != nil && m.configEditor.HasUnsavedChanges() {
+			values := m.configEditor.GetValues()
+			leftInfo = fmt.Sprintf("⚠️ Unsaved changes (%d)", len(values))
+			hints = []string{"Ctrl+S: Save", "Esc: Back (unsaved!)", "?: Help"}
+		} else {
+			leftInfo = fmt.Sprintf("App: %s", m.currentApp)
+			hints = []string{"Tab: Next", "Ctrl+S: Save", "Esc: Back", "?: Help"}
+		}
+	case HelpView:
+		leftInfo = "Help & Shortcuts"
+		hints = []string{"h/l: Navigate", "q: Close"}
+	case ProgressView:
+		leftInfo = "Loading..."
+		hints = []string{"q: Cancel"}
+	default:
+		leftInfo = "ZeroUI"
+		hints = []string{"?: Help", "q: Quit"}
+	}
+
+	// Create status bar with proper width constraint
+	hintsStr := strings.Join(hints, " • ")
+
+	// Ensure total length doesn't exceed terminal width
+	maxLeftLen := m.width - len(hintsStr) - 1 // -1 for space separator
+	if maxLeftLen < 0 {
+		maxLeftLen = 0
+	}
+
+	leftDisplay := leftInfo
+	if len(leftInfo) > maxLeftLen {
+		if maxLeftLen >= 3 {
+			leftDisplay = leftInfo[:maxLeftLen-3] + "..."
+		} else {
+			leftDisplay = leftInfo[:maxLeftLen]
+		}
+	}
+
+	// Create the status bar line
+	statusBar := leftDisplay + strings.Repeat(" ", m.width-len(leftDisplay)-len(hintsStr)) + hintsStr
+
+	// Ensure it's exactly the right width (truncate if necessary)
+	if len(statusBar) > m.width {
+		statusBar = statusBar[:m.width]
+	}
+
+	return statusBar
 }
 
 // renderFallbackView renders a fallback view when something goes wrong

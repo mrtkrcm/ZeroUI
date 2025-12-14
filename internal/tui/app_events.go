@@ -12,6 +12,7 @@ import (
 	core "github.com/mrtkrcm/ZeroUI/internal/tui/components/core"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
 )
 
@@ -187,6 +188,13 @@ func (m *Model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.logger.Debug("Key pressed", "key", msg.String())
 
+	// Handle dialog keys first if dialog is visible
+	if m.confirmDialog != nil && m.confirmDialog.IsVisible() {
+		updatedDialog, cmd := m.confirmDialog.Update(msg)
+		m.confirmDialog = updatedDialog
+		return m, cmd
+	}
+
 	// Handle global keys first
 	if cmd := m.handleGlobalKeys(msg); cmd != nil {
 		return m, cmd
@@ -212,9 +220,8 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 
 		if hasUnsavedChanges {
 			m.logger.Info("Quit requested with unsaved changes")
-			// NOTE: Confirmation dialog for unsaved changes not yet implemented
-			// For now, allow quit with unsaved changes (user should save manually)
-			return tea.Quit
+			m.confirmDialog.Show()
+			return nil
 		}
 		m.logger.Info("Quit requested")
 		return tea.Quit
@@ -232,6 +239,15 @@ func (m *Model) handleGlobalKeys(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, m.keyMap.Back):
 		return m.handleBack()
+
+	case key.Matches(msg, m.keyMap.ThemeCycle):
+		// Cycle through available themes
+		newTheme := styles.CycleTheme()
+		m.theme = &newTheme
+		m.styles = m.theme.BuildStyles()
+		m.invalidateCache()
+		m.logger.Info("Theme cycled", "new_theme", styles.GetCurrentThemeName())
+		return nil
 
 	case msg.String() == "ctrl+c":
 		m.logger.Info("Force quit requested")

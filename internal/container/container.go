@@ -2,7 +2,6 @@ package container
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/mrtkrcm/ZeroUI/internal/config"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
@@ -40,16 +39,9 @@ func New(cfg *Config) (*Container, error) {
 
 	c := &Container{}
 
-	// Initialize logger first
-	loggerConfig := &logger.Config{
-		Level:  cfg.LogLevel,
-		Format: cfg.LogFormat,
-		Output: os.Stderr, // Use stderr for logging to avoid interfering with TUI
-	}
-	c.logger = logger.New(loggerConfig)
-
-	// Initialize global logger for convenience
-	logger.InitGlobal(loggerConfig)
+	// Use the global logger which should already be initialized with runtime config
+	// This avoids resetting the log level/format that was configured via flags
+	c.logger = logger.Global()
 
 	// Initialize enhanced config loader with reference integration
 	configLoader, err := config.NewReferenceEnhancedLoader()

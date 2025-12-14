@@ -1,7 +1,9 @@
 package animations
 
 import (
+	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -144,18 +146,70 @@ func NewColorTransition(from, to lipgloss.Color, duration time.Duration) *ColorT
 	}
 }
 
-// GetCurrentColor returns the interpolated color
+// GetCurrentColor returns the interpolated color using RGB interpolation
 func (ct *ColorTransition) GetCurrentColor() lipgloss.Color {
 	if ct.Completed {
 		return ct.ToColor
 	}
 
 	progress := ct.GetValue()
-	// Simple interpolation - could be enhanced with proper color interpolation
-	if progress > 0.5 {
-		return ct.ToColor
+
+	// Parse both colors to RGB
+	fromR, fromG, fromB, fromOK := parseHexColor(string(ct.FromColor))
+	toR, toG, toB, toOK := parseHexColor(string(ct.ToColor))
+
+	// Fall back to binary transition if color parsing fails
+	if !fromOK || !toOK {
+		if progress > 0.5 {
+			return ct.ToColor
+		}
+		return ct.FromColor
 	}
-	return ct.FromColor
+
+	// Interpolate each RGB component
+	r := int(float64(fromR) + (float64(toR)-float64(fromR))*progress)
+	g := int(float64(fromG) + (float64(toG)-float64(fromG))*progress)
+	b := int(float64(fromB) + (float64(toB)-float64(fromB))*progress)
+
+	// Clamp values to valid range
+	r = clampInt(r, 0, 255)
+	g = clampInt(g, 0, 255)
+	b = clampInt(b, 0, 255)
+
+	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
+}
+
+// parseHexColor parses a hex color string to RGB components
+func parseHexColor(hex string) (r, g, b int, ok bool) {
+	hex = strings.TrimPrefix(hex, "#")
+
+	// Handle short hex colors (e.g., #FFF -> #FFFFFF)
+	if len(hex) == 3 {
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+
+	if len(hex) != 6 {
+		return 0, 0, 0, false
+	}
+
+	// Parse each component
+	_, err := fmt.Sscanf(hex, "%02x%02x%02x", &r, &g, &b)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+
+	return r, g, b, true
+}
+
+// clampInt clamps an integer value to the specified range
+func clampInt(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
 }
 
 // FadeAnimation creates fade in/out effects

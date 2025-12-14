@@ -69,8 +69,6 @@ func safeView(model *Model) (view string) {
 	return view
 }
 
-
-
 // TestConfigurationDetection verifies that test configurations are properly detected
 func TestConfigurationDetection(t *testing.T) {
 	if testing.Short() {

@@ -1,0 +1,87 @@
+# golangci-lint fast configuration for development
+# See: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 2m
+  tests: true
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters-settings:
+  # Error checks
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  # goimports settings
+  goimports:
+    local-prefixes: github.com/mrtkrcm/ZeroUI
+
+  # Line length (relaxed for development)
+  lll:
+    line-length: 140
+
+linters:
+  enable:
+    # Core correctness linters (fast)
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - unparam
+    - whitespace
+    - gofumpt
+    - nolintlint
+    - exportloopref
+
+  disable:
+    # Slow linters disabled for fast mode
+    - dupl
+    - gocognit
+    - goconst
+    - gocritic
+    - gosec
+    - prealloc
+    - godox
+    - testpackage
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+    - cyclop
+    - funlen
+    - revive
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - errcheck
+
+    # Ignore complexity in main package
+    - path: main\.go
+      linters:
+        - gocognit
+        - funlen
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error
+  case-sensitive: false

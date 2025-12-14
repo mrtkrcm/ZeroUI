@@ -129,8 +129,8 @@ func (d ApplicationDelegate) Render(w io.Writer, m list.Model, index int, item l
 				descWidth := lipgloss.Width(desc)
 				if descWidth > m.Width()-2 { // Account for "  " prefix
 					constrainedDesc = lipgloss.NewStyle().
-						Width(m.Width()-2).
-						MaxWidth(m.Width()-2).
+						Width(m.Width() - 2).
+						MaxWidth(m.Width() - 2).
 						Render(desc)
 				}
 			}

@@ -1,305 +1,85 @@
-# ZeroUI - Development Roadmap
+# Roadmap
 
-## 🎯 Project Vision
-ZeroUI is an extensible Go framework that provides a powerful CLI and TUI interface for managing configuration files across multiple applications. It aims to be the universal configuration management tool for developers who work with various tools that store configs in JSON, YAML, TOML, and custom formats.
+This roadmap tracks user-facing direction at a high level. Engineering-focused work lives in `improvements-roadmap.md`.
 
-## 📊 Project Status
-- **Current Phase**: Alpha Development
-- **Version**: 0.1.0-alpha
-- **Language**: Go 1.24+
-- **Primary Focus**: Core functionality and Ghostty integration
+## Near-term
 
-## 🗺️ Development Phases
+- Stabilize core workflows: `toggle`, `cycle`, `preset`, `backup`, and `ui`.
+- Improve app coverage by expanding curated reference metadata (`configs/`) and plugins.
+- Tighten CLI/TUI UX (help, search/filter, previews where applicable).
 
-### Phase 1: Foundation (Current) ✅
-**Status**: 80% Complete
-**Timeline**: Week 1-2
+### Raycast Integration Improvements
 
-#### Completed ✅
-- [x] Project structure and Go module initialization
-- [x] Cobra CLI framework setup
-- [x] Core commands (toggle, cycle, preset, list, ui)
-- [x] Multi-format config parser with Koanf
-- [x] Toggle engine with preset system
-- [x] Bubble Tea TUI interface foundation
-- [x] Plugin system architecture
-- [x] Ghostty plugin implementation
-- [x] Build tooling (Makefile)
-- [x] Code quality setup (golangci-lint)
-- [x] CI/CD pipeline (GitHub Actions)
+#### Phase 1: Critical Fixes ✅ COMPLETED (Dec 2025)
 
-#### Remaining
-- [ ] Fix module dependencies and run go mod tidy
-- [ ] Update config loader to use custom parser for Ghostty
-- [ ] Complete TUI implementation with real data
-- [ ] Add error handling and recovery
-- [ ] Implement config backup/restore
+- **Fix CLI Command Usage**: Added `list values <app>` and `list changed <app>` commands with proper output parsing for key-value extraction.
+- **Enable Full Feature Set**: Implemented complete `keymap` command suite (`list`, `add`, `remove`, `edit`, `validate`, `presets`, `conflicts`) instead of disabling features.
+- **Fix Version Check**: Added `zeroui version` command and updated all references (Dockerfile, scripts, extension) to replace non-existent `--version` flag.
+- **Improve Binary Discovery**: Enhanced path resolution with 20+ fallback locations, cross-platform support (macOS/Linux/Windows), and detailed error messages with platform/architecture info.
+- **Error Handling**: Implemented retry logic, graceful degradation, comprehensive logging, and fallback parsing for different ZeroUI output formats.
 
-### Phase 2: Core Features 🚧
-**Status**: Not Started
-**Timeline**: Week 3-4
+#### Phase 2: React Hooks & Performance (Medium Priority, 1-2 weeks)
 
-#### Tasks
-- [ ] **Config Watching & Auto-reload**
-  - Implement fsnotify for file watching
-  - Auto-reload on external changes
-  - Conflict resolution strategies
-  
-- [ ] **Advanced TUI Features**
-  - Real-time preview of changes
-  - Diff view for modifications
-  - Undo/redo functionality
-  - Search and filter capabilities
-  - Keyboard shortcut customization
-  
-- [ ] **Shell Integration**
-  - Zsh completions
-  - Bash completions
-  - Fish completions
-  - PowerShell completions
-  
-- [ ] **Configuration Management**
-  - Import/export configurations
-  - Config versioning
-  - Config sync across machines
-  - Profile management (work/personal/etc)
+- **Migrate to Raycast Utils**: Replace custom async logic with `useCachedPromise`, `useExec`, and `usePromise` hooks for better performance and reliability.
+- **Smart Caching**: Implement stale-while-revalidate strategy with `useCachedPromise` for menu bar and background refresh.
+- **Background Refresh**: Add menu bar command with configurable intervals for real-time status updates.
+- **Cross-Command Communication**: Enable deeplinks and `launchCommand()` for seamless navigation between list/detail views.
+- **Loading States**: Add proper loading indicators, skeleton screens, and optimistic updates.
+- **Error Handling**: Implement proper toast notifications with retry actions and graceful degradation.
+- **Form Integration**: Use `useForm` hook for configuration editing with validation and error states.
 
-### Phase 3: Plugin Ecosystem 🔌
-**Status**: Planning
-**Timeline**: Week 5-6
+#### Phase 3: Advanced Features & AI Integration (Low Priority, 2-4 weeks)
 
-#### Built-in Plugins to Implement
-- [ ] **Terminal Emulators**
-  - [x] Ghostty (completed)
-  - [ ] Alacritty
-  - [ ] iTerm2
-  - [ ] Windows Terminal
-  - [ ] Kitty
-  - [ ] WezTerm
-  
-- [ ] **Code Editors**
-  - [ ] VS Code
-  - [ ] Neovim/Vim
-  - [ ] Sublime Text
-  - [ ] JetBrains IDEs
-  - [ ] Zed
-  
-- [ ] **Development Tools**
-  - [ ] Git
-  - [ ] Docker/Docker Compose
-  - [ ] Tmux
-  - [ ] SSH config
-  - [ ] AWS CLI
-  - [ ] Kubernetes (kubectl)
-  
-- [ ] **Shell & System**
-  - [ ] Zsh/Oh-My-Zsh
-  - [ ] Starship prompt
-  - [ ] Homebrew
-  - [ ] macOS defaults
+- **AI-Powered Features**: Integrate Raycast AI tools for configuration suggestions, validation, and natural language queries.
+- **Enhanced Integrations**: Support ZeroUI's preset system, backup management UI, theme switching, and bulk operations.
+- **Developer Tools**: Add performance monitoring dashboard, extension health checks, detailed logging, and debugging tools.
+- **Form Improvements**: Implement `useForm` hook for configuration editing with validation and error handling.
+- **Pagination Support**: Add pagination for large configuration lists using Raycast's pagination API.
+- **Local Storage**: Use `useLocalStorage` for persisting user preferences and recent actions.
+- **Accessibility**: Ensure all components follow Raycast accessibility guidelines with proper ARIA labels and keyboard navigation.
 
-#### Plugin Features
-- [ ] Plugin marketplace/registry
-- [ ] Plugin auto-discovery
-- [ ] Plugin update mechanism
-- [ ] Plugin dependency management
-- [ ] Custom plugin development kit
+#### Phase 4: Testing & Documentation (Ongoing)
 
-### Phase 4: Enhanced UX 🎨
-**Status**: Planning
-**Timeline**: Week 7-8
+- **Comprehensive Testing**: Unit tests for utilities, integration tests with mock ZeroUI, E2E testing with real ZeroUI, and visual regression tests.
+- **Documentation Updates**: Update README with correct command usage, add troubleshooting guides, maintain API documentation, and create extension-specific guides.
+- **Store Publishing**: Prepare for Raycast Store submission with proper manifest, screenshots, and compliance checks.
+- **Debugging Tools**: Implement React DevTools integration, VSCode debugger support, and extension health monitoring.
+- **Performance Monitoring**: Add cache hit/miss tracking, command execution timing, and memory usage monitoring.
 
-#### Raycast Integration
-- [ ] Toggle command script
-- [ ] Cycle command script
-- [ ] Preset selector with dropdown
-- [ ] Quick switcher UI
-- [ ] Config search command
-- [ ] Recent configs menu
+## Mid-term
 
-#### Alfred Integration
-- [ ] Workflow for config management
-- [ ] Quick toggle actions
-- [ ] Preset triggers
+- Distribution: binary releases for major platforms and a simple install story.
+- Shell integration: completions and better ergonomics.
+- Safer config editing: clearer previews, better restore UX, and guardrails.
+- Raycast Store: Complete extension publishing with user onboarding, feedback collection, and update management.
 
-#### Native GUI (Optional)
-- [ ] System tray application
-- [ ] Native macOS app with SwiftUI
-- [ ] Windows system tray app
-- [ ] Linux AppIndicator support
+## Raycast Extension Best Practices Implementation
 
-### Phase 5: Advanced Features 🚀
-**Status**: Future
-**Timeline**: Month 2-3
+### Phase 5: Production Readiness (Medium Priority, 2-3 weeks)
 
-#### Features
-- [ ] **AI-Powered Suggestions**
-  - Config optimization recommendations
-  - Preset generation based on usage
-  - Anomaly detection in configs
-  
-- [ ] **Team Collaboration**
-  - Shared config repositories
-  - Team presets
-  - Config change notifications
-  - Approval workflows
-  
-- [ ] **Cloud Sync**
-  - End-to-end encrypted sync
-  - Multi-device support
-  - Conflict resolution
-  - Backup and restore
-  
-- [ ] **Config as Code**
-  - Declarative config management
-  - Infrastructure as Code integration
-  - GitOps workflows
-  - CI/CD integration
+- **Manifest Optimization**: Configure proper command modes (view/no-view/menu-bar), intervals, and argument handling.
+- **Preference Management**: Implement user preferences for API keys, cache settings, and custom paths.
+- **Cross-Platform Compatibility**: Ensure extension works across different macOS versions and hardware.
+- **Security**: Implement secure storage for sensitive data and proper input validation.
+- **Internationalization**: Add support for multiple languages if needed.
 
-### Phase 6: Production Ready 🏁
-**Status**: Future
-**Timeline**: Month 3-4
+### Phase 6: Advanced UX Patterns (Low Priority, 3-4 weeks)
 
-#### Tasks
-- [ ] **Testing**
-  - Unit tests (>80% coverage)
-  - Integration tests
-  - E2E tests
-  - Performance benchmarks
-  - Fuzz testing
-  
-- [ ] **Documentation**
-  - User guide
-  - API documentation
-  - Plugin development guide
-  - Video tutorials
-  - Example configurations
-  
-- [ ] **Distribution**
-  - Homebrew formula
-  - AUR package
-  - Snap package
-  - Docker image
-  - Binary releases for all platforms
-  - Auto-update mechanism
-  
-- [ ] **Community**
-  - Discord/Slack community
-  - Plugin marketplace
-  - Config sharing platform
-  - Blog with tips and tricks
+- **Custom Components**: Build reusable components for configuration editing, status displays, and action panels.
+- **Keyboard Shortcuts**: Implement comprehensive keyboard navigation and shortcuts.
+- **Contextual Actions**: Add smart action suggestions based on user behavior and configuration state.
+- **Progressive Enhancement**: Ensure core functionality works without advanced features, with enhancements layered on top.
+- **Offline Support**: Handle network failures gracefully with cached data and offline indicators.
 
-## 🎯 Success Metrics
+### Phase 7: Ecosystem Integration (Ongoing)
 
-### Technical Metrics
-- [ ] <100ms response time for all operations
-- [ ] <20MB binary size
-- [ ] <50MB memory usage
-- [ ] Zero-downtime config switching
-- [ ] 100% backward compatibility
+- **Plugin System**: Support for ZeroUI plugins through the Raycast extension.
+- **Third-Party Integrations**: Connect with popular tools (VSCode, JetBrains, etc.) for enhanced workflows.
+- **Community Features**: Add sharing, templates, and community-driven presets.
+- **Analytics**: Implement usage analytics for improving user experience (privacy-compliant).
+- **Feedback Loop**: Build mechanisms for user feedback and feature requests directly in the extension.
 
-### User Metrics
-- [ ] 1,000+ GitHub stars
-- [ ] 50+ community plugins
-- [ ] 10,000+ active users
-- [ ] <5min onboarding time
-- [ ] 95% user satisfaction
+## Long-term
 
-## 🚀 Quick Wins (Next Steps)
-
-### Immediate (Today)
-1. Fix Go module dependencies
-2. Complete Ghostty config parser integration
-3. Test build and basic functionality
-4. Create demo video/GIF
-
-### This Week
-1. Add VS Code plugin
-2. Implement Raycast scripts
-3. Write comprehensive README
-4. Create installation script
-5. Release v0.1.0-alpha
-
-### Next Week
-1. Add Alacritty and iTerm2 plugins
-2. Implement config watching
-3. Add shell completions
-4. Create website/landing page
-5. Release v0.2.0-beta
-
-## 📦 Release Plan
-
-### v0.1.0-alpha (This Week)
-- Core CLI functionality
-- Ghostty plugin
-- Basic TUI
-- Installation script
-
-### v0.2.0-beta (Next Week)
-- 3+ terminal plugins
-- Config watching
-- Shell completions
-- Raycast integration
-
-### v0.3.0-rc (2 Weeks)
-- 5+ editor plugins
-- Advanced TUI features
-- Plugin registry
-- Documentation
-
-### v1.0.0 (1 Month)
-- Production ready
-- 10+ plugins
-- Full test coverage
-- Cross-platform support
-
-## 🔧 Technical Debt
-
-### High Priority
-- [ ] Error handling improvements
-- [ ] Logging system implementation
-- [ ] Config validation framework
-- [ ] Plugin interface stabilization
-
-### Medium Priority
-- [ ] Code refactoring for maintainability
-- [ ] Performance optimizations
-- [ ] Memory usage optimization
-- [ ] Dependency updates
-
-### Low Priority
-- [ ] Code generation for plugins
-- [ ] Metrics and telemetry
-- [ ] A/B testing framework
-- [ ] Feature flags system
-
-## 🤝 Contributing
-
-### How to Contribute
-1. **Plugins**: Create new plugins for your favorite tools
-2. **Features**: Implement items from this roadmap
-3. **Testing**: Write tests and report bugs
-4. **Documentation**: Improve docs and create tutorials
-5. **Design**: Create logo, website, and UI improvements
-
-### Plugin Development Priority
-1. **High Demand**: VS Code, Neovim, Alacritty
-2. **Popular Tools**: Docker, Git, Tmux
-3. **Platform Specific**: Windows Terminal, iTerm2
-4. **Specialized**: JetBrains IDEs, Sublime Text
-
-## 📞 Contact & Support
-
-- **GitHub Issues**: Bug reports and feature requests
-- **Discussions**: General questions and ideas
-- **Discord**: Real-time community support (coming soon)
-- **Email**: support@zeroui.dev (coming soon)
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
----
-
-*Last Updated: 2025-01-10*
-*Version: 0.1.0-alpha*
+- Broader plugin ecosystem (more apps, clearer authoring and packaging story).
+- Optional integrations (e.g., launchers) where they improve the daily workflow.

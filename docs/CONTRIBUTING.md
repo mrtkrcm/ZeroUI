@@ -1,33 +1,25 @@
-# Contributing to ZeroUI
+# Contributing
 
-We welcome contributions! This document summarizes the contribution workflow and standards.
+This project welcomes bug fixes, features, and documentation improvements.
 
-Development workflow
+## Development workflow
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make changes and add tests
-4. Run quality checks: `make check`
-5. Commit changes: `git commit -am 'Add amazing feature'`
-6. Push to branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+1. Create a branch from `main`.
+2. Make your change (keep PRs focused).
+3. Run checks: `make check` (or at minimum `make test-fast`).
+4. Update documentation for user-visible changes.
+5. Open a pull request with a clear description and test notes.
 
-Code standards
+## Standards
 
-- Follow Go best practices and idioms
-- Write comprehensive tests (aim for high coverage)
-- Use structured logging
-- Add appropriate documentation and comments
-- Follow existing code style
+- Follow existing Go style and project conventions.
+- Add/adjust tests for behavior changes.
+- Avoid introducing new dependencies unless necessary.
+- Keep public docs concise and task-focused.
 
-How to contribute
+## Where to start
 
-- Plugins: Create new plugins for your favorite tools
-- Features: Implement items from the roadmap
-- Testing: Write tests and report bugs
-- Documentation: Improve docs and create tutorials
-- Design: Create logo, website, and UI improvements
-
-Community
-
-Please use GitHub Issues and Discussions for bugs and feature requests. When submitting PRs, include tests and update relevant docs.
+- Development setup: `development-setup.md`
+- Command surface: `commands.md`
+- Architecture: `architecture.md` and `plugin-architecture.md`
+- Roadmap: `roadmap.md` and `improvements-roadmap.md`

@@ -1,23 +1,29 @@
-# Architecture Overview — ZeroUI
+# Architecture overview
 
-ZeroUI follows clean architecture principles with separation of concerns.
+ZeroUI is a Go CLI + TUI application designed around small, testable packages and a clear separation between command wiring, business logic, and UI.
 
-Primary layout
+## Repository layout
 
+```text
+cmd/       Cobra commands and CLI wiring
+internal/  Application internals (config, service, tui, plugins, etc.)
+pkg/       Reusable packages (public API surface)
+configs/   Curated reference metadata used by `zeroui ref`
+test/      Integration tests
+testdata/  Deterministic fixtures and stub binaries
 ```
-cmd/                    # CLI commands and entry points
-internal/               # Application internals (config, service, tui, etc.)
-pkg/                    # Reusable packages
-tools/                  # Development tools
-.github/workflows/      # CI/CD pipelines
-```
 
-Key components
+## Major subsystems
 
-- `internal/config` - Configuration management
-- `internal/tui` - Terminal UI components and views
-- `internal/toggle` - Core toggle operations
-- `internal/service` - Business logic
-- `internal/observability` - Metrics and tracing
+- `internal/config/`: app registry, config loading/merging, format handling
+- `internal/toggle/`: toggle/cycle/preset execution and safe write behavior
+- `internal/tui/`: Bubble Tea application and views
+- `internal/plugins/`: plugin interfaces and implementations
+- `internal/container/`: dependency wiring for commands and runtime services
+- `internal/runtimeconfig/`: runtime config loading and defaults
+- `internal/security/` and `internal/validation/`: input/path validation and hardening
 
-For more details see docs/README.md and the module code.
+## Related documents
+
+- Plugin system: `plugin-architecture.md` and `rpc-plugin-guide.md`
+- Reference metadata: `reference-system.md`

@@ -106,4 +106,183 @@ func TestThemes(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("SetThemeByName with exact match", func(t *testing.T) {
+		// Save original theme
+		originalTheme := GetCurrentThemeName()
+		defer func() {
+			SetThemeByName(originalTheme)
+		}()
+
+		// Set theme by exact name
+		theme, ok := SetThemeByName("Modern")
+		if !ok {
+			t.Error("Expected SetThemeByName to return true for 'Modern'")
+		}
+		if theme.Name != "Modern" {
+			t.Errorf("Expected theme name 'Modern', got '%s'", theme.Name)
+		}
+		if GetCurrentThemeName() != "Modern" {
+			t.Errorf("Expected current theme to be 'Modern', got '%s'", GetCurrentThemeName())
+		}
+	})
+
+	t.Run("SetThemeByName with case-insensitive match", func(t *testing.T) {
+		// Save original theme
+		originalTheme := GetCurrentThemeName()
+		defer func() {
+			SetThemeByName(originalTheme)
+		}()
+
+		// Set theme with different case
+		testCases := []string{"modern", "MODERN", "MoDeRn", "dracula", "DRACULA"}
+		for _, testCase := range testCases {
+			theme, ok := SetThemeByName(testCase)
+			if !ok {
+				t.Errorf("Expected SetThemeByName to return true for '%s'", testCase)
+			}
+			if theme.Name == "" {
+				t.Errorf("Expected theme to have a name for input '%s'", testCase)
+			}
+			// Verify the theme was actually set
+			currentName := GetCurrentThemeName()
+			if currentName != theme.Name {
+				t.Errorf("Expected current theme to be '%s', got '%s'", theme.Name, currentName)
+			}
+		}
+	})
+
+	t.Run("SetThemeByName with invalid name", func(t *testing.T) {
+		// Save original theme
+		originalTheme := GetCurrentThemeName()
+		defer func() {
+			SetThemeByName(originalTheme)
+		}()
+
+		// Try to set theme with invalid name
+		theme, ok := SetThemeByName("NonExistent")
+		if ok {
+			t.Error("Expected SetThemeByName to return false for invalid theme name")
+		}
+		if theme.Name != "" {
+			t.Errorf("Expected empty theme for invalid name, got '%s'", theme.Name)
+		}
+		// Current theme should not have changed
+		if GetCurrentThemeName() != originalTheme {
+			t.Errorf("Expected current theme to remain '%s', got '%s'", originalTheme, GetCurrentThemeName())
+		}
+	})
+
+	t.Run("ListAvailableThemes returns all themes", func(t *testing.T) {
+		themes := ListAvailableThemes()
+		expectedThemes := GetThemeNames()
+
+		if len(themes) != len(expectedThemes) {
+			t.Errorf("Expected %d themes, got %d", len(expectedThemes), len(themes))
+		}
+
+		// Verify all expected themes are present
+		themeMap := make(map[string]bool)
+		for _, name := range themes {
+			themeMap[name] = true
+		}
+
+		for _, expected := range expectedThemes {
+			if !themeMap[expected] {
+				t.Errorf("Expected theme '%s' not found in ListAvailableThemes", expected)
+			}
+		}
+	})
+
+	t.Run("ListAvailableThemes contains Modern and Dracula", func(t *testing.T) {
+		themes := ListAvailableThemes()
+
+		hasModern := false
+		hasDracula := false
+
+		for _, name := range themes {
+			if name == "Modern" {
+				hasModern = true
+			}
+			if name == "Dracula" {
+				hasDracula = true
+			}
+		}
+
+		if !hasModern {
+			t.Error("Expected 'Modern' theme in available themes")
+		}
+		if !hasDracula {
+			t.Error("Expected 'Dracula' theme in available themes")
+		}
+	})
+
+	t.Run("GetCurrentThemeName returns non-empty string", func(t *testing.T) {
+		name := GetCurrentThemeName()
+		if name == "" {
+			t.Error("Expected GetCurrentThemeName to return non-empty string")
+		}
+	})
+
+	t.Run("GetCurrentThemeName reflects SetThemeByName", func(t *testing.T) {
+		// Save original theme
+		originalTheme := GetCurrentThemeName()
+		defer func() {
+			SetThemeByName(originalTheme)
+		}()
+
+		// Set to Modern
+		SetThemeByName("Modern")
+		if GetCurrentThemeName() != "Modern" {
+			t.Errorf("Expected current theme to be 'Modern', got '%s'", GetCurrentThemeName())
+		}
+
+		// Set to Dracula
+		SetThemeByName("Dracula")
+		if GetCurrentThemeName() != "Dracula" {
+			t.Errorf("Expected current theme to be 'Dracula', got '%s'", GetCurrentThemeName())
+		}
+	})
+
+	t.Run("buildThemeRegistry creates correct mapping", func(t *testing.T) {
+		registry := buildThemeRegistry()
+
+		if len(registry) != len(AvailableThemes) {
+			t.Errorf("Expected registry to have %d entries, got %d", len(AvailableThemes), len(registry))
+		}
+
+		// Verify each theme is in the registry
+		for _, theme := range AvailableThemes {
+			name := GetThemeName(theme)
+			if _, ok := registry[name]; !ok {
+				t.Errorf("Expected theme '%s' to be in registry", name)
+			}
+		}
+	})
+
+	t.Run("equalsCaseInsensitive works correctly", func(t *testing.T) {
+		testCases := []struct {
+			a        string
+			b        string
+			expected bool
+		}{
+			{"Modern", "Modern", true},
+			{"Modern", "modern", true},
+			{"MODERN", "modern", true},
+			{"MoDeRn", "mOdErN", true},
+			{"Dracula", "dracula", true},
+			{"Modern", "Dracula", false},
+			{"Modern", "ModernX", false},
+			{"", "", true},
+			{"a", "A", true},
+			{"abc", "ab", false},
+		}
+
+		for _, tc := range testCases {
+			result := equalsCaseInsensitive(tc.a, tc.b)
+			if result != tc.expected {
+				t.Errorf("equalsCaseInsensitive(%q, %q) = %v, expected %v", tc.a, tc.b, result, tc.expected)
+			}
+		}
+	})
 }

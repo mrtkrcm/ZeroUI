@@ -85,7 +85,7 @@ settings:
     app_name:
         name: app_name
         type: string
-        default_value: Ghostty
+        default_value: ""
         category: general
     auto-update:
         name: auto-update
@@ -175,12 +175,12 @@ settings:
     config_path:
         name: config_path
         type: string
-        default_value: ~/.config/ghostty/config
+        default_value: ""
         category: general
     config_type:
         name: config_type
         type: string
-        default_value: custom
+        default_value: ""
         category: general
     confirm-close-surface:
         name: confirm-close-surface
@@ -240,12 +240,12 @@ settings:
     default_value:
         name: default_value
         type: string
-        default_value: xterm-ghostty
+        default_value: ""
         category: general
     description:
         name: description
         type: string
-        default_value: The release channel to use for auto-updates.  The default value of this matches the release channel of the currently running Ghostty version. If you download a pre-release version of Ghostty then t...
+        default_value: ""
         category: general
     desktop-notifications:
         name: desktop-notifications
@@ -266,7 +266,7 @@ settings:
         name: font-codepoint-map
         type: string
         default_value: ""
-        category: keybindings
+        category: font
     font-family:
         name: font-family
         type: string
@@ -895,7 +895,7 @@ settings:
     name:
         name: name
         type: string
-        default_value: auto-update-channel
+        default_value: working-directory
         category: general
     osc-color-report-format:
         name: osc-color-report-format
@@ -2336,7 +2336,7 @@ settings:
         name: window-inherit-font-size
         type: string
         default_value: ""
-        category: window
+        category: font
     window-inherit-working-directory:
         name: window-inherit-working-directory
         type: string

@@ -308,7 +308,8 @@ func TestRender(t *testing.T) {
 	ns.ShowSuccess("Operation successful", 5*time.Second)
 
 	width := 80
-	rendered := ns.Render(width)
+	height := 24
+	rendered := ns.Render(width, height)
 
 	if rendered == "" {
 		t.Error("Expected non-empty rendered output")

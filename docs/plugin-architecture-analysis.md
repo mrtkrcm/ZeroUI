@@ -1,5 +1,7 @@
 # Plugin Architecture Analysis: hashicorp/go-plugin Integration
 
+> **Note:** This document represents the analysis and planning phase for the plugin system. For the current implementation details, see `plugin-architecture.md` and `rpc-plugin-guide.md`.
+
 ## Current State Analysis
 
 ### Current Plugin System

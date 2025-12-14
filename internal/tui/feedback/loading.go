@@ -374,3 +374,157 @@ func (ls *LoadingSystem) GetPerformanceStats() map[string]interface{} {
 
 	return stats
 }
+
+// SkeletonLoader provides placeholder loading states for content
+type SkeletonLoader struct {
+	lines     int
+	width     int
+	animFrame int
+	style     SkeletonStyle
+}
+
+// SkeletonStyle defines the visual appearance of skeleton loaders
+type SkeletonStyle struct {
+	BaseColor      string
+	HighlightColor string
+	BorderColor    string
+	Rounded        bool
+}
+
+// DefaultSkeletonStyle provides a default skeleton loading style
+var DefaultSkeletonStyle = SkeletonStyle{
+	BaseColor:      "#3c3c4c",
+	HighlightColor: "#4c4c5c",
+	BorderColor:    "#5c5c6c",
+	Rounded:        true,
+}
+
+// NewSkeletonLoader creates a new skeleton loader
+func NewSkeletonLoader(lines, width int) *SkeletonLoader {
+	return &SkeletonLoader{
+		lines:     lines,
+		width:     width,
+		animFrame: 0,
+		style:     DefaultSkeletonStyle,
+	}
+}
+
+// NewSkeletonLoaderWithStyle creates a skeleton loader with custom style
+func NewSkeletonLoaderWithStyle(lines, width int, style SkeletonStyle) *SkeletonLoader {
+	return &SkeletonLoader{
+		lines:     lines,
+		width:     width,
+		animFrame: 0,
+		style:     style,
+	}
+}
+
+// Update advances the shimmer animation
+func (sl *SkeletonLoader) Update() {
+	sl.animFrame = (sl.animFrame + 1) % 6
+}
+
+// View renders the skeleton loader with shimmer effect
+func (sl *SkeletonLoader) View() string {
+	shimmerChars := []string{"░", "▒", "▓", "▓", "▒", "░"}
+
+	var lines []string
+	for i := 0; i < sl.lines; i++ {
+		// Vary line widths to simulate different content lengths
+		lineWidth := sl.width
+		switch i % 4 {
+		case 0:
+			lineWidth = sl.width
+		case 1:
+			lineWidth = int(float64(sl.width) * 0.7)
+		case 2:
+			lineWidth = int(float64(sl.width) * 0.85)
+		case 3:
+			lineWidth = int(float64(sl.width) * 0.6)
+		}
+
+		// Create shimmer effect by offsetting animation frame per line
+		offset := (sl.animFrame + i) % len(shimmerChars)
+		shimmerChar := shimmerChars[offset]
+
+		line := strings.Repeat(shimmerChar, lineWidth)
+		lines = append(lines, line)
+	}
+
+	// Apply styling
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(sl.style.HighlightColor)).
+		Background(lipgloss.Color(sl.style.BaseColor))
+
+	if sl.style.Rounded {
+		style = style.
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(sl.style.BorderColor))
+	}
+
+	return style.Render(strings.Join(lines, "\n"))
+}
+
+// SetLines updates the number of lines
+func (sl *SkeletonLoader) SetLines(lines int) {
+	sl.lines = lines
+}
+
+// SetWidth updates the width
+func (sl *SkeletonLoader) SetWidth(width int) {
+	sl.width = width
+}
+
+// SetStyle updates the skeleton style
+func (sl *SkeletonLoader) SetStyle(style SkeletonStyle) {
+	sl.style = style
+}
+
+// SkeletonCard renders a card-shaped skeleton placeholder
+func SkeletonCard(width, height int) string {
+	sl := NewSkeletonLoader(height, width)
+	return sl.View()
+}
+
+// SkeletonList renders a list of skeleton items
+func SkeletonList(itemCount, itemWidth int) string {
+	var items []string
+	for i := 0; i < itemCount; i++ {
+		sl := NewSkeletonLoader(2, itemWidth)
+		sl.animFrame = i % 6 // Stagger animation
+		items = append(items, sl.View())
+	}
+	return strings.Join(items, "\n\n")
+}
+
+// SkeletonForm renders a form-shaped skeleton placeholder
+func SkeletonForm(fieldCount, width int) string {
+	var fields []string
+	for i := 0; i < fieldCount; i++ {
+		// Label skeleton (shorter)
+		labelSl := NewSkeletonLoader(1, int(float64(width)*0.3))
+		labelSl.animFrame = i % 6
+
+		// Input skeleton (full width)
+		inputSl := NewSkeletonLoader(1, width)
+		inputSl.animFrame = (i + 2) % 6
+
+		fields = append(fields, labelSl.View()+"\n"+inputSl.View())
+	}
+	return strings.Join(fields, "\n\n")
+}
+
+// SkeletonGrid renders a grid of skeleton items
+func SkeletonGrid(rows, cols, itemWidth, itemHeight int) string {
+	var gridRows []string
+	for r := 0; r < rows; r++ {
+		var rowItems []string
+		for c := 0; c < cols; c++ {
+			sl := NewSkeletonLoader(itemHeight, itemWidth)
+			sl.animFrame = (r*cols + c) % 6
+			rowItems = append(rowItems, sl.View())
+		}
+		gridRows = append(gridRows, lipgloss.JoinHorizontal(lipgloss.Top, rowItems...))
+	}
+	return strings.Join(gridRows, "\n")
+}

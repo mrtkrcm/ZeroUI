@@ -1,39 +1,46 @@
-# Quick Start — ZeroUI
+# Quick start
 
-ZeroUI is a zero-configuration UI toolkit manager. This guide covers installation and basic usage.
+This guide gets you from zero to a working `zeroui` binary and a first configuration change.
 
-Installation
+## Install
 
-Using Go (recommended):
+### Using Go
 
-```
+Requires repository access:
+
+```bash
 go install github.com/mrtkrcm/ZeroUI@latest
 ```
 
-Using Docker:
+### From source
 
+```bash
+make build
+./build/zeroui --help
 ```
-docker run --rm -it zeroui/zeroui:latest
+
+### Docker (local)
+
+```bash
+make docker-build
+make docker-run
 ```
 
-Basic Usage
+## First run
 
-List available applications:
-
-```
+```bash
+zeroui                 # Launch interactive app grid (terminal required)
 zeroui list apps
 ```
 
-Toggle a configuration value:
+## Make a change
 
-```
+```bash
 zeroui toggle ghostty theme dark
+zeroui preset ghostty minimal --show-diff
 ```
 
-Launch interactive TUI:
+## Next
 
-```
-zeroui ui
-```
-
-For the full command reference, see docs/COMMANDS.md
+- Command reference: `commands.md`
+- Reference system: `reference-system.md`

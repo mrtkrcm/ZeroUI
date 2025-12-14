@@ -8,11 +8,23 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// NotificationPosition defines where notifications appear on screen
+type NotificationPosition int
+
+const (
+	PositionTopRight NotificationPosition = iota
+	PositionTopCenter
+	PositionBottomRight
+	PositionBottomCenter
+)
+
 // NotificationSystem manages user notifications and feedback
 type NotificationSystem struct {
 	notifications    []Notification
 	maxNotifications int
 	theme            NotificationTheme
+	position         NotificationPosition
+	defaultDuration  time.Duration
 }
 
 // Notification represents a user notification
@@ -90,6 +102,8 @@ func NewNotificationSystem() *NotificationSystem {
 		notifications:    []Notification{},
 		maxNotifications: 5,
 		theme:            DefaultTheme,
+		position:         PositionTopRight,
+		defaultDuration:  3 * time.Second,
 	}
 }
 
@@ -183,18 +197,32 @@ func (ns *NotificationSystem) GetActiveNotifications() []Notification {
 }
 
 // Render renders all active notifications
-func (ns *NotificationSystem) Render(width int) string {
+func (ns *NotificationSystem) Render(width, height int) string {
 	active := ns.GetActiveNotifications()
 	if len(active) == 0 {
 		return ""
 	}
 
-	var rendered []string
-	for _, notification := range active {
-		rendered = append(rendered, ns.renderNotification(notification, width))
+	content := ns.renderNotifications(active, width)
+
+	var hPos, vPos lipgloss.Position
+	switch ns.position {
+	case PositionTopRight:
+		hPos, vPos = lipgloss.Right, lipgloss.Top
+	case PositionTopCenter:
+		hPos, vPos = lipgloss.Center, lipgloss.Top
+	case PositionBottomRight:
+		hPos, vPos = lipgloss.Right, lipgloss.Bottom
+	case PositionBottomCenter:
+		hPos, vPos = lipgloss.Center, lipgloss.Bottom
 	}
 
-	return strings.Join(rendered, "\n")
+	return lipgloss.Place(width, height, hPos, vPos, content)
+}
+
+// SetPosition sets the notification display position
+func (ns *NotificationSystem) SetPosition(pos NotificationPosition) {
+	ns.position = pos
 }
 
 // Dismiss dismisses a notification by ID
@@ -216,6 +244,15 @@ func (ns *NotificationSystem) ClearAll() {
 func (ns *NotificationSystem) Update() {
 	// Remove expired notifications
 	ns.cleanExpired()
+}
+
+// renderNotifications renders all active notifications as a single block
+func (ns *NotificationSystem) renderNotifications(active []Notification, width int) string {
+	var rendered []string
+	for _, notification := range active {
+		rendered = append(rendered, ns.renderNotification(notification, width))
+	}
+	return strings.Join(rendered, "\n")
 }
 
 // ShowTooltip shows a tooltip-style notification

@@ -8,6 +8,9 @@ import (
 var AvailableThemes = []Theme{
 	ModernTheme,
 	DraculaTheme,
+	LightTheme,
+	NordTheme,
+	CatppuccinTheme,
 }
 
 // currentThemeIndex tracks the currently active theme
@@ -173,6 +176,120 @@ var DraculaTheme = Theme{
 	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#f8f8f2"); return &c }(),
 }
 
+// LightTheme - GitHub-inspired light theme for daylight usage
+var LightTheme = Theme{
+	Background: "#ffffff", // Pure white
+	Foreground: "#24292e", // Dark gray
+	Accent:     "#0366d6", // GitHub blue
+	Secondary:  "#6a737d", // Gray
+
+	Success: "#22863a", // Green
+	Warning: "#b08800", // Dark yellow
+	Error:   "#cb2431", // Red
+	Info:    "#0366d6", // Blue
+
+	Border:       "#e1e4e8", // Light gray
+	BorderFocus:  "#0366d6", // Blue
+	Surface:      "#f6f8fa", // Very light gray
+	SurfaceHover: "#e1e4e8", // Light gray
+
+	TextPrimary:   "#24292e", // Dark gray
+	TextSecondary: "#586069", // Medium gray
+	TextMuted:     "#6a737d", // Light gray
+	TextDisabled:  "#959da5", // Very light gray
+
+	Selection: "#0366d6", // Blue
+	Highlight: "#ffd33d", // Yellow
+	Link:      "#0366d6", // Blue
+	LinkHover: "#22863a", // Green
+
+	// Backward compatibility fields
+	BgSubtle: "#f6f8fa",
+	FgMuted:  "#6a737d",
+
+	// Test compatibility fields
+	Name:    "Light",
+	Primary: func() *lipgloss.Color { c := lipgloss.Color("#0366d6"); return &c }(),
+	BgBase:  func() *lipgloss.Color { c := lipgloss.Color("#ffffff"); return &c }(),
+	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#24292e"); return &c }(),
+}
+
+// NordTheme - Arctic, north-bluish color palette
+var NordTheme = Theme{
+	Background: "#2e3440", // Polar Night
+	Foreground: "#eceff4", // Snow Storm
+	Accent:     "#88c0d0", // Frost
+	Secondary:  "#81a1c1", // Frost blue
+
+	Success: "#a3be8c", // Aurora green
+	Warning: "#ebcb8b", // Aurora yellow
+	Error:   "#bf616a", // Aurora red
+	Info:    "#88c0d0", // Frost cyan
+
+	Border:       "#4c566a", // Polar Night light
+	BorderFocus:  "#88c0d0", // Frost
+	Surface:      "#3b4252", // Polar Night medium
+	SurfaceHover: "#434c5e", // Polar Night lighter
+
+	TextPrimary:   "#eceff4", // Snow Storm bright
+	TextSecondary: "#d8dee9", // Snow Storm medium
+	TextMuted:     "#81a1c1", // Frost blue
+	TextDisabled:  "#4c566a", // Polar Night light
+
+	Selection: "#88c0d0", // Frost
+	Highlight: "#ebcb8b", // Aurora yellow
+	Link:      "#88c0d0", // Frost
+	LinkHover: "#a3be8c", // Aurora green
+
+	// Backward compatibility fields
+	BgSubtle: "#3b4252",
+	FgMuted:  "#81a1c1",
+
+	// Test compatibility fields
+	Name:    "Nord",
+	Primary: func() *lipgloss.Color { c := lipgloss.Color("#88c0d0"); return &c }(),
+	BgBase:  func() *lipgloss.Color { c := lipgloss.Color("#2e3440"); return &c }(),
+	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#eceff4"); return &c }(),
+}
+
+// CatppuccinTheme - Soothing pastel theme (Mocha variant)
+var CatppuccinTheme = Theme{
+	Background: "#1e1e2e", // Base
+	Foreground: "#cdd6f4", // Text
+	Accent:     "#cba6f7", // Mauve
+	Secondary:  "#9399b2", // Overlay1
+
+	Success: "#a6e3a1", // Green
+	Warning: "#f9e2af", // Yellow
+	Error:   "#f38ba8", // Red
+	Info:    "#89dceb", // Sky
+
+	Border:       "#45475a", // Surface1
+	BorderFocus:  "#cba6f7", // Mauve
+	Surface:      "#313244", // Surface0
+	SurfaceHover: "#45475a", // Surface1
+
+	TextPrimary:   "#cdd6f4", // Text
+	TextSecondary: "#a6adc8", // Subtext0
+	TextMuted:     "#9399b2", // Overlay1
+	TextDisabled:  "#6c7086", // Overlay0
+
+	Selection: "#cba6f7", // Mauve
+	Highlight: "#f9e2af", // Yellow
+	Link:      "#89b4fa", // Blue
+	LinkHover: "#a6e3a1", // Green
+
+	// Backward compatibility fields
+	BgSubtle: "#313244",
+	FgMuted:  "#9399b2",
+
+	// Test compatibility fields
+	Name:    "Catppuccin",
+	Primary: func() *lipgloss.Color { c := lipgloss.Color("#cba6f7"); return &c }(),
+	BgBase:  func() *lipgloss.Color { c := lipgloss.Color("#1e1e2e"); return &c }(),
+	FgBase:  func() *lipgloss.Color { c := lipgloss.Color("#cdd6f4"); return &c }(),
+}
+
 // GetTheme returns the current theme (could be configurable)
 func GetTheme() Theme {
 	return AvailableThemes[currentThemeIndex]
@@ -194,12 +311,22 @@ func GetThemeNames() []string {
 
 // GetThemeName returns a human-readable name for a theme
 func GetThemeName(theme Theme) string {
-	// For now, use simple names based on colors
-	if theme.Background == ModernTheme.Background {
-		return "Modern"
+	// Use the Name field if set
+	if theme.Name != "" {
+		return theme.Name
 	}
-	if theme.Background == DraculaTheme.Background {
+	// Fallback to background color matching
+	switch theme.Background {
+	case ModernTheme.Background:
+		return "Modern"
+	case DraculaTheme.Background:
 		return "Dracula"
+	case LightTheme.Background:
+		return "Light"
+	case NordTheme.Background:
+		return "Nord"
+	case CatppuccinTheme.Background:
+		return "Catppuccin"
 	}
 	return "Unknown"
 }
@@ -566,6 +693,66 @@ func ColorToHex(color lipgloss.Color) string {
 // GetCurrentThemeName returns the name of the current theme
 func GetCurrentThemeName() string {
 	return GetThemeName(GetTheme())
+}
+
+// buildThemeRegistry creates a map of theme names to themes for quick lookup
+func buildThemeRegistry() map[string]Theme {
+	registry := make(map[string]Theme)
+	for _, theme := range AvailableThemes {
+		name := GetThemeName(theme)
+		registry[name] = theme
+	}
+	return registry
+}
+
+// SetThemeByName sets the current theme by name (case-insensitive)
+// Returns the theme and true if found, zero theme and false otherwise
+func SetThemeByName(name string) (Theme, bool) {
+	registry := buildThemeRegistry()
+
+	// Try exact match first
+	if theme, ok := registry[name]; ok {
+		SetTheme(theme)
+		return theme, true
+	}
+
+	// Try case-insensitive match
+	for registeredName, theme := range registry {
+		if equalsCaseInsensitive(registeredName, name) {
+			SetTheme(theme)
+			return theme, true
+		}
+	}
+
+	// Theme not found
+	return Theme{}, false
+}
+
+// ListAvailableThemes returns all registered theme names
+func ListAvailableThemes() []string {
+	return GetThemeNames()
+}
+
+// equalsCaseInsensitive compares two strings case-insensitively
+func equalsCaseInsensitive(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		ca := a[i]
+		cb := b[i]
+		// Convert to lowercase for comparison
+		if ca >= 'A' && ca <= 'Z' {
+			ca += 'a' - 'A'
+		}
+		if cb >= 'A' && cb <= 'Z' {
+			cb += 'a' - 'A'
+		}
+		if ca != cb {
+			return false
+		}
+	}
+	return true
 }
 
 // BuildStyles builds the complete style set from the theme (for backward compatibility)

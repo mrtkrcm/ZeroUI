@@ -59,7 +59,7 @@ USER appuser:appgroup
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ./zeroui --version || exit 1
+    CMD ./zeroui version || exit 1
 
 # Set default command
 ENTRYPOINT ["./zeroui"]

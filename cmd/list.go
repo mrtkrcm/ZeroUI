@@ -14,16 +14,21 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list <type> [app]",
-	Short: "List available apps, presets, or UI configuration keys",
-	Long: `List available applications, presets for an app, or UI configurable keys.
+	Short: "List available apps, presets, keys, values, or changed settings",
+	Long: `List available applications, presets for an app, UI configurable keys,
+current configuration values, or changed settings.
 
 Examples:
   zeroui list apps
   zeroui list presets ghostty
-  zeroui list keys ghostty`,
+  zeroui list keys ghostty
+  zeroui list values ghostty
+  zeroui list changed ghostty`,
 	Example: `  zeroui list apps
   zeroui list presets ghostty
-  zeroui list keys ghostty`,
+  zeroui list keys ghostty
+  zeroui list values ghostty
+  zeroui list changed ghostty`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		listType := args[0]
@@ -52,8 +57,18 @@ Examples:
 				return fmt.Errorf("app name required for listing keys")
 			}
 			return listKeys(configService, app)
+		case "values":
+			if app == "" {
+				return fmt.Errorf("app name required for listing values")
+			}
+			return listCurrentValues(configService, app)
+		case "changed":
+			if app == "" {
+				return fmt.Errorf("app name required for listing changed values")
+			}
+			return listChangedValues(configService, app)
 		default:
-			return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys)", listType)
+			return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys, values, changed)", listType)
 		}
 	},
 }
@@ -85,6 +100,16 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(keymapCmd)
+
+	// Add keymap subcommands
+	keymapCmd.AddCommand(keymapListCmd)
+	keymapCmd.AddCommand(keymapAddCmd)
+	keymapCmd.AddCommand(keymapRemoveCmd)
+	keymapCmd.AddCommand(keymapEditCmd)
+	keymapCmd.AddCommand(keymapValidateCmd)
+	keymapCmd.AddCommand(keymapPresetsCmd)
+	keymapCmd.AddCommand(keymapConflictsCmd)
 }
 
 // Styles for list output

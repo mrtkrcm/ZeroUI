@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
@@ -8,7 +9,28 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// contextKey is a private type for context keys to avoid collisions
+type contextKey string
+
+const loggerContextKey contextKey = "logger"
+
+// Field represents a structured logging field
+type Field struct {
+	Key   string
+	Value interface{}
+}
+
+// LoggerInterface defines the contract for structured logging
+type LoggerInterface interface {
+	Debug(msg string, fields ...Field)
+	Info(msg string, fields ...Field)
+	Error(msg string, err error, fields ...Field)
+	With(fields ...Field) LoggerInterface
+	WithRequest(requestID string) LoggerInterface
+}
+
 // Logger provides structured logging functionality
+// It implements the LoggerInterface
 type Logger struct {
 	logger zerolog.Logger
 }
@@ -93,10 +115,24 @@ func (l *Logger) Debug(msg string, fields ...map[string]interface{}) {
 	event.Msg(msg)
 }
 
-// Info logs an info message
+// Info logs an info message with map-based fields (backward compatibility)
 func (l *Logger) Info(msg string, fields ...map[string]interface{}) {
 	event := l.logger.Info()
 	l.addFields(event, fields...)
+	event.Msg(msg)
+}
+
+// InfoStructured logs an info message with structured Field types
+func (l *Logger) InfoStructured(msg string, fields ...Field) {
+	event := l.logger.Info()
+	l.addStructuredFields(event, fields...)
+	event.Msg(msg)
+}
+
+// DebugStructured logs a debug message with structured Field types
+func (l *Logger) DebugStructured(msg string, fields ...Field) {
+	event := l.logger.Debug()
+	l.addStructuredFields(event, fields...)
 	event.Msg(msg)
 }
 
@@ -107,13 +143,23 @@ func (l *Logger) Warn(msg string, fields ...map[string]interface{}) {
 	event.Msg(msg)
 }
 
-// Error logs an error message
+// Error logs an error message with map-based fields (backward compatibility)
 func (l *Logger) Error(msg string, err error, fields ...map[string]interface{}) {
 	event := l.logger.Error()
 	if err != nil {
 		event = event.Err(err)
 	}
 	l.addFields(event, fields...)
+	event.Msg(msg)
+}
+
+// ErrorStructured logs an error message with structured Field types
+func (l *Logger) ErrorStructured(msg string, err error, fields ...Field) {
+	event := l.logger.Error()
+	if err != nil {
+		event = event.Err(err)
+	}
+	l.addStructuredFields(event, fields...)
 	event.Msg(msg)
 }
 
@@ -134,13 +180,96 @@ func (l *Logger) Success(msg string, fields ...map[string]interface{}) {
 	event.Msg("✓ " + msg)
 }
 
-// addFields adds fields to a log event
+// addFields adds fields to a log event (backward compatibility)
 func (l *Logger) addFields(event *zerolog.Event, fields ...map[string]interface{}) {
 	for _, fieldMap := range fields {
 		for key, value := range fieldMap {
 			event = event.Interface(key, value)
 		}
 	}
+}
+
+// addStructuredFields adds structured Field types to a log event
+func (l *Logger) addStructuredFields(event *zerolog.Event, fields ...Field) {
+	for _, field := range fields {
+		event = event.Interface(field.Key, field.Value)
+	}
+}
+
+// With adds structured fields to the logger and returns a new logger instance
+// This implements the LoggerInterface.With method
+func (l *Logger) With(fields ...Field) LoggerInterface {
+	ctx := l.logger.With()
+	for _, field := range fields {
+		ctx = ctx.Interface(field.Key, field.Value)
+	}
+	return &loggerAdapter{
+		logger: &Logger{logger: ctx.Logger()},
+	}
+}
+
+// WithRequest adds a request ID to the logger
+// This implements the LoggerInterface.WithRequest method
+func (l *Logger) WithRequest(requestID string) LoggerInterface {
+	return &loggerAdapter{
+		logger: &Logger{
+			logger: l.logger.With().Str("request_id", requestID).Logger(),
+		},
+	}
+}
+
+// loggerAdapter adapts the Logger to implement LoggerInterface
+// This allows the Logger to maintain backward compatibility with map-based fields
+// while also implementing the interface with Field-based methods
+type loggerAdapter struct {
+	logger *Logger
+}
+
+// Debug implements LoggerInterface.Debug with Field-based fields
+func (a *loggerAdapter) Debug(msg string, fields ...Field) {
+	a.logger.DebugStructured(msg, fields...)
+}
+
+// Info implements LoggerInterface.Info with Field-based fields
+func (a *loggerAdapter) Info(msg string, fields ...Field) {
+	a.logger.InfoStructured(msg, fields...)
+}
+
+// Error implements LoggerInterface.Error with Field-based fields
+func (a *loggerAdapter) Error(msg string, err error, fields ...Field) {
+	a.logger.ErrorStructured(msg, err, fields...)
+}
+
+// With implements LoggerInterface.With
+func (a *loggerAdapter) With(fields ...Field) LoggerInterface {
+	return a.logger.With(fields...)
+}
+
+// WithRequest implements LoggerInterface.WithRequest
+func (a *loggerAdapter) WithRequest(requestID string) LoggerInterface {
+	return a.logger.WithRequest(requestID)
+}
+
+// FromContext retrieves a logger from the context
+// If no logger is found, it returns the global logger as an adapter
+func FromContext(ctx context.Context) LoggerInterface {
+	if ctx == nil {
+		return &loggerAdapter{logger: Global()}
+	}
+
+	if logger, ok := ctx.Value(loggerContextKey).(LoggerInterface); ok {
+		return logger
+	}
+
+	return &loggerAdapter{logger: Global()}
+}
+
+// ContextWithLogger adds a logger to the context
+func ContextWithLogger(ctx context.Context, l LoggerInterface) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, loggerContextKey, l)
 }
 
 // Global logger instance
@@ -159,7 +288,7 @@ func Global() *Logger {
 	return global
 }
 
-// Convenience functions for global logger
+// Convenience functions for global logger (backward compatibility with map-based fields)
 func Debug(msg string, fields ...map[string]interface{}) {
 	Global().Debug(msg, fields...)
 }

@@ -6,20 +6,24 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/runtimeconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
 )
 
 var (
-	cfgFile      string
-	appContainer *container.Container
-	cleanupMu    sync.Mutex
-	cleanupHooks []func()
+	cfgFile       string
+	appContainer  *container.Container
+	containerOnce sync.Once
+	cleanupMu     sync.Mutex
+	cleanupHooks  []func()
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -28,19 +32,12 @@ var rootCmd = &cobra.Command{
 	Short: "Zero-configuration UI toolkit manager for developers",
 	Long: `ZeroUI is a zero-configuration UI toolkit manager that simplifies managing
 UI configurations, themes, and settings across development tools and applications.
-Built for speed and simplicity with both CLI and interactive TUI interfaces.
-
-Examples:
-  zeroui                              # Launch interactive app grid
-  zeroui toggle ghostty theme dark
-  zeroui cycle alacritty font
-  zeroui ui ghostty
-  zeroui preset vscode minimal`,
-	Example: `  zeroui
-  zeroui toggle ghostty theme dark
-  zeroui cycle alacritty font
-  zeroui ui ghostty
-  zeroui preset vscode minimal`,
+Built for speed and simplicity with both CLI and interactive TUI interfaces.`,
+	Example: `  zeroui                              # Launch interactive app grid
+  zeroui toggle ghostty theme dark    # Direct configuration toggle
+  zeroui cycle alacritty font         # Cycle through font options
+  zeroui ui ghostty                   # Launch app-specific UI
+  zeroui preset vscode minimal        # Apply configuration preset`,
 	Args:          cobra.NoArgs,
 	SilenceUsage:  true,
 	SilenceErrors: false,
@@ -80,18 +77,6 @@ func ExecuteWithContext(ctx context.Context) error {
 
 // ExecuteContext executes the root command with optional arguments
 func ExecuteContext(ctx context.Context, args []string) error {
-	// Initialize dependency container
-	containerConfig := &container.Config{
-		LogLevel:  "info",
-		LogFormat: "console",
-	}
-
-	var err error
-	appContainer, err = container.New(containerConfig)
-	if err != nil {
-		logger.Fatal("Failed to initialize application container", err)
-	}
-
 	defer func() {
 		if appContainer != nil {
 			if err := appContainer.Close(); err != nil {
@@ -107,7 +92,7 @@ func ExecuteContext(ctx context.Context, args []string) error {
 		rootCmd.SetArgs(args)
 	}
 
-	err = rootCmd.ExecuteContext(ctx)
+	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {
 		// Check if error is due to context cancellation (graceful shutdown)
 		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
@@ -128,9 +113,20 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolP("dry-run", "n", false, "show what would be changed without making changes")
 
+	// Runtime config flags (for future use with runtime config loader)
+	rootCmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().String("log-format", "text", "log format (text, json)")
+	rootCmd.PersistentFlags().String("default-theme", "modern", "default theme (modern, dracula)")
+
 	// Bind flags to viper
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	viper.BindPFlag("dry-run", rootCmd.PersistentFlags().Lookup("dry-run"))
+	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag("log-format", rootCmd.PersistentFlags().Lookup("log-format"))
+	viper.BindPFlag("default-theme", rootCmd.PersistentFlags().Lookup("default-theme"))
+
+	// Add command tracing
+	attachCommandTracing(rootCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -157,10 +153,60 @@ func initConfig() {
 			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 		}
 	}
+
+	// Load runtime configuration
+	loader := runtimeconfig.NewLoader(viper.GetViper())
+	cfg, err := loader.Load(cfgFile, rootCmd.PersistentFlags())
+	if err != nil {
+		// If runtime config loading fails, fall back to defaults
+		// This ensures backward compatibility
+		fmt.Fprintf(os.Stderr, "Warning: failed to load runtime config: %v\n", err)
+		cfg = &runtimeconfig.Config{
+			LogLevel:     "info",
+			LogFormat:    "text",
+			DefaultTheme: "modern",
+		}
+	}
+
+	// Map "text" format to "console" for logger
+	logFormat := cfg.LogFormat
+	if logFormat == "text" {
+		logFormat = "console"
+	}
+
+	// Initialize global logger with runtime config settings
+	logger.InitGlobal(&logger.Config{
+		Level:      cfg.LogLevel,
+		Format:     logFormat,
+		Output:     os.Stdout,
+		TimeFormat: time.RFC3339,
+	})
+
+	// Set theme from runtime config
+	// Map "default" to "modern" for backward compatibility
+	themeName := cfg.DefaultTheme
+	if themeName == "default" {
+		themeName = "modern"
+	}
+
+	if _, ok := styles.SetThemeByName(themeName); !ok {
+		// Fall back to modern theme if the configured theme doesn't exist
+		fmt.Fprintf(os.Stderr, "Warning: theme %q not found, using modern theme\n", cfg.DefaultTheme)
+		styles.SetThemeByName("modern")
+	}
 }
 
 // GetContainer returns the application container (for use in subcommands)
+// The container is lazily initialized on first access to ensure it's created
+// after initConfig has run and the global logger is properly configured.
 func GetContainer() *container.Container {
+	containerOnce.Do(func() {
+		var err error
+		appContainer, err = container.New(nil)
+		if err != nil {
+			logger.Fatal("Failed to initialize application container", err)
+		}
+	})
 	return appContainer
 }
 
@@ -183,5 +229,60 @@ func runCleanupHooks() {
 
 	for _, hook := range hooks {
 		hook()
+	}
+}
+
+// attachCommandTracing adds execution tracing to commands for observability
+func attachCommandTracing(cmd *cobra.Command) {
+	// Store the original PersistentPreRunE if it exists
+	originalPreRunE := cmd.PersistentPreRunE
+
+	// Wrap PersistentPreRunE to log command start
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// Create logger with request context - done here after initConfig has run
+		// so the logger uses the correct format from runtime config
+		requestID := fmt.Sprintf("cmd-%d", time.Now().UnixNano())
+		cmdLogger := logger.Global().WithRequest(requestID)
+
+		// Update the command context with the logger
+		ctx := logger.ContextWithLogger(cmd.Context(), cmdLogger)
+		cmd.SetContext(ctx)
+
+		// Log command execution start (debug level to avoid cluttering output)
+		cmdLogger.Debug("Command execution started",
+			logger.Field{Key: "command", Value: cmd.CommandPath()},
+			logger.Field{Key: "args", Value: args},
+		)
+
+		// Call original PreRunE if it exists
+		if originalPreRunE != nil {
+			return originalPreRunE(cmd, args)
+		}
+		return nil
+	}
+
+	// Store the original PersistentPostRunE if it exists
+	originalPostRunE := cmd.PersistentPostRunE
+
+	// Wrap PersistentPostRunE to log command completion
+	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		// Get logger from context
+		cmdLogger := logger.FromContext(cmd.Context())
+
+		// Log command execution end (debug level to avoid cluttering output)
+		cmdLogger.Debug("Command execution completed",
+			logger.Field{Key: "command", Value: cmd.CommandPath()},
+		)
+
+		// Call original PostRunE if it exists
+		if originalPostRunE != nil {
+			return originalPostRunE(cmd, args)
+		}
+		return nil
+	}
+
+	// Recursively attach tracing to all subcommands
+	for _, subCmd := range cmd.Commands() {
+		attachCommandTracing(subCmd)
 	}
 }

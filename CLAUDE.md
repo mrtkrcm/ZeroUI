@@ -233,11 +233,11 @@ If you add new tests that exec external tools, add a small stub under `testdata/
 - `zeroui extract [apps]` - Extract configurations to files
 - `zeroui list apps` - List supported applications
 - `zeroui preset <app> <preset>` - Apply configuration preset
-- `zeroui reference <subcommand>` - Reference system management
-  - `reference list` - List reference configurations
-  - `reference show <app>` - Show reference configuration
-  - `reference validate <app>` - Validate reference configuration
-  - `reference search <query>` - Search reference configurations
+- `zeroui ref <subcommand>` - Reference system management
+  - `ref list` - List available applications
+  - `ref show <app> [setting]` - Show reference data
+  - `ref validate <app> <setting> <value>` - Validate a value
+  - `ref search <app> <query>` - Search settings for an app
 - `zeroui toggle <app> <field> <value>` - Direct configuration toggle
 - `zeroui ui <app>` - Launch app-specific configuration UI
 - `zeroui ui-select` - Select UI implementation

@@ -45,6 +45,7 @@ type Model struct {
 	screenshotComp   *ui.ScreenshotComponent
 	uiManager        *ui.UIIntegrationManager
 	enhancedAppList  *ui.EnhancedApplicationList
+	confirmDialog    *ui.ConfirmDialog
 
 	// UI implementation selection
 	uiSelector *UISelector
@@ -105,6 +106,12 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 	componentManager := ui.NewComponentManager()
 	screenshotComp := ui.NewScreenshotComponent("testdata/screenshots")
 	uiManager := ui.NewUIIntegrationManager()
+	confirmDialog := ui.NewConfirmDialog(
+		"Unsaved Changes",
+		"You have unsaved changes. Are you sure you want to quit?",
+		func() tea.Cmd { return tea.Quit }, // onConfirm
+		func() tea.Cmd { return nil },      // onCancel
+	)
 
 	// Create base model
 	model := &Model{
@@ -123,6 +130,7 @@ func NewModel(engine *toggle.Engine, initialApp string, logger *logging.CharmLog
 		componentManager: componentManager,
 		screenshotComp:   screenshotComp,
 		uiManager:        uiManager,
+		confirmDialog:    confirmDialog,
 		renderCache:      make(map[ViewState]string),
 		eventBatcher:     NewEventBatcher(),
 		logger:           logger,
@@ -364,6 +372,10 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 	}
 	if m.helpSystem != nil {
 		m.helpSystem.SetSize(m.width, m.height-4)
+	}
+	if m.confirmDialog != nil {
+		m.confirmDialog.SetStyles(m.styles)
+		m.confirmDialog.SetSize(m.width-10, m.height-10) // Leave some margin
 	}
 
 	// Invalidate the render cache after resizing components so any cached views

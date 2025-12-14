@@ -21,7 +21,8 @@ Examples:
 	Example: `  zeroui toggle ghostty theme dark
   zeroui toggle alacritty font "JetBrains Mono"
   zeroui toggle vscode editor.fontSize 14`,
-	Args: cobra.ExactArgs(3),
+	Args:         cobra.ExactArgs(3),
+	SilenceUsage: false,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app := args[0]
 		key := args[1]

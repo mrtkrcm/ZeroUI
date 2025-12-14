@@ -31,6 +31,11 @@ type SimpleConfigModel struct {
 	validationMsg string
 	isValid       bool
 
+	// Search state
+	isSearching bool
+	searchInput textinput.Model
+	allFields   []ConfigField // Original unfiltered fields
+
 	// Values
 	values  map[string]string
 	changed map[string]bool
@@ -60,16 +65,26 @@ func NewSimpleConfig(appName string) *SimpleConfigModel {
 	editInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.TextPrimary))
 	editInput.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.Highlight))
 
+	searchInput := textinput.New()
+	searchInput.CharLimit = 100
+	searchInput.Prompt = "🔍 "
+	searchInput.Placeholder = "Search fields..."
+	searchInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.TextPrimary))
+	searchInput.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.Highlight))
+
 	m := &SimpleConfigModel{
 		appName:      appName,
 		cursor:       0,
 		width:        80,
 		height:       24,
 		editInput:    editInput,
+		searchInput:  searchInput,
+		isSearching:  false,
 		values:       make(map[string]string),
 		changed:      make(map[string]bool),
 		fields:       []ConfigField{},
 		filtered:     []ConfigField{},
+		allFields:    []ConfigField{},
 		lastActivity: time.Now(),
 
 		// Initialize delightful UX features ✨
@@ -88,6 +103,7 @@ func NewSimpleConfig(appName string) *SimpleConfigModel {
 // SetFields configures the available fields
 func (m *SimpleConfigModel) SetFields(fields []ConfigField) {
 	m.fields = fields
+	m.allFields = fields
 	m.filtered = fields
 	m.updateValues()
 }
@@ -97,6 +113,7 @@ func (m *SimpleConfigModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 	m.editInput.Width = width - 4
+	m.searchInput.Width = width - 4
 }
 
 // Init initializes the model
@@ -128,6 +145,17 @@ func (m *SimpleConfigModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Handle search input
+	if m.isSearching && !m.editing {
+		var cmd tea.Cmd
+		m.searchInput, cmd = m.searchInput.Update(msg)
+		cmds = append(cmds, cmd)
+
+		// Apply search in real-time
+		m.applySearch()
+		return m, tea.Batch(cmds...)
+	}
+
 	if m.editing {
 		var cmd tea.Cmd
 		m.editInput, cmd = m.editInput.Update(msg)
@@ -144,6 +172,12 @@ func (m *SimpleConfigModel) View() string {
 	// Header
 	header := m.renderHeader()
 	sections = append(sections, header)
+
+	// Search bar (if searching)
+	if m.isSearching {
+		searchBar := m.renderSearchBar()
+		sections = append(sections, searchBar)
+	}
 
 	// Content
 	content := m.renderContent()
@@ -333,17 +367,34 @@ func (m *SimpleConfigModel) renderFooter() string {
 	var parts []string
 
 	// Navigation help
-	parts = append(parts, "↑/↓ Navigate")
-	parts = append(parts, "Enter Edit")
-	parts = append(parts, "Esc Cancel")
-	parts = append(parts, "? Help")
-	parts = append(parts, "q Quit")
+	if m.isSearching {
+		parts = append(parts, "↑/↓ Navigate")
+		parts = append(parts, "Enter Select")
+		parts = append(parts, "Esc End Search")
+		parts = append(parts, "? Help")
+	} else {
+		parts = append(parts, "↑/↓ Navigate")
+		parts = append(parts, "Enter Edit")
+		parts = append(parts, "/ Search")
+		parts = append(parts, "? Help")
+		parts = append(parts, "q Quit")
+	}
 
 	footerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6C7086")).
 		Width(m.width)
 
 	return footerStyle.Render(strings.Join(parts, " • "))
+}
+
+func (m *SimpleConfigModel) renderSearchBar() string {
+	searchStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(styles.ModernTheme.Accent)).
+		Padding(0, 1).
+		Width(m.width)
+
+	return searchStyle.Render(m.searchInput.View())
 }
 
 // renderHelp renders the help overlay
@@ -482,7 +533,7 @@ func (m *SimpleConfigModel) getCurrentContext() string {
 	if m.showHelp {
 		return "help"
 	}
-	if m.searchQuery != "" {
+	if m.isSearching {
 		return "searching"
 	}
 	return "navigation"
@@ -539,7 +590,11 @@ func (m *SimpleConfigModel) handleEditingKeys(key string) (*SimpleConfigModel, t
 func (m *SimpleConfigModel) handleSearchKeys(key string) (*SimpleConfigModel, tea.Cmd) {
 	switch key {
 	case "enter":
-		m.applySearch()
+		if len(m.filtered) > 0 {
+			m.isSearching = false
+			m.startEditingWithAnimation()
+			return m, m.editInput.Focus()
+		}
 		return m, nil
 	case "esc":
 		m.endSearch()
@@ -577,7 +632,9 @@ func (m *SimpleConfigModel) handleNavigationKeys(key string) (*SimpleConfigModel
 		return m, nil
 
 	case "/":
-		m.startSearch()
+		if !m.isSearching {
+			m.startSearch()
+		}
 		return m, nil
 
 	case "esc":
@@ -709,16 +766,50 @@ func (m *SimpleConfigModel) toggleHelp() {
 }
 
 func (m *SimpleConfigModel) startSearch() {
-	// Would implement search mode
-	m.notifications.ShowInfo("🔍 Search mode coming soon!", 2*time.Second)
+	m.searchInput = textinput.New()
+	m.searchInput.CharLimit = 100
+	m.searchInput.Prompt = "🔍 "
+	m.searchInput.Placeholder = "Search fields..."
+	m.searchInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.TextPrimary))
+	m.searchInput.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(styles.ModernTheme.Highlight))
+	m.searchInput.Width = m.width - 4
+	m.searchInput.Focus()
+	m.isSearching = true
+	m.filtered = m.allFields // Start with all fields
+	m.cursor = 0
+	m.notifications.ShowInfo("🔍 Type to search fields", 2*time.Second)
 }
 
 func (m *SimpleConfigModel) applySearch() {
-	// Would apply search filter
+	query := strings.ToLower(m.searchInput.Value())
+	if query == "" {
+		m.filtered = m.allFields
+		m.searchQuery = ""
+		return
+	}
+
+	m.searchQuery = query
+	m.filtered = nil
+	for _, field := range m.allFields {
+		if strings.Contains(strings.ToLower(field.Key), query) ||
+			strings.Contains(strings.ToLower(field.Description), query) {
+			m.filtered = append(m.filtered, field)
+		}
+	}
+	m.cursor = 0
+
+	if len(m.filtered) == 0 {
+		m.notifications.ShowWarning("No fields match your search", 2*time.Second)
+	} else {
+		m.notifications.ShowInfo(fmt.Sprintf("Found %d matching fields", len(m.filtered)), 2*time.Second)
+	}
 }
 
 func (m *SimpleConfigModel) endSearch() {
+	m.isSearching = false
 	m.searchQuery = ""
+	m.filtered = m.allFields
+	m.cursor = 0
 	m.notifications.ShowInfo("🔍 Search cleared", 1*time.Second)
 }
 
@@ -778,7 +869,7 @@ func (m *SimpleConfigModel) EnhancedView() string {
 	result := lipgloss.JoinVertical(lipgloss.Left, sections...)
 
 	// Add notifications
-	if notificationView := m.notifications.Render(m.width); notificationView != "" {
+	if notificationView := m.notifications.Render(m.width, m.height); notificationView != "" {
 		result += "\n" + notificationView
 	}
 
