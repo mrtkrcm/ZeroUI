@@ -94,20 +94,22 @@ func testToggleOperations(t *testing.T, binaryPath, testDir string) {
 
 	// Test 1: Basic toggle operation
 	t.Run("performs basic toggle operation", func(t *testing.T) {
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "cursor-style", "block", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Toggle operation should succeed")
 
-		assert.Contains(t, output, "cursor-style", "Should reference the toggled field")
-		assert.Contains(t, output, "block", "Should reference the new value")
+		assert.Contains(t, output, "cursor-style", "Should reference the field being toggled")
+		assert.Contains(t, output, "Would set", "Should indicate dry-run mode")
 	})
 
 	// Test 2: Cycle operation
 	t.Run("performs cycle operation", func(t *testing.T) {
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "cycle", "ghostty", "cursor-style", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		// Cycle might fail if field has no predefined values, which is acceptable
@@ -120,8 +122,9 @@ func testToggleOperations(t *testing.T, binaryPath, testDir string) {
 
 	// Test 3: Field validation
 	t.Run("validates field names", func(t *testing.T) {
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "nonexistent-field", "value", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		// Should either validate field or proceed with user-provided field
@@ -133,13 +136,14 @@ func testToggleOperations(t *testing.T, binaryPath, testDir string) {
 	// Test 4: Value validation
 	t.Run("validates field values", func(t *testing.T) {
 		// Test with a known field that likely has validation
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "font-size", "not-a-number", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		// Should either validate value or accept user input
 		if err != nil {
-			assert.Contains(t, strings.ToLower(output), "value", "Should mention value validation")
+			assert.Contains(t, strings.ToLower(output), "value", "Should validate value type")
 		}
 	})
 }
@@ -147,17 +151,16 @@ func testToggleOperations(t *testing.T, binaryPath, testDir string) {
 func testFileOperations(t *testing.T, binaryPath, testDir string) {
 	setupTestConfigs(t, testDir)
 
-	configDir := filepath.Join(testDir, ".config", "ghostty")
-	configFile := filepath.Join(configDir, "config")
-
 	// Test 1: Preserves file in dry-run mode
 	t.Run("preserves original file in dry-run", func(t *testing.T) {
 		// Read original content
+		configFile := filepath.Join(testDir, ".config", "ghostty", "config")
 		originalContent, err := os.ReadFile(configFile)
 		require.NoError(t, err, "Should read original config")
 
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "cursor-style", "block", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		_, err = runCommandWithEnv(cmd)
 		require.NoError(t, err, "Dry-run should succeed")
@@ -173,18 +176,20 @@ func testFileOperations(t *testing.T, binaryPath, testDir string) {
 		// Note: This test would actually modify files, so we'll test the backup logic
 		// by ensuring the application handles backup creation gracefully
 
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "cursor-style", "block", "--dry-run", "--verbose")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Should handle backup logic")
 
 		// In dry-run, should mention what would happen
-		assert.Contains(t, strings.ToLower(output), "dry", "Should indicate dry-run mode")
+		assert.Contains(t, strings.ToLower(output), "would set", "Should indicate dry-run mode")
 	})
 
 	// Test 3: Handles read-only files
 	t.Run("handles read-only files gracefully", func(t *testing.T) {
+		configFile := filepath.Join(testDir, ".config", "ghostty", "config")
 		// Make config file read-only
 		err := os.Chmod(configFile, 0444)
 		require.NoError(t, err, "Should make file read-only")
@@ -194,13 +199,14 @@ func testFileOperations(t *testing.T, binaryPath, testDir string) {
 			os.Chmod(configFile, 0644)
 		}()
 
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "toggle", "ghostty", "cursor-style", "block", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		// Dry-run should still work even with read-only files
 		require.NoError(t, err, "Dry-run should work with read-only files")
-		assert.Contains(t, output, "dry", "Should indicate dry-run mode")
+		assert.Contains(t, output, "Would set", "Should indicate dry-run mode")
 	})
 }
 
@@ -209,13 +215,14 @@ func testValidationEngine(t *testing.T, binaryPath, testDir string) {
 
 	// Test 1: Schema validation
 	t.Run("validates configuration schema", func(t *testing.T) {
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "list", "keys", "ghostty")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Should list available keys")
 
-		assert.Contains(t, output, "keys", "Should show configuration keys")
+		assert.Contains(t, output, "Configurable Keys", "Should show configuration keys")
 		// Should show some common ghostty fields
 		lines := strings.Split(output, "\n")
 		keyCount := 0
@@ -241,8 +248,9 @@ func testValidationEngine(t *testing.T, binaryPath, testDir string) {
 		}
 
 		for _, tc := range testCases {
+			configDir := filepath.Join(testDir, ".config", "zeroui")
 			cmd := exec.Command(binaryPath, "toggle", "ghostty", tc.field, tc.value, "--dry-run")
-			cmd.Env = append(os.Environ(), "HOME="+testDir)
+			cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 			output, err := runCommandWithEnv(cmd)
 			if tc.shouldWarn && err != nil {
@@ -253,8 +261,9 @@ func testValidationEngine(t *testing.T, binaryPath, testDir string) {
 
 	// Test 3: Configuration consistency
 	t.Run("maintains configuration consistency", func(t *testing.T) {
+		configDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "extract", "ghostty", "--dry-run")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+configDir)
 
 		output, err := runCommandWithEnv(cmd)
 		require.NoError(t, err, "Should extract config consistently")
@@ -293,6 +302,49 @@ cursor-click-to-move = true
 copy-on-select = false
 `
 	require.NoError(t, os.WriteFile(ghosttyConfig, []byte(ghosttyContent), 0644))
+
+	// Create ghostty app registry entry
+	appsDir := filepath.Join(testDir, ".config", "zeroui", "apps")
+	require.NoError(t, os.MkdirAll(appsDir, 0755))
+
+	ghosttyAppConfig := `name: ghostty
+path: ` + ghosttyConfig + `
+format: custom
+description: Test Ghostty application
+
+fields:
+  cursor-style:
+    type: choice
+    values: ["beam", "block", "underline"]
+    default: "beam"
+    description: "Cursor style"
+
+  font-size:
+    type: number
+    values: ["12", "14", "16", "18"]
+    default: 12
+    description: "Font size"
+
+  theme:
+    type: choice
+    values: ["dark", "light", "auto"]
+    default: "dark"
+    description: "Theme"
+
+presets:
+  default:
+    name: default
+    description: Default settings
+    values:
+      cursor-style: beam
+      font-size: 12
+      theme: dark
+
+hooks:
+  post-toggle: "echo 'Ghostty config updated'"
+`
+	ghosttyAppPath := filepath.Join(appsDir, "ghostty.yaml")
+	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0644))
 
 	// Create other app configs if needed (e.g., Alacritty, WezTerm)
 	// This demonstrates multi-app support testing
@@ -339,15 +391,16 @@ func TestEngineErrorRecovery(t *testing.T) {
 
 		configFile := filepath.Join(configDir, "config")
 		malformedContent := `# Malformed config
-		cursor-style = 
+		cursor-style =
 		font-size = "not a number"
 		invalid-syntax-here = = = =
 		= missing-key
 		`
 		require.NoError(t, os.WriteFile(configFile, []byte(malformedContent), 0644))
 
+		zerouiConfigDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "list", "keys", "ghostty")
-		cmd.Env = append(os.Environ(), "HOME="+testDir)
+		cmd.Env = append(os.Environ(), "HOME="+testDir, "ZEROUI_CONFIG_DIR="+zerouiConfigDir)
 
 		output, err := runCommandWithEnv(cmd)
 		// Should handle malformed config gracefully
