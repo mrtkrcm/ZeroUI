@@ -215,7 +215,7 @@ func testErrorHandling(t *testing.T, binaryPath, testDir string) {
 
 		output, err := runCommandWithEnv(cmd)
 		assert.Error(t, err, "Should error for missing arguments")
-		assert.Contains(t, output, "Usage", "Should show usage information")
+		assert.Contains(t, output, "accepts 3 arg(s), received 0", "Should show argument validation error")
 	})
 
 	// Test 3: Invalid field values
@@ -248,7 +248,10 @@ func buildZeroUI(t *testing.T, testDir string) string {
 	// Build the binary in a temporary location
 	binaryPath := filepath.Join(testDir, "zeroui")
 
-	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", binaryPath, ".")
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "build", "-buildvcs=false", "-o", binaryPath, ".")
 	cmd.Dir = "../../" // Go back to project root
 
 	var stderr bytes.Buffer

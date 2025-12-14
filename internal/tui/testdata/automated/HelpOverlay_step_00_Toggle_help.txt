@@ -15,11 +15,11 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                   📚 Help                                                              
+📚 Help                                                                                                                 
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                  Esc: Back • q: Quit                                                   
+Help & Shortcuts                                                                              h/l: Navigate • q: Close  
                                                                                                                         
                                                                                                                         
                                                                                                                         
