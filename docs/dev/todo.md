@@ -66,12 +66,84 @@ ZeroUI is a stable, production-ready configuration management tool with comprehe
 
 ---
 
-## Next Steps: Improvements & Stabilizations
+## Multi-Agent Execution Strategy
 
-### High Priority - Features from Closed PRs
+### Dependency Analysis
 
-#### 1. Structured Logger Interface (from PR #3)
-**Goal**: Implement request-scoped logging with contextual tracing
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PHASE 1 (PARALLEL)                          │
+│  No file conflicts - can run simultaneously                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Agent A              Agent B              Agent C              │
+│  ─────────────────    ─────────────────    ─────────────────    │
+│  internal/logger/     internal/           internal/tui/         │
+│  - Logger interface   runtimeconfig/      styles/theme.go       │
+│  - Field struct       - Config struct     - SetThemeByName      │
+│  - FromContext        - Loader            - GetCurrentTheme     │
+│  - ContextWithLogger  - Validation        - Theme utilities     │
+│                                                                 │
+│  Agent D              Agent E                                   │
+│  ─────────────────    ─────────────────                         │
+│  Documentation        Code Quality                              │
+│  - CLAUDE.md          - Remove unused                           │
+│  - Hook patterns      - Consolidate logic                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     PHASE 2 (SEQUENTIAL)                        │
+│  Requires Phase 1 completion - touches shared cmd/root.go       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Single Agent: cmd/root.go Integration                          │
+│  ─────────────────────────────────────────────────────────────  │
+│  - Wire logger context helpers                                  │
+│  - Add command tracing (attachCommandTracing)                   │
+│  - Wire runtimeconfig loader                                    │
+│  - Preserve ExecuteContext pattern                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     PHASE 3 (PARALLEL)                          │
+│  After integration - testing and polish                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Agent F              Agent G              Agent H              │
+│  ─────────────────    ─────────────────    ─────────────────    │
+│  Test Coverage        CLI Consistency      Shell Completion     │
+│  - Signal tests       - Example audit      - Bash completion    │
+│  - Visual tests       - Args validation    - Zsh completion     │
+│  - cmd/*.go tests     - Help formatting    - Fish completion    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Conflict Matrix
+
+| Task | internal/logger | internal/runtimeconfig | internal/tui/styles | cmd/root.go | cmd/*.go | docs/ |
+|------|-----------------|------------------------|---------------------|-------------|----------|-------|
+| Logger Interface | ✏️ WRITE | - | - | ⚠️ PHASE2 | - | - |
+| Runtime Config | - | ✏️ WRITE | ✏️ WRITE | ⚠️ PHASE2 | - | - |
+| Theme Utilities | - | - | ✏️ WRITE | - | - | - |
+| Documentation | - | - | - | - | - | ✏️ WRITE |
+| Code Quality | - | - | - | - | ✏️ WRITE | - |
+| Test Coverage | - | - | - | - | ✏️ WRITE | - |
+| CLI Consistency | - | - | - | - | ✏️ WRITE | - |
+
+**Legend**: ✏️ WRITE = Primary write target | ⚠️ PHASE2 = Deferred to Phase 2 | - = No touch
+
+---
+
+## Phase 1: Parallel Implementation Tasks
+
+### Agent A: Logger Interface (`internal/logger/`)
+**Estimated complexity**: Medium
+**Files**: `internal/logger/logger.go`, `internal/logger/logger_test.go`
 
 ```go
 // Target API
@@ -87,69 +159,170 @@ type Field struct {
     Value interface{}
 }
 
-// Context helpers
 func FromContext(ctx context.Context) Logger
 func ContextWithLogger(ctx context.Context, l Logger) context.Context
 ```
 
-**Implementation steps**:
-- [ ] Create `Logger` interface in `internal/logger/`
-- [ ] Add `Field` struct for structured logging
-- [ ] Implement context helpers (FromContext, ContextWithLogger)
-- [ ] Add command tracing to root.go (without breaking current architecture)
-- [ ] Update existing logger usages incrementally
+**Subtasks**:
+- [ ] Define `Logger` interface
+- [ ] Implement `Field` struct
+- [ ] Implement context helpers
+- [ ] Add unit tests
+- [ ] Ensure backward compatibility with existing `*logger.Logger` usage
 
-#### 2. Runtime Config Loader (from PR #5)
-**Goal**: Unified config management with precedence handling
+---
+
+### Agent B: Runtime Config (`internal/runtimeconfig/`)
+**Estimated complexity**: Medium
+**Files**: `internal/runtimeconfig/loader.go`, `internal/runtimeconfig/loader_test.go`
 
 ```go
 // Target API
 type Config struct {
-    ConfigFile   string
-    ConfigDir    string
-    LogLevel     string
-    LogFormat    string
-    DefaultTheme string
-    Verbose      bool
-    DryRun       bool
+    ConfigFile   string `mapstructure:"config"`
+    ConfigDir    string `mapstructure:"config_dir"`
+    LogLevel     string `mapstructure:"log_level"`
+    LogFormat    string `mapstructure:"log_format"`
+    DefaultTheme string `mapstructure:"default_theme"`
+    Verbose      bool   `mapstructure:"verbose"`
+    DryRun       bool   `mapstructure:"dry_run"`
 }
 
 type Loader struct { v *viper.Viper }
 
 func NewLoader(v *viper.Viper) *Loader
 func (l *Loader) Load(cfgFile string, flags *pflag.FlagSet) (*Config, error)
+func DefaultConfigDir() string
 ```
 
-**Implementation steps**:
-- [ ] Create `internal/runtimeconfig/` package
-- [ ] Implement config loader with precedence: flags > env > file > defaults
-- [ ] Add validation for config values
-- [ ] Wire into cmd/root.go init (preserve current ExecuteContext pattern)
-- [ ] Add theme utilities to `internal/tui/styles/theme.go`
+**Subtasks**:
+- [ ] Create package structure
+- [ ] Implement Config struct with validation tags
+- [ ] Implement Loader with precedence: flags > env > file > defaults
+- [ ] Add unit tests for precedence scenarios
+- [ ] Add validation error handling
 
-### Medium Priority - Stabilization
+---
 
-#### 3. Test Coverage Improvements
-- [ ] Add integration tests for signal handling (real signals, not mocked)
-- [ ] Add visual regression tests for new CLI examples output
-- [ ] Ensure all cmd/*.go files have corresponding test coverage
+### Agent C: Theme Utilities (`internal/tui/styles/`)
+**Estimated complexity**: Low
+**Files**: `internal/tui/styles/theme.go`
 
-#### 4. CLI Help Consistency
-- [ ] Audit all commands for consistent Example: formatting
-- [ ] Ensure all commands properly validate Args
-- [ ] Add shell completion support
+```go
+// Target API additions
+func SetThemeByName(name string) (Theme, bool)
+func GetCurrentThemeName() string
+func ListAvailableThemes() []string
+```
 
-### Low Priority - Technical Debt
+**Subtasks**:
+- [ ] Add theme name registry
+- [ ] Implement SetThemeByName with validation
+- [ ] Implement GetCurrentThemeName
+- [ ] Add unit tests
 
-#### 5. Code Quality
-- [ ] Remove unused keymap functions in cmd/list.go (currently placeholder implementations)
+---
+
+### Agent D: Documentation
+**Estimated complexity**: Low
+**Files**: `CLAUDE.md`, `docs/dev/SETUP.md`
+
+**Subtasks**:
+- [ ] Update CLAUDE.md with signal handling documentation
+- [ ] Document cleanup hook pattern for plugins
+- [ ] Add runtime config customization examples
+
+---
+
+### Agent E: Code Quality
+**Estimated complexity**: Low
+**Files**: `cmd/list.go`, `pkg/configextractor/`
+
+**Subtasks**:
+- [ ] Remove unused keymap placeholder functions in cmd/list.go
 - [ ] Consolidate duplicate keybind validation logic
 - [ ] Add godoc comments to exported functions
 
-#### 6. Documentation
-- [ ] Update CLAUDE.md with new signal handling features
-- [ ] Document cleanup hook pattern for plugins
-- [ ] Add examples for runtime config customization
+---
+
+## Phase 2: Sequential Integration
+
+### Single Agent: cmd/root.go Integration
+**Estimated complexity**: High
+**Depends on**: Phase 1 completion (Agents A, B, C)
+**Files**: `cmd/root.go`
+
+**Subtasks**:
+- [ ] Import new logger interface
+- [ ] Add `attachCommandTracing()` function
+- [ ] Wire runtimeconfig.Loader in init()
+- [ ] Preserve ExecuteContext/ExecuteWithContext pattern
+- [ ] Add theme initialization from config
+- [ ] Run full test suite
+
+---
+
+## Phase 3: Parallel Polish Tasks
+
+### Agent F: Test Coverage
+**Depends on**: Phase 2 completion
+**Files**: `cmd/*_test.go`, `internal/*/`
+
+**Subtasks**:
+- [ ] Add integration tests for signal handling
+- [ ] Add visual regression tests for CLI examples
+- [ ] Ensure all cmd/*.go files have test coverage
+
+---
+
+### Agent G: CLI Consistency
+**Depends on**: Phase 2 completion
+**Files**: `cmd/*.go`
+
+**Subtasks**:
+- [ ] Audit all commands for consistent Example: formatting
+- [ ] Verify all commands properly validate Args
+- [ ] Standardize help text formatting
+
+---
+
+### Agent H: Shell Completion
+**Depends on**: Phase 2 completion
+**Files**: `cmd/completion.go` (new)
+
+**Subtasks**:
+- [ ] Add bash completion support
+- [ ] Add zsh completion support
+- [ ] Add fish completion support
+- [ ] Document completion installation
+
+---
+
+## Execution Commands
+
+### Launch Phase 1 (5 parallel agents)
+```bash
+# These can all run simultaneously - no file conflicts
+claude --agent logger-interface "Implement Logger interface in internal/logger/"
+claude --agent runtime-config "Implement runtimeconfig package in internal/runtimeconfig/"
+claude --agent theme-utils "Add theme utilities to internal/tui/styles/theme.go"
+claude --agent documentation "Update CLAUDE.md and docs with signal handling"
+claude --agent code-quality "Clean up unused code in cmd/list.go"
+```
+
+### Launch Phase 2 (sequential, after Phase 1)
+```bash
+# Must wait for Phase 1 completion
+claude --agent root-integration "Wire logger and runtimeconfig into cmd/root.go"
+```
+
+### Launch Phase 3 (3 parallel agents, after Phase 2)
+```bash
+# These can all run simultaneously after integration
+claude --agent test-coverage "Add comprehensive test coverage"
+claude --agent cli-consistency "Audit and fix CLI help consistency"
+claude --agent shell-completion "Add shell completion support"
+```
 
 ---
 
