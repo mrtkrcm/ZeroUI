@@ -33,13 +33,6 @@ type App struct {
 
 // NewApp creates a new TUI application
 func NewApp(c *container.Container, initialApp string) (*App, error) {
-	// We might need to adapt or just use what we have.
-	// The existing code creates a new CharmLogger. Let's reuse that for now but using container's logger config?
-	// Actually, container already has a logger.
-	// But App expects *logging.CharmLogger.
-	// Let's create a CharmLogger that wraps or is compatible.
-	// Re-initializing CharmLogger is fine for now as it mostly handles bubbletea integration.
-
 	// Use container's config service
 	configService := c.ConfigService()
 
@@ -49,7 +42,10 @@ func NewApp(c *container.Container, initialApp string) (*App, error) {
 			"initial_app": initialApp,
 		})
 
-	// Create a CharmLogger for the TUI components
+	// Create a CharmLogger for the TUI components.
+	// We currently create a separate CharmLogger here because it provides
+	// specific styling and integration with the Bubble Tea framework that
+	// the general container logger might not expose directly.
 	charmLogger, err := logging.NewCharmLogger(logging.DefaultConfig())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create charm logger: %w", err)
