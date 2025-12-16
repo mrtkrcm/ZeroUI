@@ -7,12 +7,14 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 // Container holds all application dependencies
 type Container struct {
 	logger        *logger.Logger
 	configLoader  *appconfig.ReferenceEnhancedLoader
+	validator     *validation.Validator
 	toggleEngine  *toggle.Engine
 	configService *service.ConfigService
 }
@@ -43,6 +45,9 @@ func New(cfg *Config) (*Container, error) {
 	// This avoids resetting the log level/format that was configured via flags
 	c.logger = logger.Global()
 
+	// Initialize validator
+	c.validator = validation.NewValidator()
+
 	// Initialize enhanced config loader with reference integration
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	if err != nil {
@@ -51,7 +56,7 @@ func New(cfg *Config) (*Container, error) {
 	c.configLoader = configLoader
 
 	// Initialize toggle engine with dependency injection
-	c.toggleEngine = toggle.NewEngineWithDeps(configLoader, c.logger)
+	c.toggleEngine = toggle.NewEngineWithDeps(configLoader, c.logger, c.validator)
 
 	// Initialize config service with all dependencies
 	c.configService = service.NewConfigService(c.toggleEngine, configLoader, c.logger)

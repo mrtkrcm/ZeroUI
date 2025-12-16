@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
 // Schema represents a validation schema for an application
@@ -110,4 +111,12 @@ type ValidationError struct {
 type Validator struct {
 	schemas  map[string]*Schema
 	validate *validator.Validate
+}
+
+// Manager defines the interface for a validation service
+type Manager interface {
+	ValidateAppConfig(appName string, appConfig *appconfig.AppConfig) *ValidationResult
+	ValidateTargetConfig(appName string, configData map[string]interface{}) *ValidationResult
+	RegisterSchema(appName string, schema *Schema) error
+	GetSchema(appName string) (*Schema, error)
 }

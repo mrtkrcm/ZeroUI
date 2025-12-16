@@ -12,6 +12,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 // Test that applying a preset updates the target config file for a known app (ghostty)
@@ -48,7 +49,8 @@ presets:
 	loader.SetConfigDir(tmpDir)
 
 	log := logger.Global()
-	engine := toggle.NewEngineWithDeps(loader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(loader, log, validator)
 	configService := service.NewConfigService(engine, loader, log)
 
 	_, err = NewTestModel(configService, "ghostty")

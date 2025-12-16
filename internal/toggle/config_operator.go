@@ -9,24 +9,27 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 	"github.com/spf13/viper"
 )
 
 // ConfigOperator handles core config read/write operations
 type ConfigOperator struct {
 	loader    ConfigLoader
+	validator validation.Manager
 	homeDir   string
 	pathCache *lru.Cache[string, string]
 	pathMutex sync.RWMutex
 }
 
 // NewConfigOperator creates a new config operator
-func NewConfigOperator(loader ConfigLoader) *ConfigOperator {
+func NewConfigOperator(loader ConfigLoader, validator validation.Manager) *ConfigOperator {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000)
 
 	return &ConfigOperator{
 		loader:    loader,
+		validator: validator,
 		homeDir:   homeDir,
 		pathCache: pathCache,
 	}
@@ -69,8 +72,23 @@ func (co *ConfigOperator) SaveConfigSafely(appConfig *appconfig.AppConfig, targe
 		return nil // Don't actually save in dry-run mode
 	}
 
-	// For now, use simple save without advanced validation to avoid circular dependency
-	// TODO: Refactor the validator adapter to remove circular dependency
+	// Validate the configuration before saving
+	result := co.validator.ValidateTargetConfig(appConfig.Name, targetConfig.All())
+	if !result.Valid {
+		// Create a validation error from the result
+		var errs []struct {
+			Field   string
+			Message string
+		}
+		for _, err := range result.Errors {
+			errs = append(errs, struct {
+				Field   string
+				Message string
+			}{Field: err.Field, Message: err.Message})
+		}
+		return errors.NewValidationError(appConfig.Name, errs)
+	}
+
 	if err := co.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
 		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
 			WithApp(appConfig.Name).

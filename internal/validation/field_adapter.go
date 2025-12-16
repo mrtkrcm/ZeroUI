@@ -1,20 +1,20 @@
-package toggle
+package validation
 
 import (
 	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 )
 
-// FieldValidator handles field validation logic
-type FieldValidator struct{}
+// FieldAdapter provides an abstraction for field-level validation logic
+type FieldAdapter struct{}
 
-// NewFieldValidator creates a new field validator
-func NewFieldValidator() *FieldValidator {
-	return &FieldValidator{}
+// NewFieldAdapter creates a new field adapter
+func NewFieldAdapter() *FieldAdapter {
+	return &FieldAdapter{}
 }
 
 // ValidateFieldExists checks if a field exists in the app config
-func (fv *FieldValidator) ValidateFieldExists(appConfig *appconfig.AppConfig, key string) error {
+func (fa *FieldAdapter) ValidateFieldExists(appConfig *appconfig.AppConfig, key string) error {
 	if _, exists := appConfig.Fields[key]; !exists {
 		var availableFields []string
 		for field := range appConfig.Fields {
@@ -26,7 +26,7 @@ func (fv *FieldValidator) ValidateFieldExists(appConfig *appconfig.AppConfig, ke
 }
 
 // ValidateFieldValue checks if a value is valid for a field
-func (fv *FieldValidator) ValidateFieldValue(appConfig *appconfig.AppConfig, key, value string) error {
+func (fa *FieldAdapter) ValidateFieldValue(appConfig *appconfig.AppConfig, key, value string) error {
 	fieldConfig, exists := appConfig.Fields[key]
 	if !exists {
 		return errors.NewFieldNotFoundError(appConfig.Name, key, nil)
@@ -46,7 +46,7 @@ func (fv *FieldValidator) ValidateFieldValue(appConfig *appconfig.AppConfig, key
 }
 
 // GetFieldConfig returns the field configuration for validation
-func (fv *FieldValidator) GetFieldConfig(appConfig *appconfig.AppConfig, key string) (*appconfig.FieldConfig, error) {
+func (fa *FieldAdapter) GetFieldConfig(appConfig *appconfig.AppConfig, key string) (*appconfig.FieldConfig, error) {
 	fieldConfig, exists := appConfig.Fields[key]
 	if !exists {
 		return nil, errors.NewFieldNotFoundError(appConfig.Name, key, nil)

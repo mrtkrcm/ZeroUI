@@ -11,6 +11,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 // TestDeterministicSpinner ensures spinner frame is stable in ZEROUI_TEST_MODE
@@ -20,7 +21,8 @@ func TestDeterministicSpinner(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "ghostty")
@@ -43,7 +45,8 @@ func TestStatusToast(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -71,7 +74,8 @@ func TestRefreshDebounce(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")

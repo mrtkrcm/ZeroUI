@@ -3,6 +3,7 @@ package validation
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -525,4 +526,429 @@ func validateRegexTag(fl validator.FieldLevel) bool {
 func validateFieldTypeTag(fl validator.FieldLevel) bool {
 	fieldType := fl.Field().String()
 	return isValidFieldType(fieldType)
+}
+
+// RegisterSchema registers a new validation schema
+func (v *Validator) RegisterSchema(appName string, schema *Schema) error {
+	v.schemas[appName] = schema
+	return nil
+}
+
+// GetSchema retrieves a validation schema
+func (v *Validator) GetSchema(appName string) (*Schema, error) {
+	schema, ok := v.schemas[appName]
+	if !ok {
+		return nil, fmt.Errorf("schema not found for app: %s", appName)
+	}
+	return schema, nil
+}
+
+// Reserved system-level names
+var reservedNames = map[string]bool{
+	"admin":    true,
+	"root":     true,
+	"system":   true,
+	"default":  true,
+	"config":   true,
+	"settings": true,
+	"backup":   true,
+	"test":     true,
+}
+
+// Common patterns that may indicate non-unique names
+var commonPatterns = []string{
+	"test",
+	"sample",
+	"example",
+	"default",
+	"my-",
+}
+
+// Well-known ports that should be avoided
+var wellKnownPorts = map[string]bool{
+	"80":   true,
+	"443":  true,
+	"22":   true,
+	"21":   true,
+	"25":   true,
+	"110":  true,
+	"143":  true,
+	"3306": true,
+	"5432": true,
+}
+
+// System paths that should be avoided
+var systemPaths = []string{
+	"/etc",
+	"/bin",
+	"/sbin",
+	"/usr",
+	"/var",
+	"/root",
+}
+
+// Generic application names
+var genericAppNames = map[string]bool{
+	"app":      true,
+	"my-app":   true,
+	"new-app":  true,
+	"untitled": true,
+}
+
+// validateUniqueness performs uniqueness validation based on scope
+func (v *Validator) validateUniqueness(fieldName, value string, args map[string]interface{}) error {
+	// Skip validation for empty values
+	if value == "" {
+		return nil
+	}
+
+	scope, _ := args["scope"].(string)
+	field, _ := args["field"].(string)
+
+	// Default to "global" scope and fieldName if not provided
+	if scope == "" {
+		scope = "global"
+	}
+	if field == "" {
+		field = fieldName
+	}
+
+	switch scope {
+	case "global":
+		return v.validateGlobalUniqueness(field, value)
+	case "local":
+		return v.validateLocalUniqueness(field, value)
+	case "app":
+		return v.validateAppUniqueness(field, value)
+	default:
+		return fmt.Errorf("unknown uniqueness scope: %s", scope)
+	}
+}
+
+// validateGlobalUniqueness checks for globally unique values
+func (v *Validator) validateGlobalUniqueness(field, value string) error {
+	switch field {
+	case "name":
+		if reservedNames[strings.ToLower(value)] {
+			return fmt.Errorf("'%s' is a reserved name", value)
+		}
+	case "port":
+		if wellKnownPorts[value] {
+			return fmt.Errorf("port %s is a well-known port and should be avoided", value)
+		}
+	case "path":
+		for _, sysPath := range systemPaths {
+			if strings.HasPrefix(value, sysPath) {
+				return fmt.Errorf("path '%s' is in a system directory", value)
+			}
+		}
+	}
+	return nil
+}
+
+// validateLocalUniqueness checks for locally unique values
+func (v *Validator) validateLocalUniqueness(field, value string) error {
+	if len(value) < 3 {
+		return fmt.Errorf("value must be at least 3 characters long")
+	}
+
+	lowerValue := strings.ToLower(value)
+	for _, pattern := range commonPatterns {
+		if strings.Contains(lowerValue, pattern) {
+			return fmt.Errorf("value contains a common pattern: '%s'", pattern)
+		}
+	}
+
+	return nil
+}
+
+// validateAppUniqueness checks for app-specific uniqueness
+func (v *Validator) validateAppUniqueness(field, value string) error {
+	if genericAppNames[strings.ToLower(value)] {
+		return fmt.Errorf("'%s' is a generic application name", value)
+	}
+
+	// This could be extended to check against a list of existing app names
+	return nil
+}
+
+// validateCustom validates a field against a custom validation rule
+func (v *Validator) validateCustom(value interface{}, rule *CustomRule) error {
+	if rule.Function == "unique" {
+		return v.validateUniqueness("", value.(string), rule.Args)
+	}
+	// This is a placeholder for a future implementation of custom validation rules.
+	// For now, we'll just return nil.
+	return nil
+}
+
+// validateFieldDefinition validates a field's definition against a schema rule
+func (v *Validator) validateFieldDefinition(fieldName string, field *appconfig.FieldConfig, rule *FieldRule) *ValidationResult {
+	result := &ValidationResult{Valid: true}
+
+	// Check type consistency
+	if field.Type != rule.Type {
+		result.Valid = false
+		result.Errors = append(result.Errors, &ValidationError{
+			Field:   fieldName,
+			Message: fmt.Sprintf("type mismatch: schema expects %s, but config has %s", rule.Type, field.Type),
+			Code:    "type_mismatch",
+		})
+	}
+
+	// Check if default value matches field type
+	if field.Default != nil {
+		if !v.validateFieldType(fieldName, field.Default, field.Type) {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("default value type mismatch for field type %s", field.Type),
+				Code:    "default_type_mismatch",
+				Value:   field.Default,
+			})
+		}
+	}
+
+	return result
+}
+
+func (v *Validator) validateFieldType(fieldName string, value interface{}, fieldType string) bool {
+	switch fieldType {
+	case "string", "choice":
+		_, ok := value.(string)
+		return ok
+	case "number":
+		_, err := convertToFloat64(value)
+		return err == nil
+	case "boolean":
+		_, ok := value.(bool)
+		return ok
+	case "array":
+		_, ok := value.([]interface{})
+		return ok
+	default:
+		return false
+	}
+}
+
+// ValidateField validates a single field
+func (v *Validator) ValidateField(appName, fieldName string, value interface{}) *ValidationResult {
+	schema, err := v.GetSchema(appName)
+	if err != nil {
+		return &ValidationResult{
+			Valid: false,
+			Errors: []*ValidationError{
+				{
+					Field:   fieldName,
+					Message: "schema not found",
+					Code:    "schema_not_found",
+				},
+			},
+		}
+	}
+
+	rule, ok := schema.Fields[fieldName]
+	if !ok {
+		return &ValidationResult{
+			Valid: true, // Not in schema, so we can't validate it
+			Warnings: []*ValidationError{
+				{
+					Field:   fieldName,
+					Message: "field is not defined in schema",
+					Code:    "undefined_field",
+					Value:   value,
+				},
+			},
+		}
+	}
+
+	return v.validateFieldWithRule(fieldName, value, rule)
+}
+
+func (v *Validator) validateFieldWithRule(fieldName string, value interface{}, rule *FieldRule) *ValidationResult {
+	result := &ValidationResult{Valid: true}
+
+	// Type check
+	if !v.validateFieldType(fieldName, value, rule.Type) {
+		result.Valid = false
+		result.Errors = append(result.Errors, &ValidationError{
+			Field:   fieldName,
+			Message: fmt.Sprintf("invalid type: expected %s, got %T", rule.Type, value),
+			Code:    "type_mismatch",
+		})
+		return result
+	}
+
+	// String validations
+	if rule.Type == "string" || rule.Type == "choice" {
+		strValue := fmt.Sprintf("%v", value)
+		if rule.MinLength != nil && len(strValue) < *rule.MinLength {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("minimum length is %d", *rule.MinLength),
+				Code:    "too_short",
+			})
+		}
+		if rule.MaxLength != nil && len(strValue) > *rule.MaxLength {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("maximum length is %d", *rule.MaxLength),
+				Code:    "too_long",
+			})
+		}
+		if rule.Pattern != "" {
+			if !regexp.MustCompile(rule.Pattern).MatchString(strValue) {
+				result.Valid = false
+				result.Errors = append(result.Errors, &ValidationError{
+					Field:   fieldName,
+					Message: "does not match pattern",
+					Code:    "pattern_mismatch",
+				})
+			}
+		}
+	}
+
+	// Number validations
+	if rule.Type == "number" {
+		floatValue, err := convertToFloat64(value)
+		if err != nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: "could not convert to number",
+				Code:    "conversion_error",
+			})
+		} else {
+			if rule.Min != nil && floatValue < *rule.Min {
+				result.Valid = false
+				result.Errors = append(result.Errors, &ValidationError{
+					Field:   fieldName,
+					Message: fmt.Sprintf("minimum value is %g", *rule.Min),
+					Code:    "too_small",
+				})
+			}
+			if rule.Max != nil && floatValue > *rule.Max {
+				result.Valid = false
+				result.Errors = append(result.Errors, &ValidationError{
+					Field:   fieldName,
+					Message: fmt.Sprintf("maximum value is %g", *rule.Max),
+					Code:    "too_large",
+				})
+			}
+		}
+	}
+
+	// Enum validation
+	if rule.Type == "choice" {
+		strValue := fmt.Sprintf("%v", value)
+		valid := false
+		for _, enumVal := range rule.Enum {
+			if strValue == enumVal {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("must be one of: %s", strings.Join(rule.Enum, ", ")),
+				Code:    "invalid_choice",
+			})
+		}
+	}
+
+	// Format validation
+	if rule.Format != "" {
+		if err := v.validateFormat(fmt.Sprintf("%v", value), rule.Format); err != nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, &ValidationError{
+				Field:   fieldName,
+				Message: err.Error(),
+				Code:    "invalid_format",
+			})
+		}
+	}
+
+	return result
+}
+
+func (v *Validator) validateFormat(value, format string) error {
+	switch format {
+	case "email":
+		if !regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`).MatchString(value) {
+			return fmt.Errorf("invalid email format")
+		}
+	case "url":
+		if !regexp.MustCompile(`^https?://[^\s/$.?#].[^\s]*$`).MatchString(value) {
+			return fmt.Errorf("invalid URL format")
+		}
+	case "path":
+		if strings.Contains(value, "\x00") {
+			return fmt.Errorf("path contains null characters")
+		}
+	case "color":
+		return validateColor(value)
+	case "regex":
+		if _, err := regexp.Compile(value); err != nil {
+			return fmt.Errorf("invalid regex pattern: %w", err)
+		}
+	default:
+		return fmt.Errorf("unknown format: %s", format)
+	}
+	return nil
+}
+
+func validateColor(color string) error {
+	if regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}){1,2}$`).MatchString(color) {
+		return nil
+	}
+	// Add more color formats if needed
+	switch strings.ToLower(color) {
+	case "red", "green", "blue", "yellow", "magenta", "cyan", "white", "black":
+		return nil
+	}
+	return fmt.Errorf("invalid color format")
+}
+
+func validatePath(path string) error {
+	if strings.Contains(path, "\x00") {
+		return fmt.Errorf("path contains null characters")
+	}
+	return nil
+}
+
+func isValidFieldType(fieldType string) bool {
+	switch fieldType {
+	case "string", "number", "boolean", "choice", "array":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidConfigValue(value interface{}) bool {
+	switch value.(type) {
+	case string, int, int64, float64, bool, []interface{}, []string, map[string]interface{}:
+		return true
+	default:
+		return false
+	}
+}
+
+func convertToFloat64(value interface{}) (float64, error) {
+	switch v := value.(type) {
+	case int:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case float64:
+		return v, nil
+	case string:
+		return strconv.ParseFloat(v, 64)
+	default:
+		return 0, fmt.Errorf("could not convert %T to float64", v)
+	}
 }

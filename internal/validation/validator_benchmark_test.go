@@ -81,7 +81,7 @@ func BenchmarkValidator_ValidateAppConfig(b *testing.B) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Create test app config
 	appConfig := &appconfig.AppConfig{
@@ -197,7 +197,7 @@ func BenchmarkValidator_ValidateTargetConfig(b *testing.B) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Create test config data
 	configData := map[string]interface{}{
@@ -240,7 +240,7 @@ func BenchmarkValidator_ValidateField(b *testing.B) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -290,7 +290,7 @@ func BenchmarkValidator_ValidateMultipleFields(b *testing.B) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	fields := []struct {
 		name  string
@@ -378,7 +378,7 @@ func BenchmarkValidator_ComplexValidation(b *testing.B) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Create test config with OAuth
 	configData := map[string]interface{}{

@@ -15,6 +15,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 const visualTestDir = "testdata/visual"
@@ -31,7 +32,8 @@ func TestVisualRendering(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Test cases for different screen sizes and states
@@ -182,7 +184,8 @@ func TestResponsiveLayout(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	sizes := []struct {
@@ -246,7 +249,8 @@ func TestAnimationsAndTransitions(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -320,7 +324,8 @@ func TestPerformance(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -363,7 +368,8 @@ func TestUIKeyboardNavigation(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -424,7 +430,8 @@ func TestErrorRecovery(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -523,7 +530,8 @@ func TestVisualRegression(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")

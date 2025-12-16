@@ -22,7 +22,7 @@ func BenchmarkSuperOptimizedValidation(b *testing.B) {
 			RequiredFields: []string{"name"},
 		},
 	}
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Simple config
 	appConfig := &appconfig.AppConfig{
@@ -82,7 +82,7 @@ func BenchmarkComplexSchemaValidation(b *testing.B) {
 			MaxFields:       intPtr(10),
 		},
 	}
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	appConfig := &appconfig.AppConfig{
 		Name:   "complex",

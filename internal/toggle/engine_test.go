@@ -7,6 +7,8 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 // setupTestEngine creates a test engine with a temporary config directory
@@ -142,11 +144,12 @@ hooks:
 	loader := &appconfig.Loader{}
 	loader.SetConfigDir(tmpDir) // Assume we add this method
 
-	engine, err := NewEngine()
-	if err != nil {
-		t.Fatalf("Failed to create engine: %v", err)
-	}
-	engine.loader = loader
+	// Initialize dependencies
+	testLogger := logger.New(logger.DefaultConfig())
+	validator := validation.NewValidator()
+
+	// Use NewEngineWithDeps to ensure all fields are initialized
+	engine := NewEngineWithDeps(loader, testLogger, validator)
 
 	cleanup := func() {
 		_ = os.RemoveAll(tmpDir)

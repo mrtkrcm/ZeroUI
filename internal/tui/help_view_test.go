@@ -10,6 +10,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 // TestHelpOverlayHasLiteralTitle validates that the help view contains 'Help'
@@ -17,7 +18,8 @@ func TestHelpOverlayHasLiteralTitle(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")

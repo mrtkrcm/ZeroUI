@@ -12,6 +12,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 )
 
 func TestConfigService_Integration(t *testing.T) {
@@ -52,7 +53,8 @@ fields:
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	validator := validation.NewValidator()
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, validator)
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
@@ -99,7 +101,8 @@ func TestConfigService_ErrorHandling(t *testing.T) {
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	validator := validation.NewValidator()
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, validator)
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
@@ -151,7 +154,8 @@ fields:
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
 	testLogger := logger.New(logger.DefaultConfig())
-	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger)
+	validator := validation.NewValidator()
+	toggleEngine := toggle.NewEngineWithDeps(configLoader, testLogger, validator)
 
 	service := service.NewConfigService(toggleEngine, configLoader, testLogger)
 
