@@ -10,9 +10,9 @@ import (
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
-	"github.com/mrtkrcm/ZeroUI/internal/runtimeconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/tui"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
@@ -129,6 +129,11 @@ func (rc *RootCommand) Execute(ctx context.Context, args []string) error {
 
 // initConfig reads in config file and ENV variables if set.
 func (rc *RootCommand) initConfig() {
+	// Set default values
+	viper.SetDefault("log-level", "info")
+	viper.SetDefault("log-format", "text")
+	viper.SetDefault("default-theme", "modern")
+
 	if rc.cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(rc.cfgFile)
@@ -152,29 +157,21 @@ func (rc *RootCommand) initConfig() {
 		}
 	}
 
-	// Load runtime configuration
-	loader := runtimeconfig.NewLoader(viper.GetViper())
-	cfg, err := loader.Load(rc.cfgFile, rc.cmd.PersistentFlags())
-	if err != nil {
-		// If runtime config loading fails, fall back to defaults
-		// This ensures backward compatibility
-		fmt.Fprintf(os.Stderr, "Warning: failed to load runtime config: %v\n", err)
-		cfg = &runtimeconfig.Config{
-			LogLevel:     "info",
-			LogFormat:    "text",
-			DefaultTheme: "modern",
-		}
-	}
-
 	// Map "text" format to "console" for logger
-	logFormat := cfg.LogFormat
+	logFormat := viper.GetString("log-format")
 	if logFormat == "text" {
 		logFormat = "console"
 	}
 
-	// Initialize global logger with runtime config settings
+	// Validate and initialize global logger
+	logLevel := viper.GetString("log-level")
+	if _, err := zerolog.ParseLevel(logLevel); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: invalid log level %q, falling back to 'info'\n", logLevel)
+		logLevel = "info"
+	}
+
 	logger.InitGlobal(&logger.Config{
-		Level:      cfg.LogLevel,
+		Level:      logLevel,
 		Format:     logFormat,
 		Output:     os.Stdout,
 		TimeFormat: time.RFC3339,
@@ -182,14 +179,14 @@ func (rc *RootCommand) initConfig() {
 
 	// Set theme from runtime config
 	// Map "default" to "modern" for backward compatibility
-	themeName := cfg.DefaultTheme
+	themeName := viper.GetString("default-theme")
 	if themeName == "default" {
 		themeName = "modern"
 	}
 
 	if _, ok := styles.SetThemeByName(themeName); !ok {
 		// Fall back to modern theme if the configured theme doesn't exist
-		fmt.Fprintf(os.Stderr, "Warning: theme %q not found, using modern theme\n", cfg.DefaultTheme)
+		fmt.Fprintf(os.Stderr, "Warning: theme %q not found, using modern theme\n", themeName)
 		styles.SetThemeByName("modern")
 	}
 }
@@ -197,7 +194,7 @@ func (rc *RootCommand) initConfig() {
 func (rc *RootCommand) getContainer() (*container.Container, error) {
 	var err error
 	rc.containerOnce.Do(func() {
-		rc.container, err = container.New(nil)
+		rc.container, err = container.New()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize application container: %w", err)

@@ -17,26 +17,8 @@ type Container struct {
 	configService *service.ConfigService
 }
 
-// Config holds container configuration
-type Config struct {
-	LogLevel  string
-	LogFormat string
-}
-
-// DefaultConfig returns default container configuration
-func DefaultConfig() *Config {
-	return &Config{
-		LogLevel:  "info",
-		LogFormat: "console",
-	}
-}
-
 // New creates a new dependency container
-func New(cfg *Config) (*Container, error) {
-	if cfg == nil {
-		cfg = DefaultConfig()
-	}
-
+func New() (*Container, error) {
 	c := &Container{}
 
 	// Use the global logger which should already be initialized with runtime config

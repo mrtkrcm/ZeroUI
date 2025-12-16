@@ -12,23 +12,11 @@ func TestMain(m *testing.M) {
 	helpers.RunTestMainWithCleanup(m, "internal/container", "zeroui-internal-container-test-home-", nil)
 }
 
-func TestDefaultConfig(t *testing.T) {
-	config := DefaultConfig()
-
-	if config.LogLevel != "info" {
-		t.Errorf("Expected default log level to be 'info', got '%s'", config.LogLevel)
-	}
-
-	if config.LogFormat != "console" {
-		t.Errorf("Expected default log format to be 'console', got '%s'", config.LogFormat)
-	}
-}
-
 func TestNewContainer(t *testing.T) {
-	// Test with nil config (should use defaults)
-	container, err := New(nil)
+	// Test that the container can be created successfully
+	container, err := New()
 	if err != nil {
-		t.Fatalf("Failed to create container with nil config: %v", err)
+		t.Fatalf("Failed to create container: %v", err)
 	}
 
 	if container == nil {
@@ -53,41 +41,8 @@ func TestNewContainer(t *testing.T) {
 	}
 }
 
-func TestNewContainerWithConfig(t *testing.T) {
-	config := &Config{
-		LogLevel:  "debug",
-		LogFormat: "json",
-	}
-
-	container, err := New(config)
-	if err != nil {
-		t.Fatalf("Failed to create container with custom config: %v", err)
-	}
-
-	if container == nil {
-		t.Fatal("Container should not be nil")
-	}
-
-	// Verify dependencies are still initialized
-	if container.Logger() == nil {
-		t.Error("Logger should be initialized")
-	}
-
-	if container.ConfigLoader() == nil {
-		t.Error("ConfigLoader should be initialized")
-	}
-
-	if container.ToggleEngine() == nil {
-		t.Error("ToggleEngine should be initialized")
-	}
-
-	if container.ConfigService() == nil {
-		t.Error("ConfigService should be initialized")
-	}
-}
-
 func TestContainerDependencyInjection(t *testing.T) {
-	container, err := New(nil)
+	container, err := New()
 	if err != nil {
 		t.Fatalf("Failed to create container: %v", err)
 	}
@@ -120,7 +75,7 @@ func TestContainerDependencyInjection(t *testing.T) {
 }
 
 func TestContainerClose(t *testing.T) {
-	container, err := New(nil)
+	container, err := New()
 	if err != nil {
 		t.Fatalf("Failed to create container: %v", err)
 	}
@@ -142,7 +97,7 @@ func TestContainerWithCustomHome(t *testing.T) {
 	os.Setenv("HOME", tempDir)
 
 	// Create container and verify it works with custom HOME
-	container, err := New(nil)
+	container, err := New()
 	if err != nil {
 		t.Fatalf("Failed to create container with custom HOME: %v", err)
 	}

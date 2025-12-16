@@ -33,6 +33,7 @@ type LoggerInterface interface {
 // It implements the LoggerInterface
 type Logger struct {
 	logger zerolog.Logger
+	output io.Writer
 }
 
 // Config holds logger configuration
@@ -80,7 +81,13 @@ func New(config *Config) *Logger {
 
 	return &Logger{
 		logger: logger,
+		output: config.Output,
 	}
+}
+
+// GetOutput returns the current output writer of the logger
+func (l *Logger) GetOutput() io.Writer {
+	return l.output
 }
 
 // WithContext adds contextual fields to the logger
