@@ -69,8 +69,7 @@ func (co *ConfigOperator) SaveConfigSafely(appConfig *appconfig.AppConfig, targe
 		return nil // Don't actually save in dry-run mode
 	}
 
-	// For now, use simple save without advanced validation to avoid circular dependency
-	// TODO: Refactor the validator adapter to remove circular dependency
+	// Save target config (now includes advanced validation via FieldValidator in loader)
 	if err := co.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
 		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
 			WithApp(appConfig.Name).
