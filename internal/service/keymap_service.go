@@ -5,18 +5,21 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 )
 
 // KeymapService handles keymap operations across different applications
 type KeymapService struct {
 	configService *ConfigService
+	logger        *logger.Logger
 }
 
 // NewKeymapService creates a new keymap service
-func NewKeymapService(configService *ConfigService) *KeymapService {
+func NewKeymapService(configService *ConfigService, log *logger.Logger) *KeymapService {
 	return &KeymapService{
 		configService: configService,
+		logger:        log,
 	}
 }
 
@@ -36,8 +39,12 @@ type KeymapPreset struct {
 
 // GetKeymapsForApp retrieves all keymaps for a specific application
 func (s *KeymapService) GetKeymapsForApp(app string) ([]KeymapInfo, error) {
+	log := s.logger.WithApp(app)
+	log.DebugStructured("Getting keymaps for app")
+
 	values, err := s.configService.GetCurrentValues(app)
 	if err != nil {
+		log.ErrorStructured("Failed to get current values for app", err)
 		return nil, err
 	}
 
@@ -65,6 +72,7 @@ func (s *KeymapService) GetKeymapsForApp(app string) ([]KeymapInfo, error) {
 		return keymaps[i].Keys < keymaps[j].Keys
 	})
 
+	log.DebugStructured("Retrieved keymaps", logger.Field{Key: "count", Value: len(keymaps)})
 	return keymaps, nil
 }
 
@@ -233,11 +241,16 @@ func (s *KeymapService) SuggestAlternatives(conflictingKeys string) []string {
 
 // AddKeymap adds a new keymap to an application
 func (s *KeymapService) AddKeymap(app, keymap string) error {
+	log := s.logger.WithApp(app)
+	log.InfoStructured("Adding keymap", logger.Field{Key: "keymap", Value: keymap})
+
 	// Validate before adding
 	validator := configextractor.NewKeybindValidator()
 	result := validator.ValidateKeybind(keymap)
 	if !result.Valid {
-		return fmt.Errorf("invalid keymap format: %v", result.Errors)
+		err := fmt.Errorf("invalid keymap format: %v", result.Errors)
+		log.ErrorStructured("Keymap validation failed", err, logger.Field{Key: "keymap", Value: keymap})
+		return err
 	}
 
 	return s.configService.AppendConfiguration(app, "keybind", keymap)
@@ -245,6 +258,8 @@ func (s *KeymapService) AddKeymap(app, keymap string) error {
 
 // RemoveKeymap removes a keymap by its keys (e.g., "ctrl+c")
 func (s *KeymapService) RemoveKeymap(app, keys string) error {
+	log := s.logger.WithApp(app)
+	log.InfoStructured("Removing keymap", logger.Field{Key: "keys", Value: keys})
 	// We need to find the full keymap string to remove it consistently
 	// Use fuzzy matching logic similar to engine but here we can be smarter
 	return s.configService.RemoveConfiguration(app, "keybind", keys)
@@ -252,8 +267,12 @@ func (s *KeymapService) RemoveKeymap(app, keys string) error {
 
 // ValidateAllKeymaps validates all keymaps for an application
 func (s *KeymapService) ValidateAllKeymaps(app string) (int, int, []string, error) {
+	log := s.logger.WithApp(app)
+	log.DebugStructured("Validating all keymaps for app")
+
 	keymaps, err := s.GetKeymapsForApp(app)
 	if err != nil {
+		log.ErrorStructured("Failed to get keymaps for validation", err)
 		return 0, 0, nil, err
 	}
 
@@ -274,5 +293,9 @@ func (s *KeymapService) ValidateAllKeymaps(app string) (int, int, []string, erro
 		}
 	}
 
+	log.DebugStructured("Keymap validation complete",
+		logger.Field{Key: "valid_count", Value: validCount},
+		logger.Field{Key: "invalid_count", Value: invalidCount},
+	)
 	return validCount, invalidCount, errorMessages, nil
 }

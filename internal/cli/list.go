@@ -356,7 +356,7 @@ func newKeymapAddCmd(getContainer func() (*container.Container, error)) *cobra.C
 			}
 
 			configService := container.ConfigService()
-			return addKeymap(configService, app, keymap)
+			return addKeymap(container, app, keymap)
 		},
 	}
 }
@@ -378,8 +378,7 @@ func newKeymapConflictsCmd(getContainer func() (*container.Container, error)) *c
 				return fmt.Errorf("application container not initialized")
 			}
 
-			configService := container.ConfigService()
-			return detectKeymapConflicts(configService, app)
+			return detectKeymapConflicts(container, app)
 		},
 	}
 }
@@ -423,8 +422,7 @@ func newKeymapRemoveCmd(getContainer func() (*container.Container, error)) *cobr
 				return fmt.Errorf("application container not initialized")
 			}
 
-			configService := container.ConfigService()
-			return removeKeymap(configService, app, keys)
+			return removeKeymap(container, app, keys)
 		},
 	}
 }
@@ -446,8 +444,7 @@ func newKeymapValidateCmd(getContainer func() (*container.Container, error)) *co
 				return fmt.Errorf("application container not initialized")
 			}
 
-			configService := container.ConfigService()
-			return validateKeymaps(configService, app)
+			return validateKeymaps(container, app)
 		},
 	}
 }
@@ -469,8 +466,7 @@ func newKeymapPresetsCmd(getContainer func() (*container.Container, error)) *cob
 				return fmt.Errorf("application container not initialized")
 			}
 
-			configService := container.ConfigService()
-			return showKeymapPresets(configService, app)
+			return showKeymapPresets(container, app)
 		},
 	}
 }
@@ -492,15 +488,14 @@ func newKeymapListCmd(getContainer func() (*container.Container, error)) *cobra.
 				return fmt.Errorf("application container not initialized")
 			}
 
-			configService := container.ConfigService()
-			return listKeymaps(configService, app)
+			return listKeymaps(container, app)
 		},
 	}
 }
 
 // Keymap management functions
-func listKeymaps(configService *service.ConfigService, app string) error {
-	kmService := service.NewKeymapService(configService)
+func listKeymaps(container *container.Container, app string) error {
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 	keymaps, err := kmService.GetKeymapsForApp(app)
 	if err != nil {
 		return err
@@ -524,10 +519,10 @@ func listKeymaps(configService *service.ConfigService, app string) error {
 	return nil
 }
 
-func addKeymap(configService *service.ConfigService, app, keymap string) error {
+func addKeymap(container *container.Container, app, keymap string) error {
 	fmt.Printf("Adding keymap: %s\n", keymap)
 
-	kmService := service.NewKeymapService(configService)
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 	if err := kmService.AddKeymap(app, keymap); err != nil {
 		return err
 	}
@@ -544,10 +539,10 @@ func addKeymap(configService *service.ConfigService, app, keymap string) error {
 	return nil
 }
 
-func removeKeymap(configService *service.ConfigService, app, keys string) error {
+func removeKeymap(container *container.Container, app, keys string) error {
 	fmt.Printf("Removing keymap for keys: %s\n", keys)
 
-	kmService := service.NewKeymapService(configService)
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 	if err := kmService.RemoveKeymap(app, keys); err != nil {
 		return err
 	}
@@ -564,8 +559,8 @@ func editKeymaps(app string) error {
 	return nil
 }
 
-func validateKeymaps(configService *service.ConfigService, app string) error {
-	kmService := service.NewKeymapService(configService)
+func validateKeymaps(container *container.Container, app string) error {
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 
 	validCount, invalidCount, errors, err := kmService.ValidateAllKeymaps(app)
 	if err != nil {
@@ -588,10 +583,10 @@ func validateKeymaps(configService *service.ConfigService, app string) error {
 	return nil
 }
 
-func showKeymapPresets(configService *service.ConfigService, app string) error {
+func showKeymapPresets(container *container.Container, app string) error {
 	fmt.Printf("Available keymap presets for %s\n", app)
 
-	kmService := service.NewKeymapService(configService)
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 	presets := kmService.GetKeymapPresets(app)
 
 	// Convert map to sorted slice of names for consistent output
@@ -628,8 +623,8 @@ func showKeymapPresets(configService *service.ConfigService, app string) error {
 	return nil
 }
 
-func detectKeymapConflicts(configService *service.ConfigService, app string) error {
-	kmService := service.NewKeymapService(configService)
+func detectKeymapConflicts(container *container.Container, app string) error {
+	kmService := service.NewKeymapService(container.ConfigService(), container.Logger())
 
 	conflicts, err := kmService.DetectConflicts(app)
 	if err != nil {
