@@ -24,6 +24,7 @@ type Field struct {
 type LoggerInterface interface {
 	Debug(msg string, fields ...Field)
 	Info(msg string, fields ...Field)
+	Warn(msg string, fields ...Field)
 	Error(msg string, err error, fields ...Field)
 	With(fields ...Field) LoggerInterface
 	WithRequest(requestID string) LoggerInterface
@@ -115,6 +116,13 @@ func (l *Logger) Debug(msg string, fields ...map[string]interface{}) {
 	event.Msg(msg)
 }
 
+// Warn logs a warning message with structured Field types
+func (l *Logger) Warn(msg string, fields ...Field) {
+	event := l.logger.Warn()
+	l.addStructuredFields(event, fields...)
+	event.Msg(msg)
+}
+
 // Info logs an info message with map-based fields (backward compatibility)
 func (l *Logger) Info(msg string, fields ...map[string]interface{}) {
 	event := l.logger.Info()
@@ -133,13 +141,6 @@ func (l *Logger) InfoStructured(msg string, fields ...Field) {
 func (l *Logger) DebugStructured(msg string, fields ...Field) {
 	event := l.logger.Debug()
 	l.addStructuredFields(event, fields...)
-	event.Msg(msg)
-}
-
-// Warn logs a warning message
-func (l *Logger) Warn(msg string, fields ...map[string]interface{}) {
-	event := l.logger.Warn()
-	l.addFields(event, fields...)
 	event.Msg(msg)
 }
 
@@ -235,6 +236,11 @@ func (a *loggerAdapter) Info(msg string, fields ...Field) {
 	a.logger.InfoStructured(msg, fields...)
 }
 
+// Warn implements LoggerInterface.Warn with Field-based fields
+func (a *loggerAdapter) Warn(msg string, fields ...Field) {
+	a.logger.Warn(msg, fields...)
+}
+
 // Error implements LoggerInterface.Error with Field-based fields
 func (a *loggerAdapter) Error(msg string, err error, fields ...Field) {
 	a.logger.ErrorStructured(msg, err, fields...)
@@ -297,7 +303,7 @@ func Info(msg string, fields ...map[string]interface{}) {
 	Global().Info(msg, fields...)
 }
 
-func Warn(msg string, fields ...map[string]interface{}) {
+func Warn(msg string, fields ...Field) {
 	Global().Warn(msg, fields...)
 }
 

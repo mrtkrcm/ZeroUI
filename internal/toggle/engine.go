@@ -438,7 +438,7 @@ func (e *Engine) RemoveConfiguration(appName, key, value string) error {
 	// Get current value
 	currentVal := targetConfig.Get(key)
 	if currentVal == nil {
-		log.Warn("Configuration key not found", nil)
+		log.Warn("Configuration key not found")
 		return nil
 	}
 
@@ -469,9 +469,7 @@ func (e *Engine) RemoveConfiguration(appName, key, value string) error {
 	}
 
 	if !found {
-		log.Warn("Value not found in configuration", map[string]interface{}{
-			"value": value,
-		})
+		log.Warn("Value not found in configuration", logger.Field{Key: "value", Value: value})
 		return nil
 	}
 
@@ -570,9 +568,7 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 		fieldConfig, exists := appConfig.Fields[key]
 		if !exists {
 			if viper.GetBool("verbose") {
-				log.Warn("Field not found in app config, applying anyway", nil, map[string]interface{}{
-					"field": key,
-				})
+				log.Warn("Field not found in app config, applying anyway", logger.Field{Key: "field", Value: key})
 			}
 		}
 

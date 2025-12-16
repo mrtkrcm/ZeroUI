@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +37,7 @@ Examples:
 		if err := configService.ToggleConfiguration(app, key, value); err != nil {
 			// Check if it's a ZeroUIError for better user experience
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil // Don't return error to avoid double printing
 			}
 			return err

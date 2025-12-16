@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,7 +58,8 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 		if _, err := os.Stat(customAppsPath); err == nil {
 			if err := registry.MergeFromFile(customAppsPath); err != nil {
 				// Log error but don't fail - embedded registry is still valid
-				fmt.Fprintf(os.Stderr, "Warning: failed to load custom apps: %v\n", err)
+				// Use the global logger as this happens during app initialization
+				logger.Global().Warn("Failed to load custom apps", logger.Field{Key: "error", Value: err})
 			}
 		}
 

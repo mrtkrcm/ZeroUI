@@ -161,7 +161,7 @@ func initConfig() {
 	if err != nil {
 		// If runtime config loading fails, fall back to defaults
 		// This ensures backward compatibility
-		fmt.Fprintf(os.Stderr, "Warning: failed to load runtime config: %v\n", err)
+		logger.Global().Warn("Failed to load runtime config, falling back to defaults", logger.Field{Key: "error", Value: err})
 		cfg = &runtimeconfig.Config{
 			LogLevel:     "info",
 			LogFormat:    "text",
@@ -192,7 +192,9 @@ func initConfig() {
 
 	if _, ok := styles.SetThemeByName(themeName); !ok {
 		// Fall back to modern theme if the configured theme doesn't exist
-		fmt.Fprintf(os.Stderr, "Warning: theme %q not found, using modern theme\n", cfg.DefaultTheme)
+		logger.Global().Warn("Theme not found, falling back to modern theme",
+			logger.Field{Key: "theme", Value: cfg.DefaultTheme},
+		)
 		styles.SetThemeByName("modern")
 	}
 }

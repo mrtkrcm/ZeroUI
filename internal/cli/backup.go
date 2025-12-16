@@ -13,6 +13,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 	"github.com/spf13/cobra"
@@ -51,7 +52,7 @@ for that app will be shown.`,
 		backupManager, err := recovery.NewBackupManager()
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -60,7 +61,7 @@ for that app will be shown.`,
 		backups, err := backupManager.ListBackups(appName)
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -121,7 +122,7 @@ This is useful before making major changes or for creating restore points.`,
 		appConfig, err := engine.GetAppConfig(appName)
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -138,7 +139,7 @@ This is useful before making major changes or for creating restore points.`,
 		backupManager, err := recovery.NewBackupManager()
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -147,7 +148,7 @@ This is useful before making major changes or for creating restore points.`,
 		backupPath, err := backupManager.CreateBackup(configPath, appName)
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -187,7 +188,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 		appConfig, err := engine.GetAppConfig(appName)
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -204,7 +205,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 		backupManager, err := recovery.NewBackupManager()
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -212,15 +213,15 @@ Use 'zeroui backup list <app>' to see available backups.`,
 
 		// Validate backup name for security before processing
 		if strings.Contains(backupName, "..") || strings.ContainsAny(backupName, "/\\") || strings.Contains(backupName, "\x00") {
-			fmt.Fprintf(os.Stderr, "Error: invalid backup name '%s' - contains dangerous characters\n", backupName)
-			fmt.Fprintf(os.Stderr, "Use 'zeroui backup list %s' to see valid backup names\n", appName)
+			err := fmt.Errorf("invalid backup name '%s' - contains dangerous characters. Use 'zeroui backup list %s' to see valid backup names", backupName, appName)
+			logger.FromContext(cmd.Context()).Error(err.Error(), err, logger.Field{Key: "backupName", Value: backupName})
 			return nil
 		}
 
 		backups, err := backupManager.ListBackups(appName)
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -235,8 +236,8 @@ Use 'zeroui backup list <app>' to see available backups.`,
 		}
 
 		if backupPath == "" {
-			fmt.Fprintf(os.Stderr, "Error: backup '%s' not found for app '%s'\n", backupName, appName)
-			fmt.Fprintf(os.Stderr, "Use 'zeroui backup list %s' to see available backups\n", appName)
+			err := fmt.Errorf("backup '%s' not found for app '%s'. Use 'zeroui backup list %s' to see available backups", backupName, appName, appName)
+			logger.FromContext(cmd.Context()).Error(err.Error(), err, logger.Field{Key: "backupName", Value: backupName}, logger.Field{Key: "appName", Value: appName})
 			return nil
 		}
 
@@ -275,7 +276,7 @@ Use 'zeroui backup list <app>' to see available backups.`,
 		// Restore the backup
 		if err := backupManager.RestoreBackup(backupPath, configPath); err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -306,7 +307,7 @@ By default, keeps the 5 most recent backups per application.`,
 		backupManager, err := recovery.NewBackupManager()
 		if err != nil {
 			if ctErr, ok := errors.GetZeroUIError(err); ok {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+				logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 				return nil
 			}
 			return err
@@ -316,7 +317,7 @@ By default, keeps the 5 most recent backups per application.`,
 			// Clean up specific app
 			if err := backupManager.CleanupOldBackups(appName, keepCount); err != nil {
 				if ctErr, ok := errors.GetZeroUIError(err); ok {
-					fmt.Fprintf(os.Stderr, "Error: %s\n", ctErr.String())
+					logger.FromContext(cmd.Context()).Error(ctErr.String(), err)
 					return nil
 				}
 				return err
