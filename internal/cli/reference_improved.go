@@ -88,12 +88,67 @@ Uses curated static configuration files instead of fragile web scraping.`,
 			Foreground(lipgloss.Color("7"))
 )
 
-func init() {
-	rootCmd.AddCommand(improvedReferenceCmd)
-	improvedReferenceCmd.AddCommand(refListCmd)
-	improvedReferenceCmd.AddCommand(refShowCmd)
-	improvedReferenceCmd.AddCommand(refValidateCmd)
-	improvedReferenceCmd.AddCommand(refSearchCmd)
+func newReferenceImprovedCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ref",
+		Short: "Configuration reference (improved)",
+		Long: `Improved configuration reference system with clean, reliable data.
+Uses curated static configuration files instead of fragile web scraping.`,
+		Example: `  zeroui ref list
+  zeroui ref show ghostty
+  zeroui ref validate ghostty font_size 14
+  zeroui ref search zed theme`,
+		Args: cobra.NoArgs,
+	}
+
+	cmd.AddCommand(newRefListCmd())
+	cmd.AddCommand(newRefShowCmd())
+	cmd.AddCommand(newRefValidateCmd())
+	cmd.AddCommand(newRefSearchCmd())
+
+	return cmd
+}
+
+func newRefListCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "list",
+		Short:   "List available applications",
+		Example: `  zeroui ref list`,
+		RunE:    runRefList,
+	}
+}
+
+func newRefShowCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show [app] [setting]",
+		Short: "Show configuration details",
+		Example: `  zeroui ref show ghostty
+  zeroui ref show ghostty font_size`,
+		Args: cobra.MinimumNArgs(1),
+		RunE: runRefShow,
+	}
+}
+
+func newRefValidateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "validate [app] [setting] [value]",
+		Short: "Validate a configuration value",
+		Example: `  zeroui ref validate ghostty font_size 14
+  zeroui ref validate zed theme "Nord"`,
+		Args: cobra.ExactArgs(3),
+		RunE: runRefValidate,
+	}
+}
+
+func newRefSearchCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "search [app] [query]",
+		Short: "Search configuration settings",
+		Example: `  zeroui ref search ghostty theme
+  zeroui ref search zed font`,
+		Args: cobra.ExactArgs(2),
+		RunE: runRefSearch,
+	}
 }
 
 func setupImprovedManager() *reference.ReferenceManager {

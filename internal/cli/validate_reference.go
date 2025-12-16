@@ -8,11 +8,13 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 )
 
-// validateReferenceCmd represents the validate-reference command
-var validateReferenceCmd = &cobra.Command{
-	Use:   "validate-reference [app]",
-	Short: "Validate reference config mapping for an app",
-	Long: `Validate that reference config mapping is working correctly.
+func newValidateReferenceCmd() *cobra.Command {
+	var validateAll bool
+
+	cmd := &cobra.Command{
+		Use:   "validate-reference [app]",
+		Short: "Validate reference config mapping for an app",
+		Long: `Validate that reference config mapping is working correctly.
 
 This command checks:
 - Reference config can be loaded
@@ -23,20 +25,19 @@ This command checks:
 Examples:
   zeroui validate-reference ghostty
   zeroui validate-reference --all`,
-	Example: `  zeroui validate-reference ghostty
+		Example: `  zeroui validate-reference ghostty
   zeroui validate-reference --all`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runValidateReference,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runValidateReference(cmd, args, validateAll)
+		},
+	}
+
+	cmd.Flags().BoolVar(&validateAll, "all", false, "Validate all available apps")
+	return cmd
 }
 
-var validateAll bool
-
-func init() {
-	rootCmd.AddCommand(validateReferenceCmd)
-	validateReferenceCmd.Flags().BoolVar(&validateAll, "all", false, "Validate all available apps")
-}
-
-func runValidateReference(cmd *cobra.Command, args []string) error {
+func runValidateReference(cmd *cobra.Command, args []string, validateAll bool) error {
 	// Create reference-enhanced loader
 	loader, err := appconfig.NewReferenceEnhancedLoader()
 	if err != nil {

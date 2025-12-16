@@ -40,8 +40,11 @@ func main() {
 		}
 	}()
 
+	rootCmd := cli.NewRootCommand()
+	rootCmd.AddSubcommands()
+
 	// Execute CLI commands with context support
-	if err := cli.ExecuteWithContext(ctx); err != nil {
+	if err := rootCmd.Execute(ctx, os.Args[1:]); err != nil {
 		// CLI handles its own error output
 		os.Exit(1)
 	}
