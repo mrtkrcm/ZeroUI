@@ -31,7 +31,7 @@ background-opacity = 0.9
 debug = true
 window-width = 120
 `
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write basic config: %v", err)
 		}
 
@@ -80,7 +80,7 @@ keybind = cmd+c=copy
 keybind = cmd+v=paste
 keybind = cmd+n=new_window
 `
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write multiple config: %v", err)
 		}
 
@@ -137,7 +137,7 @@ font-size = 14
 debug = false
 
 `
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write comments config: %v", err)
 		}
 
@@ -173,7 +173,7 @@ malformed line without equals
 special-chars = áëíôü
 unicode = 🎨🚀
 `
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write edge cases config: %v", err)
 		}
 
@@ -238,7 +238,7 @@ unicode = 🎨🚀
 	// Test empty file
 	t.Run("Empty file", func(t *testing.T) {
 		configPath := filepath.Join(tmpDir, "empty.conf")
-		if err := os.WriteFile(configPath, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(""), 0o644); err != nil {
 			t.Fatalf("Failed to write empty config: %v", err)
 		}
 
@@ -260,7 +260,7 @@ unicode = 🎨🚀
 # Yet another comment
 
 # Final comment`
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write comments-only config: %v", err)
 		}
 
@@ -347,7 +347,7 @@ window-height = 40
 # Debug mode
 debug = false
 `
-		if err := os.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
+		if err := os.WriteFile(originalPath, []byte(originalContent), 0o644); err != nil {
 			t.Fatalf("Failed to write original config: %v", err)
 		}
 
@@ -485,7 +485,7 @@ palette-117 = #87d7d7
 keybind-31 = super+ctrl+left=resize_split:left
 keybind-33 = super+ctrl+up=resize_split:up
 `
-	err = os.WriteFile(originalPath, []byte(original), 0644)
+	err = os.WriteFile(originalPath, []byte(original), 0o644)
 	require.NoError(t, err)
 
 	k := koanf.New(".")
@@ -533,7 +533,7 @@ keybind = cmd+c=copy
 keybind = cmd+v=paste
 `
 
-	if err := os.WriteFile(originalPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(originalPath, []byte(originalContent), 0o644); err != nil {
 		t.Fatalf("Failed to write original config: %v", err)
 	}
 
@@ -634,7 +634,7 @@ func BenchmarkParseGhosttyConfig(b *testing.B) {
 		content.WriteString(fmt.Sprintf("keybind = cmd+%d=action-%d\n", i, i))
 	}
 
-	if err := os.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content.String()), 0o644); err != nil {
 		b.Fatalf("Failed to write bench config: %v", err)
 	}
 

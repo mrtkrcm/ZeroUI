@@ -61,7 +61,7 @@ func runExtract(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create output directory
-	if err := os.MkdirAll(extractOutput, 0755); err != nil {
+	if err := os.MkdirAll(extractOutput, 0o755); err != nil {
 		return err
 	}
 
@@ -99,5 +99,5 @@ func saveConfig(cfg *legacyextractor.Config, path string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }

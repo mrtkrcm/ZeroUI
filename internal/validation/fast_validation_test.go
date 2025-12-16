@@ -25,11 +25,11 @@ func BenchmarkSuperOptimizedValidation(b *testing.B) {
 	validator.RegisterSchema(schema)
 
 	// Simple config
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Name:   "super-simple",
 		Path:   "/config",
 		Format: "json",
-		Fields: map[string]config.FieldConfig{
+		Fields: map[string]appconfig.FieldConfig{
 			"name":    {Type: "string", Default: "test"},
 			"port":    {Type: "number", Default: 8080},
 			"enabled": {Type: "boolean", Default: true},
@@ -84,11 +84,11 @@ func BenchmarkComplexSchemaValidation(b *testing.B) {
 	}
 	validator.RegisterSchema(schema)
 
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Name:   "complex",
 		Path:   "/config",
 		Format: "json",
-		Fields: map[string]config.FieldConfig{
+		Fields: map[string]appconfig.FieldConfig{
 			"username": {Type: "string", Default: "testuser"},
 			"password": {Type: "string", Default: "securepass123"},
 		},

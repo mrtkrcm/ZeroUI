@@ -32,7 +32,6 @@ const (
 
 // ValidateField validates a single field with its schema rule
 func (v *Validator) ValidateField(appName string, fieldName string, value interface{}) *ValidationResult {
-
 	// Check if schema exists
 	schema, ok := v.schemas[appName]
 	if !ok {
@@ -260,7 +259,7 @@ func (v *Validator) validateChoiceField(fieldName string, value interface{}, rul
 }
 
 // validateFieldDefinition validates a field configuration definition
-func (v *Validator) validateFieldDefinition(fieldName string, field *config.FieldConfig, rule *FieldRule) *ValidationResult {
+func (v *Validator) validateFieldDefinition(fieldName string, field *appconfig.FieldConfig, rule *FieldRule) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
 	// Validate field type

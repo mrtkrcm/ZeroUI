@@ -482,8 +482,10 @@ func (m *SimpleConfigModel) cancelEdit() {
 // Utility functions are in utils.go
 
 // Backward compatibility aliases
-type TabbedConfigModel = SimpleConfigModel
-type EnhancedConfigModel = SimpleConfigModel
+type (
+	TabbedConfigModel   = SimpleConfigModel
+	EnhancedConfigModel = SimpleConfigModel
+)
 
 // Backward compatibility constructors
 func NewTabbedConfig(appName string) *SimpleConfigModel {

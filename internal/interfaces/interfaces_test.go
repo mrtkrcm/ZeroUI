@@ -11,15 +11,15 @@ import (
 // mockConfigLoader is a mock implementation of ConfigLoader for testing
 type mockConfigLoader struct{}
 
-func (m *mockConfigLoader) LoadAppConfig(appName string) (*config.AppConfig, error) {
-	return &config.AppConfig{Name: appName}, nil
+func (m *mockConfigLoader) LoadAppConfig(appName string) (*appconfig.AppConfig, error) {
+	return &appconfig.AppConfig{Name: appName}, nil
 }
 
-func (m *mockConfigLoader) LoadTargetConfig(app *config.AppConfig) (*koanf.Koanf, error) {
+func (m *mockConfigLoader) LoadTargetConfig(app *appconfig.AppConfig) (*koanf.Koanf, error) {
 	return koanf.New("."), nil
 }
 
-func (m *mockConfigLoader) SaveTargetConfig(app *config.AppConfig, target *koanf.Koanf) error {
+func (m *mockConfigLoader) SaveTargetConfig(app *appconfig.AppConfig, target *koanf.Koanf) error {
 	return nil
 }
 
@@ -46,8 +46,8 @@ func (m *mockToggleEngine) ApplyPreset(appName, presetName string) error {
 	return nil
 }
 
-func (m *mockToggleEngine) GetAppConfig(appName string) (*config.AppConfig, error) {
-	return &config.AppConfig{Name: appName}, nil
+func (m *mockToggleEngine) GetAppConfig(appName string) (*appconfig.AppConfig, error) {
+	return &appconfig.AppConfig{Name: appName}, nil
 }
 
 func (m *mockToggleEngine) GetCurrentValues(appName string) (map[string]interface{}, error) {
@@ -148,16 +148,10 @@ func TestInterfaceCompliance(t *testing.T) {
 	var engine ToggleEngine = &mockToggleEngine{}
 	var logger Logger = &mockLogger{}
 
-	// Verify they are not nil
-	if loader == nil {
-		t.Error("ConfigLoader implementation is nil")
-	}
-	if engine == nil {
-		t.Error("ToggleEngine implementation is nil")
-	}
-	if logger == nil {
-		t.Error("Logger implementation is nil")
-	}
+	// Interfaces are implemented by concrete types
+	_ = loader
+	_ = engine
+	_ = logger
 }
 
 func TestInterfaceMethodSignatures(t *testing.T) {

@@ -107,7 +107,7 @@ func (op *Operation) CreateBackup(appName string) error {
 }
 
 // WriteConfig writes configuration data atomically
-func (op *Operation) WriteConfig(appConfig *config.AppConfig, configData map[string]interface{}) error {
+func (op *Operation) WriteConfig(appConfig *appconfig.AppConfig, configData map[string]interface{}) error {
 	if op.lock == nil {
 		return fmt.Errorf("operation not properly initialized")
 	}
@@ -117,18 +117,18 @@ func (op *Operation) WriteConfig(appConfig *config.AppConfig, configData map[str
 
 	// Ensure directory exists
 	dir := filepath.Dir(op.filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// Write to temporary file first
-	loader := &config.Loader{}
+	loader := &appconfig.Loader{}
 	k := koanf.New(".")
 	for key, value := range configData {
 		k.Set(key, value)
 	}
 
-	if err := loader.SaveTargetConfig(&config.AppConfig{
+	if err := loader.SaveTargetConfig(&appconfig.AppConfig{
 		Path:   tempPath,
 		Format: appConfig.Format,
 	}, k); err != nil {
@@ -190,12 +190,12 @@ type ReadOperation struct {
 }
 
 // ReadConfig reads configuration data with read lock
-func (rop *ReadOperation) ReadConfig(appConfig *config.AppConfig) (map[string]interface{}, error) {
+func (rop *ReadOperation) ReadConfig(appConfig *appconfig.AppConfig) (map[string]interface{}, error) {
 	if rop.lock == nil {
 		return nil, fmt.Errorf("read operation not properly initialized")
 	}
 
-	loader := &config.Loader{}
+	loader := &appconfig.Loader{}
 	configObj, err := loader.LoadTargetConfig(appConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config: %w", err)

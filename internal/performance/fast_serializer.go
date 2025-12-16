@@ -132,8 +132,7 @@ func (sjp *StreamingJSONProcessor) ProcessJSONStream(reader io.Reader, processor
 
 // OptimizedConfigMarshaler provides specialized marshaling for config structures
 type OptimizedConfigMarshaler struct {
-	// Pre-compiled field mappings for common config structures
-	fieldMappings map[string][]string
+	// TODO: Add field mappings for optimization
 }
 
 // MarshalConfig uses specialized knowledge of config structures for faster marshaling

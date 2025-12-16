@@ -7,9 +7,9 @@ import (
 
 // ConfigLoader defines the interface for configuration loading operations
 type ConfigLoader interface {
-	LoadAppConfig(appName string) (*config.AppConfig, error)
-	LoadTargetConfig(app *config.AppConfig) (*koanf.Koanf, error)
-	SaveTargetConfig(app *config.AppConfig, target *koanf.Koanf) error
+	LoadAppConfig(appName string) (*appconfig.AppConfig, error)
+	LoadTargetConfig(app *appconfig.AppConfig) (*koanf.Koanf, error)
+	SaveTargetConfig(app *appconfig.AppConfig, target *koanf.Koanf) error
 	ListApps() ([]string, error)
 	SetConfigDir(dir string)
 }
@@ -19,7 +19,7 @@ type ToggleEngine interface {
 	Toggle(appName, key, value string) error
 	Cycle(appName, key string) error
 	ApplyPreset(appName, presetName string) error
-	GetAppConfig(appName string) (*config.AppConfig, error)
+	GetAppConfig(appName string) (*appconfig.AppConfig, error)
 	GetCurrentValues(appName string) (map[string]interface{}, error)
 }
 

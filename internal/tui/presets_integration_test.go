@@ -15,7 +15,7 @@ import (
 
 func TestOpenPresetsAndSelect(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)

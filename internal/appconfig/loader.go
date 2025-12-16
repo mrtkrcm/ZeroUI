@@ -2,7 +2,6 @@ package appconfig
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -392,11 +391,6 @@ func (l *Loader) loadCustomFormat(configPath string) (*koanf.Koanf, error) {
 	return ParseGhosttyConfig(configPath)
 }
 
-// saveCustomFormat handles saving custom formats.
-func (l *Loader) saveCustomFormat(configPath string, k *koanf.Koanf) error {
-	return WriteGhosttyConfig(configPath, k, configPath)
-}
-
 // saveCustomFormatWithTemp handles saving custom formats to a temporary file.
 func (l *Loader) saveCustomFormatWithTemp(tempPath string, k *koanf.Koanf, originalPath string) error {
 	return WriteGhosttyConfig(tempPath, k, originalPath)
@@ -460,27 +454,4 @@ func (l *Loader) Close() error {
 		return l.fileWatcher.Close()
 	}
 	return nil
-}
-
-// copyFile creates a copy of a file using streaming I/O for efficiency.
-func copyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = srcFile.Close() }()
-
-	_, err = srcFile.Stat()
-	if err != nil {
-		return err
-	}
-
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = dstFile.Close() }()
-
-	_, err = io.Copy(dstFile, srcFile)
-	return err
 }

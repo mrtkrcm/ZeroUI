@@ -84,12 +84,12 @@ func BenchmarkValidator_ValidateAppConfig(b *testing.B) {
 	validator.RegisterSchema(schema)
 
 	// Create test app config
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Name:        "benchmark-app",
 		Path:        "/path/to/config",
 		Format:      "json",
 		Description: "Benchmark test application",
-		Fields: map[string]config.FieldConfig{
+		Fields: map[string]appconfig.FieldConfig{
 			"theme": {
 				Type:        "choice",
 				Values:      []string{"dark", "light", "auto", "system", "custom"},

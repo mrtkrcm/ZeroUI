@@ -23,7 +23,7 @@ func TestLoader_LoadAppConfig(t *testing.T) {
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err = os.MkdirAll(appsDir, 0755); err != nil {
+	if err = os.MkdirAll(appsDir, 0o755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -59,7 +59,7 @@ hooks:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	if err = os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err = os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -162,7 +162,7 @@ func TestLoader_ListApps(t *testing.T) {
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err = os.MkdirAll(appsDir, 0755); err != nil {
+	if err = os.MkdirAll(appsDir, 0o755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -171,7 +171,7 @@ func TestLoader_ListApps(t *testing.T) {
 	for _, app := range testApps {
 		configContent := fmt.Sprintf("name: %s\npath: ~/.config/%s/config.json", app, app)
 		configPath := filepath.Join(appsDir, app+".yaml")
-		if err = os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		if err = os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			t.Fatalf("Failed to write test config for %s: %v", app, err)
 		}
 	}
@@ -254,7 +254,7 @@ func BenchmarkLoader_LoadAppConfig(b *testing.B) {
 
 	// Create apps directory and test config
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err := os.MkdirAll(appsDir, 0755); err != nil {
+	if err := os.MkdirAll(appsDir, 0o755); err != nil {
 		b.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -274,7 +274,7 @@ presets:
 `
 
 	configPath := filepath.Join(appsDir, "bench-app.yaml")
-	if err = os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err = os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
 		b.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -313,7 +313,7 @@ func TestLoader_LoadTargetConfig(t *testing.T) {
   "font-size": 14,
   "debug": true
 }`
-		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
+		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0o644); err != nil {
 			t.Fatalf("Failed to write JSON file: %v", err)
 		}
 
@@ -349,7 +349,7 @@ debug: false
 nested:
   value: test
 `
-		if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		if err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644); err != nil {
 			t.Fatalf("Failed to write YAML file: %v", err)
 		}
 
@@ -389,7 +389,7 @@ font-family = JetBrains Mono
 font-size = 14
 background-opacity = 0.9
 `
-		if err := os.WriteFile(customPath, []byte(customContent), 0644); err != nil {
+		if err := os.WriteFile(customPath, []byte(customContent), 0o644); err != nil {
 			t.Fatalf("Failed to write custom config file: %v", err)
 		}
 
@@ -420,7 +420,7 @@ background-opacity = 0.9
 	t.Run("Format detection", func(t *testing.T) {
 		jsonPath := filepath.Join(tmpDir, "auto.json")
 		jsonContent := `{"detected": "json"}`
-		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0644); err != nil {
+		if err := os.WriteFile(jsonPath, []byte(jsonContent), 0o644); err != nil {
 			t.Fatalf("Failed to write auto-detect JSON file: %v", err)
 		}
 
@@ -465,7 +465,7 @@ background-opacity = 0.9
 
 		// Invalid JSON
 		invalidPath := filepath.Join(tmpDir, "invalid.json")
-		if err := os.WriteFile(invalidPath, []byte("invalid json"), 0644); err != nil {
+		if err := os.WriteFile(invalidPath, []byte("invalid json"), 0o644); err != nil {
 			t.Fatalf("Failed to write invalid JSON: %v", err)
 		}
 

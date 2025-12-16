@@ -25,7 +25,7 @@ keybind = ctrl+v=paste
 background-opacity = 0.9
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
@@ -173,7 +173,7 @@ keybind=ctrl+c=copy,ctrl+v=paste`)
 	t.Run("Error handling - invalid config", func(t *testing.T) {
 		// Create invalid config
 		invalidPath := filepath.Join(tempDir, "invalid")
-		err := os.WriteFile(invalidPath, []byte("invalid content without equals"), 0644)
+		err := os.WriteFile(invalidPath, []byte("invalid content without equals"), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create invalid config: %v", err)
 		}
@@ -238,7 +238,7 @@ window-decoration = false
 cursor-style = block
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		b.Fatalf("Failed to create test config: %v", err)
 	}

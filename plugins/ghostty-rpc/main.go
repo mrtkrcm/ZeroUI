@@ -428,7 +428,7 @@ func (p *GhosttyRPCPlugin) updateConfigLines(lines []string, config map[string]i
 func (p *GhosttyRPCPlugin) writeNewConfig(configPath string, config map[string]interface{}) error {
 	// Ensure directory exists
 	dir := filepath.Dir(configPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 

@@ -70,13 +70,13 @@ func NewTempFileManagerWithOptions(opts *TempFileOptions) (*TempFileManager, err
 	}
 
 	// Ensure temp directory exists with proper permissions
-	if err := os.MkdirAll(opts.TempDir, 0700); err != nil {
+	if err := os.MkdirAll(opts.TempDir, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create temp directory %q: %w", opts.TempDir, err)
 	}
 
 	// Test write permissions
 	testFile := filepath.Join(opts.TempDir, ".test")
-	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0o600); err != nil {
 		return nil, fmt.Errorf("temp directory %q is not writable: %w", opts.TempDir, err)
 	}
 	os.Remove(testFile)
@@ -151,7 +151,7 @@ func (m *TempFileManager) CreateTempCopyWithContext(ctx context.Context, origina
 	// Create lock file with process info
 	lockFile := tempPath + ".lock"
 	lockInfo := fmt.Sprintf("%d:%s:%d", os.Getpid(), runtime.GOOS, time.Now().Unix())
-	if err := os.WriteFile(lockFile, []byte(lockInfo), 0600); err != nil {
+	if err := os.WriteFile(lockFile, []byte(lockInfo), 0o600); err != nil {
 		os.Remove(tempPath)
 		atomic.AddUint64(&m.errors, 1)
 		return nil, fmt.Errorf("failed to create lock file: %w", err)
@@ -240,7 +240,7 @@ func (m *TempFileManager) CommitTempWithContext(ctx context.Context, tempFile *T
 
 	// Ensure target directory exists
 	targetDir := filepath.Dir(tempFile.OriginalPath)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		atomic.AddUint64(&m.errors, 1)
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
@@ -340,11 +340,6 @@ func (m *TempFileManager) CleanupAll() {
 	m.tempFiles = make(map[string]*TempFile)
 }
 
-// calculateFileHash calculates SHA-256 hash of a file
-func (m *TempFileManager) calculateFileHash(path string) (string, error) {
-	return m.calculateFileHashWithContext(context.Background(), path)
-}
-
 // calculateFileHashWithContext calculates hash with context support
 func (m *TempFileManager) calculateFileHashWithContext(ctx context.Context, path string) (string, error) {
 	file, err := os.Open(path)
@@ -393,7 +388,7 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 	// If source doesn't exist, create empty temp file
 	srcInfo, err := os.Stat(src)
 	if os.IsNotExist(err) {
-		return os.WriteFile(dst, []byte{}, 0600)
+		return os.WriteFile(dst, []byte{}, 0o600)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to stat source file: %w", err)
@@ -456,11 +451,6 @@ func (m *TempFileManager) copyFileWithContext(ctx context.Context, src, dst stri
 
 	success = true
 	return nil
-}
-
-// createBackup creates a backup with rotation
-func (m *TempFileManager) createBackup(src, dst string) error {
-	return m.createBackupWithRotation(src, dst)
 }
 
 // createBackupWithRotation creates a backup with configurable rotation

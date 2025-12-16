@@ -42,7 +42,7 @@ func testPluginDiscovery(t *testing.T, binaryPath, pluginPath, testDir string) {
 	t.Run("discovers plugin in PATH", func(t *testing.T) {
 		// Create plugin directory and symlink
 		pluginDir := filepath.Join(testDir, "plugins")
-		require.NoError(t, os.MkdirAll(pluginDir, 0755))
+		require.NoError(t, os.MkdirAll(pluginDir, 0o755))
 
 		pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 		require.NoError(t, os.Symlink(pluginPath, pluginLink))
@@ -81,7 +81,7 @@ func testPluginDiscovery(t *testing.T, binaryPath, pluginPath, testDir string) {
 func testPluginCommunication(t *testing.T, binaryPath, pluginPath, testDir string) {
 	// Setup plugin in PATH
 	pluginDir := filepath.Join(testDir, "plugins")
-	require.NoError(t, os.MkdirAll(pluginDir, 0755))
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	os.Remove(pluginLink) // Remove if exists
@@ -134,7 +134,7 @@ func testPluginCommunication(t *testing.T, binaryPath, pluginPath, testDir strin
 func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 	// Setup plugin in PATH
 	pluginDir := filepath.Join(testDir, "plugins")
-	require.NoError(t, os.MkdirAll(pluginDir, 0755))
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	os.Remove(pluginLink) // Remove if exists
@@ -173,7 +173,7 @@ func testPluginLifecycle(t *testing.T, binaryPath, pluginPath, testDir string) {
 		crashScript := `#!/bin/bash
 exit 1
 `
-		require.NoError(t, os.WriteFile(crashingPlugin, []byte(crashScript), 0755))
+		require.NoError(t, os.WriteFile(crashingPlugin, []byte(crashScript), 0o755))
 
 		// Try to use the crashing plugin
 		cmd := exec.Command(binaryPath, "list", "apps")
@@ -217,7 +217,7 @@ func TestPluginAPIIntegration(t *testing.T) {
 		info, err := os.Stat(pluginPath)
 		require.NoError(t, err, "Plugin binary should exist")
 		assert.True(t, info.Mode().IsRegular(), "Should be a regular file")
-		assert.True(t, info.Mode().Perm()&0111 != 0, "Should be executable")
+		assert.True(t, info.Mode().Perm()&0o111 != 0, "Should be executable")
 	})
 }
 
@@ -235,7 +235,7 @@ func TestRPCProtocolIntegration(t *testing.T) {
 
 	// Setup plugin environment
 	pluginDir := filepath.Join(testDir, "plugins")
-	require.NoError(t, os.MkdirAll(pluginDir, 0755))
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
 
 	pluginLink := filepath.Join(pluginDir, "zeroui-plugin-ghostty-rpc")
 	os.Remove(pluginLink) // Remove if exists

@@ -20,7 +20,7 @@ func TestApplyPresetUpdatesConfig(t *testing.T) {
 
 	// Create a minimal ghostty app schema with a preset
 	appsDir := filepath.Join(tmpDir, "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	schema := `name: ghostty
 path: ` + filepath.Join(tmpDir, "ghostty.conf") + `
@@ -36,17 +36,17 @@ presets:
     values:
       theme: Dracula
 `
-	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(schema), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(schema), 0o644))
 
 	// Ensure target config exists and is empty
 	target := filepath.Join(tmpDir, "ghostty.conf")
-	require.NoError(t, os.WriteFile(target, []byte(""), 0644))
+	require.NoError(t, os.WriteFile(target, []byte(""), 0o644))
 
 	// Wire engine to temp dir
-	loader, err := config.NewLoader()
+	loader, err := appconfig.NewLoader()
 	require.NoError(t, err)
 	loader.SetConfigDir(tmpDir)
-	
+
 	log := logger.Global()
 	engine := toggle.NewEngineWithDeps(loader, log)
 	configService := service.NewConfigService(engine, loader, log)

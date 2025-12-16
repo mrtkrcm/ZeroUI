@@ -77,7 +77,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "json",
 			content: `{"theme": "dark", "size": 14, "enabled": true}`,
 			setup: func(path string) error {
-				return os.WriteFile(path, []byte(`{"theme": "dark", "size": 14, "enabled": true}`), 0644)
+				return os.WriteFile(path, []byte(`{"theme": "dark", "size": 14, "enabled": true}`), 0o644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "dark", k.String("theme"))
@@ -90,7 +90,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "yaml",
 			content: `theme: light\nsize: 16\nenabled: false`,
 			setup: func(path string) error {
-				return os.WriteFile(path, []byte("theme: light\nsize: 16\nenabled: false"), 0644)
+				return os.WriteFile(path, []byte("theme: light\nsize: 16\nenabled: false"), 0o644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "light", k.String("theme"))
@@ -103,7 +103,7 @@ func TestLoader_TargetConfigFormats(t *testing.T) {
 			format:  "toml",
 			content: `theme = "auto"\nsize = 18\nenabled = true`,
 			setup: func(path string) error {
-				return os.WriteFile(path, []byte(`theme = "auto"`+"\n"+`size = 18`+"\n"+`enabled = true`), 0644)
+				return os.WriteFile(path, []byte(`theme = "auto"`+"\n"+`size = 18`+"\n"+`enabled = true`), 0o644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "auto", k.String("theme"))
@@ -121,7 +121,7 @@ font-size = 14
 window-decoration = false
 keybind = shift+super+k=reload_config
 keybind = super+equal=increase_font_size`
-				return os.WriteFile(path, []byte(content), 0644)
+				return os.WriteFile(path, []byte(content), 0o644)
 			},
 			verify: func(t *testing.T, k *koanf.Koanf) {
 				assert.Equal(t, "dark", k.String("theme"))
@@ -184,7 +184,7 @@ func TestLoader_PathExpansionCoverage(t *testing.T) {
 
 	configFile := filepath.Join(tmpDir, "absolute.json")
 	configData := `{"key": "absolute_value"}`
-	err = os.WriteFile(configFile, []byte(configData), 0644)
+	err = os.WriteFile(configFile, []byte(configData), 0o644)
 	require.NoError(t, err)
 
 	appConfig := &AppConfig{
@@ -202,7 +202,7 @@ func TestLoader_PathExpansionCoverage(t *testing.T) {
 	require.NoError(t, err)
 
 	homeConfigFile := filepath.Join(home, "test_home_config.json")
-	err = os.WriteFile(homeConfigFile, []byte(`{"key": "home_value"}`), 0644)
+	err = os.WriteFile(homeConfigFile, []byte(`{"key": "home_value"}`), 0o644)
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(homeConfigFile) }()
 
@@ -229,7 +229,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("UnsupportedFormat", func(t *testing.T) {
 		configFile := filepath.Join(tmpDir, "unsupported.xml")
-		err = os.WriteFile(configFile, []byte(`<config>test</config>`), 0644)
+		err = os.WriteFile(configFile, []byte(`<config>test</config>`), 0o644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -245,7 +245,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidJSONFile", func(t *testing.T) {
 		invalidJsonFile := filepath.Join(tmpDir, "invalid.json")
-		err = os.WriteFile(invalidJsonFile, []byte(`{"invalid": json syntax`), 0644)
+		err = os.WriteFile(invalidJsonFile, []byte(`{"invalid": json syntax`), 0o644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -260,7 +260,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidYAMLFile", func(t *testing.T) {
 		invalidYamlFile := filepath.Join(tmpDir, "invalid.yaml")
-		err = os.WriteFile(invalidYamlFile, []byte("invalid: yaml: [unclosed"), 0644)
+		err = os.WriteFile(invalidYamlFile, []byte("invalid: yaml: [unclosed"), 0o644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -275,7 +275,7 @@ func TestLoader_ErrorConditions(t *testing.T) {
 
 	t.Run("InvalidTOMLFile", func(t *testing.T) {
 		invalidTomlFile := filepath.Join(tmpDir, "invalid.toml")
-		err = os.WriteFile(invalidTomlFile, []byte("[invalid toml syntax"), 0644)
+		err = os.WriteFile(invalidTomlFile, []byte("[invalid toml syntax"), 0o644)
 		require.NoError(t, err)
 
 		appConfig := &AppConfig{
@@ -386,7 +386,7 @@ func TestLoader_LoadAppConfigCoverage(t *testing.T) {
 
 	// Create app config directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	err = os.MkdirAll(appsDir, 0755)
+	err = os.MkdirAll(appsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a sample app config file
@@ -407,7 +407,7 @@ fields:
     description: Font size setting
 `
 
-	err = os.WriteFile(appConfigPath, []byte(appConfigContent), 0644)
+	err = os.WriteFile(appConfigPath, []byte(appConfigContent), 0o644)
 	require.NoError(t, err)
 
 	// Test loading the app config
@@ -449,7 +449,7 @@ func TestLoader_InvalidAppConfigFile(t *testing.T) {
 
 	// Create app config directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	err = os.MkdirAll(appsDir, 0755)
+	err = os.MkdirAll(appsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create an invalid YAML app config file
@@ -459,7 +459,7 @@ path: /path/to/config.json
 format: json
 fields: [invalid yaml structure`
 
-	err = os.WriteFile(invalidAppConfigPath, []byte(invalidContent), 0644)
+	err = os.WriteFile(invalidAppConfigPath, []byte(invalidContent), 0o644)
 	require.NoError(t, err)
 
 	// Test loading invalid app config

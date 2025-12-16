@@ -79,7 +79,6 @@ func (s *ConfigService) RemoveConfiguration(app, key, value string) error {
 	return s.engine.RemoveConfiguration(app, key, value)
 }
 
-
 // ListApplications returns all available applications
 func (s *ConfigService) ListApplications() ([]string, error) {
 	s.logger.Debug("Listing applications")

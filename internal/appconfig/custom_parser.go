@@ -65,12 +65,12 @@ func WriteGhosttyConfig(configPath string, k *koanf.Koanf, originalPath string) 
 func writeConfigToFile(configPath string, data []byte) error {
 	// Ensure directory exists
 	dir := filepath.Dir(configPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// Write file
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
@@ -282,7 +282,7 @@ func readGhosttyConfigWithComments(configPath string) ([]string, map[int]string,
 func writeNewGhosttyConfig(configPath string, k *koanf.Koanf) error {
 	// Ensure directory exists
 	dir := filepath.Dir(configPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 

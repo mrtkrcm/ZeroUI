@@ -16,8 +16,10 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 )
 
-type TickMsg time.Time
-type SparklineMsg []float64
+type (
+	TickMsg      time.Time
+	SparklineMsg []float64
+)
 
 type DelightfulUIModel struct {
 	apps          []registry.AppStatus

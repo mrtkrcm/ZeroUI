@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/knadh/koanf/v2"
-	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
 )
 
@@ -31,13 +30,13 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err := os.MkdirAll(appsDir, 0755); err != nil {
+	if err := os.MkdirAll(appsDir, 0o755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
 	// Create target configs directory
 	targetDir := filepath.Join(tmpDir, "targets")
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		t.Fatalf("Failed to create targets dir: %v", err)
 	}
 
@@ -141,7 +140,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 
 		// Write app config file
 		appConfigPath := filepath.Join(appsDir, fmt.Sprintf("%s.yaml", appName))
-		if err := os.WriteFile(appConfigPath, []byte(appConfig.String()), 0644); err != nil {
+		if err := os.WriteFile(appConfigPath, []byte(appConfig.String()), 0o644); err != nil {
 			t.Fatalf("Failed to write app config: %v", err)
 		}
 
@@ -166,7 +165,7 @@ func setupLargeConfigTest(t testing.TB, numApps, fieldsPerApp int) (string, func
 		}
 		targetJSON += "\n}"
 
-		if err := os.WriteFile(targetPath, []byte(targetJSON), 0644); err != nil {
+		if err := os.WriteFile(targetPath, []byte(targetJSON), 0o644); err != nil {
 			t.Fatalf("Failed to write target config: %v", err)
 		}
 	}
@@ -220,7 +219,7 @@ func setupLargeCustomConfig(t testing.TB, numLines int) (string, func()) {
 		}
 	}
 
-	if err := os.WriteFile(configPath, []byte(content.String()), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content.String()), 0o644); err != nil {
 		t.Fatalf("Failed to write large config: %v", err)
 	}
 

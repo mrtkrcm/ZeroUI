@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 )
 
 // NewTestModel creates a model for testing with a default logger

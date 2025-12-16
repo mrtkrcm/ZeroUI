@@ -162,5 +162,7 @@ func (m *StatusBarModel) ClearMessage() {
 }
 
 // Ensure StatusBarModel implements the required interfaces
-var _ util.Model = (*StatusBarModel)(nil)
-var _ layout.Sizeable = (*StatusBarModel)(nil)
+var (
+	_ util.Model      = (*StatusBarModel)(nil)
+	_ layout.Sizeable = (*StatusBarModel)(nil)
+)

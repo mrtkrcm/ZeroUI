@@ -265,8 +265,10 @@ func BuildStringWithSeparator(separator string, parts ...string) string {
 }
 
 // Aliases for backward compatibility
-var GetBuilder = GetStringBuilder
-var PutBuilder = PutStringBuilder
+var (
+	GetBuilder = GetStringBuilder
+	PutBuilder = PutStringBuilder
+)
 
 // GetSpacer returns a string of spaces for padding
 func GetSpacer(n int) string {

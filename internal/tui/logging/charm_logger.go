@@ -90,12 +90,12 @@ func NewCharmLogger(config LoggerConfig) (*CharmLogger, error) {
 func (cl *CharmLogger) setupFileLogging(filePath string) error {
 	// Ensure the directory exists
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
 	// Open the log file
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return err
 	}

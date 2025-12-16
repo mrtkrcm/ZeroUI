@@ -22,14 +22,14 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 
 	// Small file (should pass)
 	smallFile := tempDir + "/small.yaml"
-	if err := os.WriteFile(smallFile, []byte("key: value"), 0644); err != nil {
+	if err := os.WriteFile(smallFile, []byte("key: value"), 0o644); err != nil {
 		t.Fatalf("Failed to create small file: %v", err)
 	}
 
 	// Large file (should fail)
 	largeContent := strings.Repeat("key: value\n", 200) // > 1KB
 	largeFile := tempDir + "/large.yaml"
-	if err := os.WriteFile(largeFile, []byte(largeContent), 0644); err != nil {
+	if err := os.WriteFile(largeFile, []byte(largeContent), 0o644); err != nil {
 		t.Fatalf("Failed to create large file: %v", err)
 	}
 
@@ -151,14 +151,14 @@ func TestYAMLValidator_SafeReadFile(t *testing.T) {
 	// Valid file
 	validFile := tempDir + "/valid.yaml"
 	validContent := "key: value\nother: data"
-	if err := os.WriteFile(validFile, []byte(validContent), 0644); err != nil {
+	if err := os.WriteFile(validFile, []byte(validContent), 0o644); err != nil {
 		t.Fatalf("Failed to create valid file: %v", err)
 	}
 
 	// Large file
 	largeFile := tempDir + "/large.yaml"
 	largeContent := strings.Repeat("key: value\n", 200)
-	if err := os.WriteFile(largeFile, []byte(largeContent), 0644); err != nil {
+	if err := os.WriteFile(largeFile, []byte(largeContent), 0o644); err != nil {
 		t.Fatalf("Failed to create large file: %v", err)
 	}
 

@@ -26,7 +26,7 @@ func NewValidator() *Validator {
 }
 
 // ValidateAppConfig validates an entire application configuration
-func (v *Validator) ValidateAppConfig(appName string, appConfig *config.AppConfig) *ValidationResult {
+func (v *Validator) ValidateAppConfig(appName string, appConfig *appconfig.AppConfig) *ValidationResult {
 	// Check if schema exists
 	schema, ok := v.schemas[appName]
 	if !ok {
@@ -57,7 +57,7 @@ func (v *Validator) ValidateTargetConfig(appName string, configData map[string]i
 }
 
 // validateBasic performs basic validation without a schema
-func (v *Validator) validateBasic(appConfig *config.AppConfig) *ValidationResult {
+func (v *Validator) validateBasic(appConfig *appconfig.AppConfig) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
 	// Validate using struct tags
@@ -238,7 +238,7 @@ func (v *Validator) validateGlobalRules(configData interface{}, global *GlobalRu
 	// Convert to map if it's an AppConfig
 	var data map[string]interface{}
 	switch c := configData.(type) {
-	case *config.AppConfig:
+	case *appconfig.AppConfig:
 		data = make(map[string]interface{})
 		for k, field := range c.Fields {
 			data[k] = field.Default
@@ -293,7 +293,7 @@ func (v *Validator) validateGlobalRules(configData interface{}, global *GlobalRu
 }
 
 // validateAppConfigWithSchema validates app config with full schema
-func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, schema *Schema) *ValidationResult {
+func (v *Validator) validateAppConfigWithSchema(appConfig *appconfig.AppConfig, schema *Schema) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
 	// Validate each field definition
@@ -351,7 +351,7 @@ func (v *Validator) validateAppConfigWithSchema(appConfig *config.AppConfig, sch
 }
 
 // validateAppConfigFast performs optimized validation for simple schemas
-func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *Schema) *ValidationResult {
+func (v *Validator) validateAppConfigFast(appConfig *appconfig.AppConfig, schema *Schema) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
 	// Fast path: check field types and required fields
@@ -400,7 +400,7 @@ func (v *Validator) validateAppConfigFast(appConfig *config.AppConfig, schema *S
 }
 
 // convertToValidatedAppConfig converts AppConfig to ValidatedAppConfig
-func (v *Validator) convertToValidatedAppConfig(appConfig *config.AppConfig) ValidatedAppConfig {
+func (v *Validator) convertToValidatedAppConfig(appConfig *appconfig.AppConfig) ValidatedAppConfig {
 	validated := ValidatedAppConfig{
 		Name:        appConfig.Name,
 		Path:        appConfig.Path,

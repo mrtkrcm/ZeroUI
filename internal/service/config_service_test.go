@@ -22,7 +22,7 @@ func TestConfigService_Integration(t *testing.T) {
 
 	// Create test config structure
 	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	// Create test app config
 	testAppConfig := `name: test-app
@@ -39,15 +39,15 @@ fields:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte(testAppConfig), 0644))
+	require.NoError(t, os.WriteFile(configPath, []byte(testAppConfig), 0o644))
 
 	// Create target config file
 	targetConfig := `{"theme": "dark"}`
 	targetPath := filepath.Join(tmpDir, "test-config.json")
-	require.NoError(t, os.WriteFile(targetPath, []byte(targetConfig), 0644))
+	require.NoError(t, os.WriteFile(targetPath, []byte(targetConfig), 0o644))
 
 	// Set up service components
-	configLoader, err := config.NewLoader()
+	configLoader, err := appconfig.NewLoader()
 	require.NoError(t, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
@@ -94,7 +94,7 @@ func TestConfigService_ErrorHandling(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	configLoader, err := config.NewLoader()
+	configLoader, err := appconfig.NewLoader()
 	require.NoError(t, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 
@@ -127,7 +127,7 @@ func BenchmarkConfigService_ListApplications(b *testing.B) {
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	appsDir := filepath.Join(tmpDir, ".config", "zeroui", "apps")
-	require.NoError(b, os.MkdirAll(appsDir, 0755))
+	require.NoError(b, os.MkdirAll(appsDir, 0o755))
 
 	// Create multiple test apps
 	for i := 0; i < 10; i++ {
@@ -143,10 +143,10 @@ fields:
     default: "dark"
 `
 		configPath := filepath.Join(appsDir, "test-app-"+string(rune('0'+i))+".yaml")
-		require.NoError(b, os.WriteFile(configPath, []byte(testAppConfig), 0644))
+		require.NoError(b, os.WriteFile(configPath, []byte(testAppConfig), 0o644))
 	}
 
-	configLoader, err := config.NewLoader()
+	configLoader, err := appconfig.NewLoader()
 	require.NoError(b, err)
 	configLoader.SetConfigDir(filepath.Join(tmpDir, ".config", "zeroui"))
 

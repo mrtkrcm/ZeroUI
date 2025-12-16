@@ -376,7 +376,6 @@ func TestRuntimeConfigFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			err := ExecuteContext(ctx, tt.args)
-
 			// The command should execute without error
 			if err != nil {
 				t.Errorf("Expected no error but got: %v", err)
@@ -462,7 +461,7 @@ func TestThemeInitialization(t *testing.T) {
 log-level: info
 log-format: text
 `
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 

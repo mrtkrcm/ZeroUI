@@ -47,7 +47,7 @@ func NewScreenshotComponent(captureDir string) *ScreenshotComponent {
 	}
 
 	// Ensure capture directory exists
-	if err := os.MkdirAll(captureDir, 0755); err != nil {
+	if err := os.MkdirAll(captureDir, 0o755); err != nil {
 		// Log error but don't fail - component can still function
 		fmt.Printf("Warning: Failed to create screenshot directory: %v\n", err)
 	}
@@ -136,7 +136,7 @@ func (s *ScreenshotComponent) Capture(model tea.Model, description, testName str
 func (s *ScreenshotComponent) saveScreenshot(data *ScreenshotData) error {
 	// Create test directory
 	testDir := filepath.Join(s.captureDir, data.TestName)
-	if err := os.MkdirAll(testDir, 0755); err != nil {
+	if err := os.MkdirAll(testDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create test directory: %w", err)
 	}
 
@@ -147,7 +147,7 @@ func (s *ScreenshotComponent) saveScreenshot(data *ScreenshotData) error {
 	captureName := strings.ReplaceAll(data.Description, " ", "_")
 	txtPath := filepath.Join(testDir, fmt.Sprintf("%s.txt", captureName))
 
-	if err := os.WriteFile(txtPath, []byte(yamlContent), 0644); err != nil {
+	if err := os.WriteFile(txtPath, []byte(yamlContent), 0o644); err != nil {
 		return fmt.Errorf("failed to save text file: %w", err)
 	}
 
@@ -158,7 +158,7 @@ func (s *ScreenshotComponent) saveScreenshot(data *ScreenshotData) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	if err := os.WriteFile(jsonPath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(jsonPath, jsonData, 0o644); err != nil {
 		return fmt.Errorf("failed to save JSON file: %w", err)
 	}
 

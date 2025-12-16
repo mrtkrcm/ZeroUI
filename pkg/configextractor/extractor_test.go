@@ -86,7 +86,6 @@ func TestExtractor_ExtractBatch(t *testing.T) {
 	ctx := context.Background()
 
 	results, err := extractor.ExtractBatch(ctx, apps)
-
 	// Batch extraction should not error even if some apps fail
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -271,7 +270,6 @@ func TestExtractor_StrategyPriority(t *testing.T) {
 
 	ctx := context.Background()
 	config, err := extractor.Extract(ctx, "test-app")
-
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return // Exit early if extraction failed

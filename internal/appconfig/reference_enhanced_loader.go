@@ -45,7 +45,7 @@ func NewReferenceEnhancedLoader() (*ReferenceEnhancedLoader, error) {
 
 		if !found {
 			// Create a basic configs directory as fallback
-			if err := os.MkdirAll("configs", 0755); err != nil {
+			if err := os.MkdirAll("configs", 0o755); err != nil {
 				return nil, fmt.Errorf("failed to create configs directory: %w", err)
 			}
 			configsDir = "configs"

@@ -209,5 +209,7 @@ func (m *ResponsiveHelpModel) GetBindings() []key.Binding {
 }
 
 // Ensure ResponsiveHelpModel implements the required interfaces
-var _ util.Model = (*ResponsiveHelpModel)(nil)
-var _ layout.Sizeable = (*ResponsiveHelpModel)(nil)
+var (
+	_ util.Model      = (*ResponsiveHelpModel)(nil)
+	_ layout.Sizeable = (*ResponsiveHelpModel)(nil)
+)

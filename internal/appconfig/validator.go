@@ -272,6 +272,7 @@ func (v *Validator) ValidateConfigFile(path string) error {
 // Private methods
 
 func (v *Validator) validateField(name string, value interface{}, ruleName string) error {
+	_ = name // Reserved for future use (e.g., error messages)
 	for _, rule := range v.rules {
 		if rule.Name == ruleName {
 			return rule.Check(value)

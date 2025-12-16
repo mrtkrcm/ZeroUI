@@ -277,8 +277,10 @@ func findProjectRoot() (string, error) {
 }
 
 // Binary cache for performance
-var binaryCache = make(map[string]string)
-var binaryTimestamps = make(map[string]time.Time)
+var (
+	binaryCache      = make(map[string]string)
+	binaryTimestamps = make(map[string]time.Time)
+)
 
 func getCachedBinary(key string) (string, bool) {
 	path, exists := binaryCache[key]

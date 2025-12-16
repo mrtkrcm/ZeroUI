@@ -169,7 +169,9 @@ func (m *AppSelectorModel) GetApps() []string {
 }
 
 // Ensure AppSelectorModel implements the required interfaces
-var _ util.Model = (*AppSelectorModel)(nil)
-var _ layout.Focusable = (*AppSelectorModel)(nil)
-var _ layout.Sizeable = (*AppSelectorModel)(nil)
-var _ layout.Help = (*AppSelectorModel)(nil)
+var (
+	_ util.Model       = (*AppSelectorModel)(nil)
+	_ layout.Focusable = (*AppSelectorModel)(nil)
+	_ layout.Sizeable  = (*AppSelectorModel)(nil)
+	_ layout.Help      = (*AppSelectorModel)(nil)
+)

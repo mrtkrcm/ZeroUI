@@ -8,8 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mrtkrcm/ZeroUI/internal/container"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 )
 
 // ViewState represents the view states for the app
@@ -26,9 +26,9 @@ const (
 type App struct {
 	configService *service.ConfigService
 	initialApp    string
-	program    *tea.Program
-	ctx        context.Context
-	logger     *logging.CharmLogger
+	program       *tea.Program
+	ctx           context.Context
+	logger        *logging.CharmLogger
 }
 
 // NewApp creates a new TUI application

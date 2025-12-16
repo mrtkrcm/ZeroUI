@@ -27,7 +27,7 @@ settings:
 `
 
 	configFile := filepath.Join(tempDir, "test_app.yaml")
-	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(testConfig), 0o644); err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
 
@@ -100,7 +100,7 @@ settings:
 `
 
 	configFile := filepath.Join(tempDir, "test_app.yaml")
-	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(testConfig), 0o644); err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
 
@@ -273,7 +273,7 @@ settings:
 `
 
 	configFile := filepath.Join(tempDir, "bench_app.yaml")
-	if err := os.WriteFile(configFile, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(testConfig), 0o644); err != nil {
 		b.Fatalf("Failed to create test config: %v", err)
 	}
 

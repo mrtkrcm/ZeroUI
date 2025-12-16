@@ -191,12 +191,12 @@ func testFileOperations(t *testing.T, binaryPath, testDir string) {
 	t.Run("handles read-only files gracefully", func(t *testing.T) {
 		configFile := filepath.Join(testDir, ".config", "ghostty", "config")
 		// Make config file read-only
-		err := os.Chmod(configFile, 0444)
+		err := os.Chmod(configFile, 0o444)
 		require.NoError(t, err, "Should make file read-only")
 
 		// Restore permissions after test
 		defer func() {
-			os.Chmod(configFile, 0644)
+			os.Chmod(configFile, 0o644)
 		}()
 
 		configDir := filepath.Join(testDir, ".config", "zeroui")
@@ -282,7 +282,7 @@ func testValidationEngine(t *testing.T, binaryPath, testDir string) {
 func setupTestConfigs(t *testing.T, testDir string) {
 	// Create Ghostty configuration
 	ghosttyDir := filepath.Join(testDir, ".config", "ghostty")
-	require.NoError(t, os.MkdirAll(ghosttyDir, 0755))
+	require.NoError(t, os.MkdirAll(ghosttyDir, 0o755))
 
 	ghosttyConfig := filepath.Join(ghosttyDir, "config")
 	ghosttyContent := `# Test Ghostty Configuration
@@ -301,11 +301,11 @@ background = #000000
 cursor-click-to-move = true
 copy-on-select = false
 `
-	require.NoError(t, os.WriteFile(ghosttyConfig, []byte(ghosttyContent), 0644))
+	require.NoError(t, os.WriteFile(ghosttyConfig, []byte(ghosttyContent), 0o644))
 
 	// Create ghostty app registry entry
 	appsDir := filepath.Join(testDir, ".config", "zeroui", "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	ghosttyAppConfig := `name: ghostty
 path: ` + ghosttyConfig + `
@@ -344,14 +344,14 @@ hooks:
   post-toggle: "echo 'Ghostty config updated'"
 `
 	ghosttyAppPath := filepath.Join(appsDir, "ghostty.yaml")
-	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0644))
+	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0o644))
 
 	// Create other app configs if needed (e.g., Alacritty, WezTerm)
 	// This demonstrates multi-app support testing
 
 	// Alacritty config (YAML format)
 	alacrittyDir := filepath.Join(testDir, ".config", "alacritty")
-	require.NoError(t, os.MkdirAll(alacrittyDir, 0755))
+	require.NoError(t, os.MkdirAll(alacrittyDir, 0o755))
 
 	alacrittyConfig := filepath.Join(alacrittyDir, "alacritty.yml")
 	alacrittyContent := `# Test Alacritty Configuration
@@ -373,7 +373,7 @@ colors:
 cursor:
   style: Block
 `
-	require.NoError(t, os.WriteFile(alacrittyConfig, []byte(alacrittyContent), 0644))
+	require.NoError(t, os.WriteFile(alacrittyConfig, []byte(alacrittyContent), 0o644))
 }
 
 // TestEngineErrorRecovery tests error recovery mechanisms
@@ -387,7 +387,7 @@ func TestEngineErrorRecovery(t *testing.T) {
 	t.Run("recovers from malformed configuration", func(t *testing.T) {
 		// Create malformed config
 		configDir := filepath.Join(testDir, ".config", "ghostty")
-		require.NoError(t, os.MkdirAll(configDir, 0755))
+		require.NoError(t, os.MkdirAll(configDir, 0o755))
 
 		configFile := filepath.Join(configDir, "config")
 		malformedContent := `# Malformed config
@@ -396,7 +396,7 @@ func TestEngineErrorRecovery(t *testing.T) {
 		invalid-syntax-here = = = =
 		= missing-key
 		`
-		require.NoError(t, os.WriteFile(configFile, []byte(malformedContent), 0644))
+		require.NoError(t, os.WriteFile(configFile, []byte(malformedContent), 0o644))
 
 		zerouiConfigDir := filepath.Join(testDir, ".config", "zeroui")
 		cmd := exec.Command(binaryPath, "list", "keys", "ghostty")

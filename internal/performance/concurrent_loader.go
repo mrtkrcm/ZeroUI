@@ -41,9 +41,9 @@ func (c *ConcurrentConfigLoader) LoadMultipleConfigs(ctx context.Context, config
 	resultChan := make(chan LoadResult, len(apps))
 
 	// Launch concurrent workers for each app
-	for i, app := range apps {
+	for _, app := range apps {
 		wg.Add(1)
-		go func(index int, appName string) {
+		go func(appName string) {
 			defer wg.Done()
 
 			// Acquire worker slot (rate limiting)
@@ -56,7 +56,7 @@ func (c *ConcurrentConfigLoader) LoadMultipleConfigs(ctx context.Context, config
 
 			result := c.loadSingleConfig(opCtx, configDir, appName, extensions)
 			resultChan <- result
-		}(i, app)
+		}(app)
 	}
 
 	// Close channel when all workers complete

@@ -18,7 +18,7 @@ func TestFileCache(t *testing.T) {
 	// Create a test file
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testContent := []byte("test content")
-	if err := os.WriteFile(testFile, testContent, 0644); err != nil {
+	if err := os.WriteFile(testFile, testContent, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,7 +67,7 @@ func TestFileCacheInvalidation(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	testFile := filepath.Join(tmpDir, "test.txt")
-	if err := os.WriteFile(testFile, []byte("original"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("original"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -83,7 +83,7 @@ func TestFileCacheInvalidation(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Modify the file
-	if err := os.WriteFile(testFile, []byte("modified"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("modified"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -121,7 +121,7 @@ func TestFileCacheHitRate(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	testFile := filepath.Join(tmpDir, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -153,7 +153,7 @@ func TestFileCacheCleanup(t *testing.T) {
 	files := make([]string, 3)
 	for i := range files {
 		files[i] = filepath.Join(tmpDir, string(rune('a'+i))+".txt")
-		if err := os.WriteFile(files[i], []byte("content"), 0644); err != nil {
+		if err := os.WriteFile(files[i], []byte("content"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -189,7 +189,7 @@ func BenchmarkFileCache(b *testing.B) {
 	for i := range content {
 		content[i] = byte(i % 256)
 	}
-	if err := os.WriteFile(testFile, content, 0644); err != nil {
+	if err := os.WriteFile(testFile, content, 0o644); err != nil {
 		b.Fatal(err)
 	}
 

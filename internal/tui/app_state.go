@@ -8,13 +8,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	app "github.com/mrtkrcm/ZeroUI/internal/tui/components/app"
 	display "github.com/mrtkrcm/ZeroUI/internal/tui/components/display"
 	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 	ui "github.com/mrtkrcm/ZeroUI/internal/tui/components/ui"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/keybindings"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/styles"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/util"
 )
@@ -24,13 +24,13 @@ type Model struct {
 	// Core state
 	configService *service.ConfigService
 	state         ViewState
-	stateMachine *StateMachine
-	width        int
-	height       int
-	err          error
-	ctx          context.Context
-	logger       *logging.CharmLogger
-	errorHandler *ErrorHandler
+	stateMachine  *StateMachine
+	width         int
+	height        int
+	err           error
+	ctx           context.Context
+	logger        *logging.CharmLogger
+	errorHandler  *ErrorHandler
 
 	// Modern components using unified component system
 	appList      *app.ApplicationListModel
@@ -110,13 +110,13 @@ func NewModel(configService *service.ConfigService, initialApp string, logger *l
 	model := &Model{
 		configService: configService,
 		state:         ListView,
-		stateMachine: stateMachine,
-		keyMap:       keybindings.NewAppKeyMap(),
-		styles:       appStyles,
-		theme:        theme,
-		appList:      appList,
-		appScanner:   appScanner,
-		errorHandler: errorHandler,
+		stateMachine:  stateMachine,
+		keyMap:        keybindings.NewAppKeyMap(),
+		styles:        appStyles,
+		theme:         theme,
+		appList:       appList,
+		appScanner:    appScanner,
+		errorHandler:  errorHandler,
 		// Initialize help system
 		helpSystem:       helpModel,
 		presetSel:        app.NewPresetsSelector(),
@@ -165,8 +165,8 @@ func (m *Model) Init() tea.Cmd {
 	}
 
 	// Start with scanning state
-	// We use direct assignment here or SetState? 
-	// SetState checks transitions. 
+	// We use direct assignment here or SetState?
+	// SetState checks transitions.
 	// If NewModel set FormView, FormView->ProgressView is valid.
 	// If ListView, ListView->ProgressView is valid.
 	m.SetState(ProgressView)
@@ -378,22 +378,22 @@ func (m *Model) updateComponentSizes() tea.Cmd {
 
 // SetState changes the current view state using the state machine
 func (m *Model) SetState(state ViewState) {
-    if err := m.stateMachine.Transition(state); err != nil {
-        m.logger.Warn("Invalid state transition attempted", 
-            "from", m.state, 
-            "to", state, 
-            "error", err)
-        // For now, we don't block the transition to avoid breaking things immediately,
-        // but we log it. In a stricter future version, we might return the error.
-        // However, to enforce using the state machine, we should rely on its internal state
-        // if the transition was successful.
-        // But since we just failed, we probably shouldn't update m.state if we want to be strict.
-        // Let's force it for now to maintain behavior but log the violation.
-        m.state = state
-    } else {
-        // Sync model state with state machine
-        m.state = m.stateMachine.Current()
-    }
+	if err := m.stateMachine.Transition(state); err != nil {
+		m.logger.Warn("Invalid state transition attempted",
+			"from", m.state,
+			"to", state,
+			"error", err)
+		// For now, we don't block the transition to avoid breaking things immediately,
+		// but we log it. In a stricter future version, we might return the error.
+		// However, to enforce using the state machine, we should rely on its internal state
+		// if the transition was successful.
+		// But since we just failed, we probably shouldn't update m.state if we want to be strict.
+		// Let's force it for now to maintain behavior but log the violation.
+		m.state = state
+	} else {
+		// Sync model state with state machine
+		m.state = m.stateMachine.Current()
+	}
 	m.invalidateCache()
 }
 

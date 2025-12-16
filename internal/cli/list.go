@@ -437,7 +437,7 @@ var keymapPresetsCmd = &cobra.Command{
 		if container == nil {
 			return fmt.Errorf("application container not initialized")
 		}
-		
+
 		configService := container.ConfigService()
 		return showKeymapPresets(configService, app)
 	},
@@ -566,13 +566,13 @@ func showKeymapPresets(configService *service.ConfigService, app string) error {
 
 	for _, presetName := range presetNames {
 		preset := presets[presetName]
-		
+
 		fmt.Printf("\n%s", presetName)
 		if preset.Description != "" {
 			fmt.Printf(" - %s", preset.Description)
 		}
 		fmt.Println(":")
-		
+
 		for _, keymap := range preset.Keymaps {
 			if strings.Contains(keymap, "=") {
 				parts := strings.SplitN(keymap, "=", 2)
@@ -593,7 +593,7 @@ func showKeymapPresets(configService *service.ConfigService, app string) error {
 
 func detectKeymapConflicts(configService *service.ConfigService, app string) error {
 	kmService := service.NewKeymapService(configService)
-	
+
 	conflicts, err := kmService.DetectConflicts(app)
 	if err != nil {
 		return err

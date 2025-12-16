@@ -16,7 +16,7 @@ var validateReferenceCmd = &cobra.Command{
 
 This command checks:
 - Reference config can be loaded
-- Reference config can be mapped to app config format  
+- Reference config can be mapped to app config format
 - App config and reference config can be merged
 - All settings from reference are available in the final config
 
@@ -172,24 +172,4 @@ func validateFieldStructure(mergedConfig *appconfig.AppConfig) []string {
 	}
 
 	return errors
-}
-
-func printConfigDetails(cfg *appconfig.AppConfig, title string) {
-	fmt.Printf("\n📋 %s:\n", title)
-	fmt.Printf("  Name: %s\n", cfg.Name)
-	fmt.Printf("  Path: %s\n", cfg.Path)
-	fmt.Printf("  Format: %s\n", cfg.Format)
-	fmt.Printf("  Fields: %d\n", len(cfg.Fields))
-	fmt.Printf("  Presets: %d\n", len(cfg.Presets))
-
-	if len(cfg.Fields) > 0 {
-		fmt.Printf("  Field types:\n")
-		typeCount := make(map[string]int)
-		for _, field := range cfg.Fields {
-			typeCount[field.Type]++
-		}
-		for fieldType, count := range typeCount {
-			fmt.Printf("    %s: %d\n", fieldType, count)
-		}
-	}
 }

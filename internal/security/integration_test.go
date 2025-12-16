@@ -18,7 +18,7 @@ func TestSecurityIntegration(t *testing.T) {
 
 	// Create a mock backup directory
 	backupDir := filepath.Join(tempDir, "backups")
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		t.Fatalf("Failed to create backup dir: %v", err)
 	}
 
@@ -162,7 +162,7 @@ config:
 `
 
 	testFile := filepath.Join(tempDir, "normal_config.yaml")
-	if err := os.WriteFile(testFile, []byte(normalYAMLContent), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(normalYAMLContent), 0o644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 

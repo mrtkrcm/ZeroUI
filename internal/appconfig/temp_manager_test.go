@@ -26,7 +26,7 @@ func TestTempFileManager(t *testing.T) {
 	testFile := filepath.Join(testDir, "test.json")
 	testContent := `{"key": "value"}`
 
-	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(testContent), 0o644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
@@ -60,7 +60,7 @@ func TestTempFileManager(t *testing.T) {
 	t.Run("ValidateTemp", func(t *testing.T) {
 		// Create a separate test file for this test
 		validateFile := filepath.Join(testDir, "validate.json")
-		if err := os.WriteFile(validateFile, []byte(testContent), 0644); err != nil {
+		if err := os.WriteFile(validateFile, []byte(testContent), 0o644); err != nil {
 			t.Fatalf("Failed to create validate test file: %v", err)
 		}
 
@@ -85,7 +85,7 @@ func TestTempFileManager(t *testing.T) {
 	t.Run("CommitTemp", func(t *testing.T) {
 		// Create a new test file
 		commitFile := filepath.Join(testDir, "commit.json")
-		if err := os.WriteFile(commitFile, []byte(`{"old": "data"}`), 0644); err != nil {
+		if err := os.WriteFile(commitFile, []byte(`{"old": "data"}`), 0o644); err != nil {
 			t.Fatalf("Failed to create commit test file: %v", err)
 		}
 
@@ -96,7 +96,7 @@ func TestTempFileManager(t *testing.T) {
 
 		// Modify temp file
 		newContent := `{"new": "data"}`
-		if err := os.WriteFile(tempFile.TempPath, []byte(newContent), 0644); err != nil {
+		if err := os.WriteFile(tempFile.TempPath, []byte(newContent), 0o644); err != nil {
 			t.Fatalf("Failed to write to temp file: %v", err)
 		}
 
@@ -129,7 +129,7 @@ func TestTempFileManager(t *testing.T) {
 		// Create a test file
 		rollbackFile := filepath.Join(testDir, "rollback.json")
 		originalContent := `{"original": "data"}`
-		if err := os.WriteFile(rollbackFile, []byte(originalContent), 0644); err != nil {
+		if err := os.WriteFile(rollbackFile, []byte(originalContent), 0o644); err != nil {
 			t.Fatalf("Failed to create rollback test file: %v", err)
 		}
 
@@ -139,7 +139,7 @@ func TestTempFileManager(t *testing.T) {
 		}
 
 		// Modify temp file
-		if err := os.WriteFile(tempFile.TempPath, []byte(`{"modified": "data"}`), 0644); err != nil {
+		if err := os.WriteFile(tempFile.TempPath, []byte(`{"modified": "data"}`), 0o644); err != nil {
 			t.Fatalf("Failed to write to temp file: %v", err)
 		}
 
@@ -166,7 +166,7 @@ func TestTempFileManager(t *testing.T) {
 	t.Run("ConcurrentEditPrevention", func(t *testing.T) {
 		// Create a separate test file for this test
 		concurrentFile := filepath.Join(testDir, "concurrent.json")
-		if err := os.WriteFile(concurrentFile, []byte(testContent), 0644); err != nil {
+		if err := os.WriteFile(concurrentFile, []byte(testContent), 0o644); err != nil {
 			t.Fatalf("Failed to create concurrent test file: %v", err)
 		}
 
@@ -196,7 +196,7 @@ func TestTempFileManager(t *testing.T) {
 	t.Run("CleanupStale", func(t *testing.T) {
 		// Create a separate test file for this test
 		staleFile := filepath.Join(testDir, "stale.json")
-		if err := os.WriteFile(staleFile, []byte(testContent), 0644); err != nil {
+		if err := os.WriteFile(staleFile, []byte(testContent), 0o644); err != nil {
 			t.Fatalf("Failed to create stale test file: %v", err)
 		}
 
@@ -255,7 +255,7 @@ func TestIntegrityChecker(t *testing.T) {
 	t.Run("CalculateChecksum", func(t *testing.T) {
 		testFile := filepath.Join(testDir, "checksum.txt")
 		content := "test content"
-		if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(testFile, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 
@@ -298,7 +298,7 @@ func TestIntegrityChecker(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				testFile := filepath.Join(testDir, "test"+tt.ext)
-				if err := os.WriteFile(testFile, []byte(tt.content), 0644); err != nil {
+				if err := os.WriteFile(testFile, []byte(tt.content), 0o644); err != nil {
 					t.Fatalf("Failed to create test file: %v", err)
 				}
 
@@ -321,9 +321,9 @@ func TestIntegrityChecker(t *testing.T) {
 		content1 := "same content"
 		content2 := "different content"
 
-		os.WriteFile(file1, []byte(content1), 0644)
-		os.WriteFile(file2, []byte(content1), 0644)
-		os.WriteFile(file3, []byte(content2), 0644)
+		os.WriteFile(file1, []byte(content1), 0o644)
+		os.WriteFile(file2, []byte(content1), 0o644)
+		os.WriteFile(file3, []byte(content2), 0o644)
 
 		// Same content
 		same, err := checker.CompareFiles(file1, file2)
@@ -346,7 +346,7 @@ func TestIntegrityChecker(t *testing.T) {
 
 	t.Run("IntegrityReport", func(t *testing.T) {
 		testFile := filepath.Join(testDir, "report.json")
-		if err := os.WriteFile(testFile, []byte(`{"test": "data"}`), 0644); err != nil {
+		if err := os.WriteFile(testFile, []byte(`{"test": "data"}`), 0o644); err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 

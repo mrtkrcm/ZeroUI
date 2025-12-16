@@ -26,7 +26,7 @@ func NewBackupManager() (*BackupManager, error) {
 	}
 
 	backupDir := filepath.Join(home, ".config", "configtoggle", "backups")
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return nil, errors.Wrap(errors.SystemPermission, "failed to create backup directory", err).
 			WithSuggestions("Check directory permissions")
 	}
@@ -57,7 +57,7 @@ func (bm *BackupManager) CreateBackup(configPath, appName string) (string, error
 			WithSuggestions("Check file permissions")
 	}
 
-	if err := os.WriteFile(backupPath, data, 0644); err != nil {
+	if err := os.WriteFile(backupPath, data, 0o644); err != nil {
 		return "", errors.Wrap(errors.SystemFileError, "failed to write backup", err).
 			WithSuggestions("Check disk space and permissions")
 	}
@@ -101,11 +101,11 @@ func (bm *BackupManager) RestoreBackup(backupPath, targetPath string) error {
 
 	// Ensure target directory exists
 	targetDir := filepath.Dir(targetPath)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return errors.Wrap(errors.SystemPermission, "failed to create target directory", err)
 	}
 
-	if err := os.WriteFile(targetPath, data, 0644); err != nil {
+	if err := os.WriteFile(targetPath, data, 0o644); err != nil {
 		return errors.Wrap(errors.SystemFileError, "failed to restore backup", err).
 			WithSuggestions("Check target directory permissions")
 	}
@@ -248,7 +248,7 @@ func (so *SafeOperation) Cleanup(keepCount int) error {
 func (bm *BackupManager) HealthCheck() error {
 	// Check if backup directory exists and is writable
 	if _, err := os.Stat(bm.backupDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(bm.backupDir, 0755); err != nil {
+		if err := os.MkdirAll(bm.backupDir, 0o755); err != nil {
 			return errors.Wrap(errors.SystemPermission, "backup directory not accessible", err).
 				WithSuggestions("Check directory permissions")
 		}
@@ -256,7 +256,7 @@ func (bm *BackupManager) HealthCheck() error {
 
 	// Try to write a test file to verify write permissions
 	testFile := filepath.Join(bm.backupDir, ".health_check")
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0o644); err != nil {
 		return errors.Wrap(errors.SystemPermission, "backup directory not writable", err).
 			WithSuggestions("Check directory permissions")
 	}

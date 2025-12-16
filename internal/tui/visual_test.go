@@ -25,11 +25,11 @@ func TestVisualRendering(t *testing.T) {
 		t.Skip("Skipping visual rendering tests in short mode")
 	}
 	// Create test directory
-	err := os.MkdirAll(visualTestDir, 0755)
+	err := os.MkdirAll(visualTestDir, 0o755)
 	require.NoError(t, err)
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -180,7 +180,7 @@ func TestVisualRendering(t *testing.T) {
 // TestResponsiveLayout tests that all layouts adapt correctly to different sizes
 func TestResponsiveLayout(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -244,7 +244,7 @@ func TestResponsiveLayout(t *testing.T) {
 // TestAnimationsAndTransitions tests dynamic UI elements
 func TestAnimationsAndTransitions(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -318,7 +318,7 @@ func TestAnimationsAndTransitions(t *testing.T) {
 // TestPerformance benchmarks UI rendering performance
 func TestPerformance(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -361,7 +361,7 @@ func TestPerformance(t *testing.T) {
 // TestUIKeyboardNavigation tests navigation behavior in visual context
 func TestUIKeyboardNavigation(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -422,7 +422,7 @@ func TestUIKeyboardNavigation(t *testing.T) {
 // TestErrorRecovery tests error handling and recovery
 func TestErrorRecovery(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -491,7 +491,7 @@ func saveVisualSnapshot(t *testing.T, filename, content string) {
 	t.Helper()
 
 	path := filepath.Join(visualTestDir, filename)
-	err := os.WriteFile(path, []byte(content), 0644)
+	err := os.WriteFile(path, []byte(content), 0o644)
 	if err != nil {
 		t.Logf("Warning: Could not save visual snapshot %s: %v", filename, err)
 	} else {
@@ -521,7 +521,7 @@ func TestVisualRegression(t *testing.T) {
 	// This test would compare current output with saved reference images
 	// For now, it just ensures we can generate all the visual outputs
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)

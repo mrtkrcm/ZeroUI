@@ -18,7 +18,7 @@ func TestDeterministicSpinner(t *testing.T) {
 	t.Setenv("ZEROUI_TEST_MODE", "true")
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -41,7 +41,7 @@ func TestDeterministicSpinner(t *testing.T) {
 // TestStatusToast ensures transient status is appended and then expires
 func TestStatusToast(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -69,7 +69,7 @@ func TestStatusToast(t *testing.T) {
 // TestRefreshDebounce ensures rapid refresh messages are debounced
 func TestRefreshDebounce(t *testing.T) {
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)

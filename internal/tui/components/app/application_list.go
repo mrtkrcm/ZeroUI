@@ -361,15 +361,15 @@ func (m *ApplicationListModel) RefreshFromRegistry() {
 				ConfigPath:  configPath,
 			})
 		} else {
-            // Also include apps that we know about even if not configured,
-            // so users can see what's possible
+			// Also include apps that we know about even if not configured,
+			// so users can see what's possible
 			apps = append(apps, ApplicationInfo{
 				Name:        appDef.Name,
 				Description: fmt.Sprintf("%s application", appDef.Category),
 				Status:      "Not Configured",
 				ConfigPath:  "",
 			})
-        }
+		}
 	}
 
 	// Update the list

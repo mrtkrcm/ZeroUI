@@ -94,7 +94,7 @@ func TestTUIVisualRegression(t *testing.T) {
 		t.Skip("Skipping visual regression tests (set GENERATE_TUI_IMAGES=true to enable)")
 	}
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -104,7 +104,7 @@ func TestTUIVisualRegression(t *testing.T) {
 	// Create necessary directories
 	dirs := []string{visualRegressionDir, baselineImagesDir, diffImagesDir}
 	for _, dir := range dirs {
-		require.NoError(t, os.MkdirAll(dir, 0755))
+		require.NoError(t, os.MkdirAll(dir, 0o755))
 	}
 
 	// Define visual test scenarios
@@ -238,7 +238,7 @@ func (vrt *VisualRegressionTester) runVisualRegressionTest(t *testing.T, scenari
 
 	// Save current snapshot
 	currentSnapshotPath := filepath.Join(visualRegressionDir, fmt.Sprintf("%s_current.txt", scenario.Name))
-	err = os.WriteFile(currentSnapshotPath, []byte(currentView), 0644)
+	err = os.WriteFile(currentSnapshotPath, []byte(currentView), 0o644)
 	require.NoError(t, err)
 
 	// Convert to image if enabled
@@ -264,7 +264,7 @@ func (vrt *VisualRegressionTester) runVisualRegressionTest(t *testing.T, scenari
 
 	if !baselineExists {
 		// Create new baseline
-		err = os.WriteFile(baselinePath, []byte(currentView), 0644)
+		err = os.WriteFile(baselinePath, []byte(currentView), 0o644)
 		require.NoError(t, err)
 
 		if vrt.generateImages {
@@ -500,7 +500,7 @@ func (vrt *VisualRegressionTester) generateDiffVisualization(baseline, current, 
 		}
 	}
 
-	return os.WriteFile(outputPath, []byte(diff.String()), 0644)
+	return os.WriteFile(outputPath, []byte(diff.String()), 0o644)
 }
 
 // generateVisualRegressionReport creates a summary report
@@ -529,7 +529,7 @@ func (vrt *VisualRegressionTester) generateVisualRegressionReport(t *testing.T, 
 	report.WriteString("- Baseline images: `testdata/baseline_images/`\n")
 	report.WriteString("- Diff visualizations: `testdata/diff_images/`\n\n")
 
-	err := os.WriteFile(reportPath, []byte(report.String()), 0644)
+	err := os.WriteFile(reportPath, []byte(report.String()), 0o644)
 	if err != nil {
 		t.Logf("Failed to write regression report: %v", err)
 	} else {
@@ -623,7 +623,7 @@ func TestContinuousIntegration(t *testing.T) {
 
 	// CI-specific visual tests with stricter requirements
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -654,7 +654,7 @@ func TestContinuousIntegration(t *testing.T) {
 // BenchmarkTUIRendering benchmarks TUI rendering performance
 func BenchmarkTUIRendering(b *testing.B) {
 	log := logger.Global()
-	configLoader, _ := config.NewReferenceEnhancedLoader()
+	configLoader, _ := appconfig.NewReferenceEnhancedLoader()
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
 
@@ -675,7 +675,7 @@ func BenchmarkTUIRendering(b *testing.B) {
 // BenchmarkTUIInteraction benchmarks TUI interaction handling
 func BenchmarkTUIInteraction(b *testing.B) {
 	log := logger.Global()
-	configLoader, _ := config.NewReferenceEnhancedLoader()
+	configLoader, _ := appconfig.NewReferenceEnhancedLoader()
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
 

@@ -76,7 +76,7 @@ func testCLICommands(t *testing.T, binaryPath, testDir string) {
 func testConfigurationEngine(t *testing.T, binaryPath, testDir string) {
 	// Create test config file
 	configDir := filepath.Join(testDir, ".config", "ghostty")
-	require.NoError(t, os.MkdirAll(configDir, 0755))
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
 
 	configFile := filepath.Join(configDir, "config")
 	configContent := `# Test Ghostty config
@@ -84,11 +84,11 @@ cursor-style = beam
 font-size = 12
 theme = dark
 `
-	require.NoError(t, os.WriteFile(configFile, []byte(configContent), 0644))
+	require.NoError(t, os.WriteFile(configFile, []byte(configContent), 0o644))
 
 	// Create ghostty app registry entry
 	appsDir := filepath.Join(testDir, ".config", "zeroui", "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	ghosttyAppConfig := `name: ghostty
 path: ` + configFile + `
@@ -127,7 +127,7 @@ hooks:
   post-toggle: "echo 'Ghostty config updated'"
 `
 	ghosttyAppPath := filepath.Join(appsDir, "ghostty.yaml")
-	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0644))
+	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0o644))
 
 	// Test 1: Toggle operation with existing config
 	t.Run("toggle operation modifies config correctly", func(t *testing.T) {
@@ -150,7 +150,7 @@ hooks:
 		invalidContent := `invalid syntax here =
 		malformed = = =
 		`
-		require.NoError(t, os.WriteFile(invalidConfigFile, []byte(invalidContent), 0644))
+		require.NoError(t, os.WriteFile(invalidConfigFile, []byte(invalidContent), 0o644))
 
 		// Should handle parsing errors gracefully
 		configDir := filepath.Join(testDir, ".config", "zeroui")
@@ -347,18 +347,18 @@ func TestConfigFileOperations(t *testing.T) {
 
 	// Create test config structure
 	configDir := filepath.Join(testDir, ".config", "ghostty")
-	require.NoError(t, os.MkdirAll(configDir, 0755))
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
 
 	configFile := filepath.Join(configDir, "config")
 	originalContent := `# Test config
 cursor-style = beam
 font-size = 12
 `
-	require.NoError(t, os.WriteFile(configFile, []byte(originalContent), 0644))
+	require.NoError(t, os.WriteFile(configFile, []byte(originalContent), 0o644))
 
 	// Create ghostty app registry entry
 	appsDir := filepath.Join(testDir, ".config", "zeroui", "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	ghosttyAppConfig := `name: ghostty
 path: ` + configFile + `
@@ -390,7 +390,7 @@ hooks:
   post-toggle: "echo 'Ghostty config updated'"
 `
 	ghosttyAppPath := filepath.Join(appsDir, "ghostty.yaml")
-	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0644))
+	require.NoError(t, os.WriteFile(ghosttyAppPath, []byte(ghosttyAppConfig), 0o644))
 
 	t.Run("preserves config file structure in dry-run", func(t *testing.T) {
 		configDir := filepath.Join(testDir, ".config", "zeroui")

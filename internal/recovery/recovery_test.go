@@ -21,13 +21,13 @@ func TestBackupManager_CreateBackup(t *testing.T) {
 
 	// Create test config file
 	configDir := filepath.Join(tmpDir, "config")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
 	}
 
 	configPath := filepath.Join(configDir, "test.conf")
 	configContent := "theme = dark\nfont-size = 14"
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -78,7 +78,7 @@ func TestBackupManager_RestoreBackup(t *testing.T) {
 	// Create backup file
 	backupContent := "theme = light\nfont-size = 16"
 	backupPath := filepath.Join(tmpDir, "test-backup.backup")
-	if err := os.WriteFile(backupPath, []byte(backupContent), 0644); err != nil {
+	if err := os.WriteFile(backupPath, []byte(backupContent), 0o644); err != nil {
 		t.Fatalf("Failed to write backup file: %v", err)
 	}
 
@@ -132,7 +132,7 @@ func TestBackupManager_ListBackups(t *testing.T) {
 
 	for _, backup := range backups {
 		path := filepath.Join(tmpDir, backup.name)
-		if err := os.WriteFile(path, []byte(backup.content), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(backup.content), 0o644); err != nil {
 			t.Fatalf("Failed to write backup file %s: %v", backup.name, err)
 		}
 	}
@@ -159,7 +159,7 @@ func TestBackupManager_ListBackups(t *testing.T) {
 
 	// Test empty directory
 	emptyDir := filepath.Join(tmpDir, "empty")
-	if err := os.MkdirAll(emptyDir, 0755); err != nil {
+	if err := os.MkdirAll(emptyDir, 0o755); err != nil {
 		t.Fatalf("Failed to create empty dir: %v", err)
 	}
 
@@ -188,7 +188,7 @@ func TestSafeOperation(t *testing.T) {
 	// Create original config file
 	configPath := filepath.Join(tmpDir, "config.conf")
 	originalContent := "theme = dark"
-	if err := os.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(originalContent), 0o644); err != nil {
 		t.Fatalf("Failed to write original config: %v", err)
 	}
 
@@ -200,7 +200,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Modify the file (simulating a config change)
 	newContent := "theme = light"
-	if err := os.WriteFile(configPath, []byte(newContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(newContent), 0o644); err != nil {
 		t.Fatalf("Failed to modify config: %v", err)
 	}
 
@@ -227,7 +227,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Modify the file again
 	badContent := "invalid config"
-	if err := os.WriteFile(configPath, []byte(badContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(badContent), 0o644); err != nil {
 		t.Fatalf("Failed to write bad config: %v", err)
 	}
 
@@ -270,7 +270,7 @@ func TestBackupManager_CleanupOldBackups(t *testing.T) {
 
 	for _, name := range backupNames {
 		path := filepath.Join(tmpDir, name)
-		if err := os.WriteFile(path, []byte("backup content"), 0644); err != nil {
+		if err := os.WriteFile(path, []byte("backup content"), 0o644); err != nil {
 			t.Fatalf("Failed to write backup file %s: %v", name, err)
 		}
 		// Sleep to ensure different modification times
@@ -321,7 +321,7 @@ func BenchmarkBackupManager_CreateBackup(b *testing.B) {
 	// Create test config file
 	configPath := filepath.Join(tmpDir, "test.conf")
 	configContent := "theme = dark\nfont-size = 14\nother = value"
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		b.Fatalf("Failed to write config file: %v", err)
 	}
 

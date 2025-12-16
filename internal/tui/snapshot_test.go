@@ -25,8 +25,8 @@ const SNAPSHOT_DIR = "testdata/snapshots"
 
 // File permission constants
 const (
-	DirPerm  os.FileMode = 0755 // rwxr-xr-x
-	FilePerm os.FileMode = 0644 // rw-r--r--
+	DirPerm  os.FileMode = 0o755 // rwxr-xr-x
+	FilePerm os.FileMode = 0o644 // rw-r--r--
 )
 
 // ensureDir creates a directory with proper error handling
@@ -78,7 +78,7 @@ func TestConfigurationDetection(t *testing.T) {
 	}
 
 	// Load the apps registry to test configuration detection
-	registry, err := config.LoadAppsRegistry()
+	registry, err := appconfig.LoadAppsRegistry()
 	require.NoError(t, err, "Should be able to load apps registry")
 
 	// Test specific applications
@@ -99,7 +99,7 @@ func TestSnapshotListView(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -132,7 +132,7 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -160,7 +160,7 @@ func TestSnapshotFormView(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -196,7 +196,7 @@ func TestSnapshotHelpView(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -224,7 +224,7 @@ func TestSnapshotErrorView(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -252,7 +252,7 @@ func TestSnapshotResponsiveSizes(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -313,7 +313,7 @@ func TestSnapshotComponentStates(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -398,7 +398,7 @@ func TestCoreUIFunctionality(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)
@@ -454,7 +454,7 @@ func TestUILayoutCoverage(t *testing.T) {
 	}
 
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)

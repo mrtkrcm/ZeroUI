@@ -56,7 +56,7 @@ func TestOperation_Basic(t *testing.T) {
 
 	// Create initial config file
 	initialConfig := `{"setting": "initial_value"}`
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -70,7 +70,7 @@ func TestOperation_Basic(t *testing.T) {
 	}
 
 	// Write new config
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Path:   configPath,
 		Format: "json",
 	}
@@ -117,7 +117,7 @@ func TestOperation_Rollback(t *testing.T) {
 
 	// Create initial config file
 	originalContent := `{"setting": "original_value"}`
-	if err := os.WriteFile(configPath, []byte(originalContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(originalContent), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -131,7 +131,7 @@ func TestOperation_Rollback(t *testing.T) {
 	}
 
 	// Write new config
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Path:   configPath,
 		Format: "json",
 	}
@@ -190,14 +190,14 @@ func TestReadOperation(t *testing.T) {
 
 	// Create config file
 	configContent := `{"setting1": "value1", "setting2": 42, "setting3": true}`
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
 	// Test read operation
 	readOp := manager.BeginReadOperation(configPath)
 
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Path:   configPath,
 		Format: "json",
 	}
@@ -238,7 +238,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"counter": 0}`
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -255,7 +255,7 @@ func TestConcurrentOperations(t *testing.T) {
 				readOp := manager.BeginReadOperation(configPath)
 				defer readOp.Complete()
 
-				appConfig := &config.AppConfig{
+				appConfig := &appconfig.AppConfig{
 					Path:   configPath,
 					Format: "json",
 				}
@@ -306,7 +306,7 @@ func TestConcurrentOperations(t *testing.T) {
 				mu.Unlock()
 
 				// Write the current count
-				appConfig := &config.AppConfig{
+				appConfig := &appconfig.AppConfig{
 					Path:   configPath,
 					Format: "json",
 				}
@@ -367,7 +367,7 @@ func TestTransaction(t *testing.T) {
 	// Create initial files
 	for i, configPath := range configPaths {
 		content := fmt.Sprintf(`{"id": %d, "value": "initial"}`, i+1)
-		if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to write initial config %d: %v", i+1, err)
 		}
 	}
@@ -389,7 +389,7 @@ func TestTransaction(t *testing.T) {
 
 		// Write to all files
 		for i, op := range operations {
-			appConfig := &config.AppConfig{
+			appConfig := &appconfig.AppConfig{
 				Path:   configPaths[i],
 				Format: "json",
 			}
@@ -439,7 +439,7 @@ func TestTransaction(t *testing.T) {
 
 		// Write to some files
 		for i := 0; i < 2; i++ {
-			appConfig := &config.AppConfig{
+			appConfig := &appconfig.AppConfig{
 				Path:   configPaths[i],
 				Format: "json",
 			}
@@ -492,7 +492,7 @@ func TestSafeOperation(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"status": "original"}`
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -501,7 +501,7 @@ func TestSafeOperation(t *testing.T) {
 		safeOp := manager.NewSafeOperation(configPath)
 
 		err := safeOp.Execute("test-app", func(op *Operation) error {
-			appConfig := &config.AppConfig{
+			appConfig := &appconfig.AppConfig{
 				Path:   configPath,
 				Format: "json",
 			}
@@ -512,7 +512,6 @@ func TestSafeOperation(t *testing.T) {
 
 			return op.WriteConfig(appConfig, configData)
 		})
-
 		if err != nil {
 			t.Fatalf("Safe operation failed: %v", err)
 		}
@@ -533,7 +532,7 @@ func TestSafeOperation(t *testing.T) {
 		safeOp := manager.NewSafeOperation(configPath)
 
 		err := safeOp.Execute("test-app", func(op *Operation) error {
-			appConfig := &config.AppConfig{
+			appConfig := &appconfig.AppConfig{
 				Path:   configPath,
 				Format: "json",
 			}
@@ -585,7 +584,7 @@ func TestLockManager(t *testing.T) {
 
 	// Create initial config
 	initialConfig := `{"counter": 0}`
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -607,7 +606,6 @@ func TestLockManager(t *testing.T) {
 
 			return nil
 		})
-
 		if err != nil {
 			t.Fatalf("Read lock operation failed: %v", err)
 		}
@@ -620,7 +618,7 @@ func TestLockManager(t *testing.T) {
 	// Test write lock
 	t.Run("Write lock", func(t *testing.T) {
 		err := lockManager.WithWriteLock(configPath, "test-app", func(op *Operation) error {
-			appConfig := &config.AppConfig{
+			appConfig := &appconfig.AppConfig{
 				Path:   configPath,
 				Format: "json",
 			}
@@ -631,7 +629,6 @@ func TestLockManager(t *testing.T) {
 
 			return op.WriteConfig(appConfig, configData)
 		})
-
 		if err != nil {
 			t.Fatalf("Write lock operation failed: %v", err)
 		}

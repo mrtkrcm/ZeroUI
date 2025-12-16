@@ -19,7 +19,7 @@ background-opacity = 0.9
 window-decoration = false`
 
 		configPath := filepath.Join(tempDir, "basic.conf")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create config file: %v", err)
 		}
@@ -50,7 +50,7 @@ keybind = ctrl+shift+c=copy_html
 mouse-click-bindings = 1,2,3`
 
 		configPath := filepath.Join(tempDir, "multi.conf")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create config file: %v", err)
 		}
@@ -89,7 +89,7 @@ window-padding-y = 5
 # Empty line above`
 
 		configPath := filepath.Join(tempDir, "comments.conf")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create config file: %v", err)
 		}
@@ -123,7 +123,7 @@ empty-value =
 no-value`
 
 		configPath := filepath.Join(tempDir, "edge.conf")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create config file: %v", err)
 		}
@@ -198,7 +198,7 @@ mouse-shift-capture = true
 mouse-scroll-multiplier = 1.0`
 
 		configPath := filepath.Join(tempDir, "large.conf")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create config file: %v", err)
 		}
@@ -239,7 +239,7 @@ window-padding-y = 10
 background-opacity = 0.9`
 
 	configPath := filepath.Join(tempDir, "bench.conf")
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o644)
 	if err != nil {
 		b.Fatalf("Failed to create config file: %v", err)
 	}

@@ -53,8 +53,8 @@ const (
 type AutomatedRenderingTest struct {
 	configService *service.ConfigService
 	scenarios     []TestScenario
-	baselines  map[string]string // scenario -> hash
-	updateMode bool              // whether to update baselines
+	baselines     map[string]string // scenario -> hash
+	updateMode    bool              // whether to update baselines
 }
 
 // Types are now defined in automation_framework.go to avoid duplication
@@ -67,7 +67,7 @@ func TestAutomatedTUIRendering(t *testing.T) {
 	// Initialize test framework
 	// We need ConfigService now, so we need config loader and logger
 	log := logger.Global() // tests run with global logger
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 
 	engine := toggle.NewEngineWithDeps(configLoader, log)
@@ -236,9 +236,9 @@ func TestAutomatedTUIRendering(t *testing.T) {
 	}
 
 	// Create test directories
-	require.NoError(t, os.MkdirAll(automatedTestDir, 0755))
-	require.NoError(t, os.MkdirAll(baselineDir, 0755))
-	require.NoError(t, os.MkdirAll(diffDir, 0755))
+	require.NoError(t, os.MkdirAll(automatedTestDir, 0o755))
+	require.NoError(t, os.MkdirAll(baselineDir, 0o755))
+	require.NoError(t, os.MkdirAll(diffDir, 0o755))
 
 	// Load existing baselines
 	err = tester.loadBaselines()
@@ -482,7 +482,7 @@ func (art *AutomatedRenderingTest) createDiff(t *testing.T, scenarioName, actual
 		}
 	}
 
-	err := os.WriteFile(diffPath, []byte(diff.String()), 0644)
+	err := os.WriteFile(diffPath, []byte(diff.String()), 0o644)
 	if err != nil {
 		t.Logf("Failed to write diff file: %v", err)
 	}
@@ -491,7 +491,7 @@ func (art *AutomatedRenderingTest) createDiff(t *testing.T, scenarioName, actual
 // saveSnapshot saves a snapshot to the automated test directory
 func (art *AutomatedRenderingTest) saveSnapshot(t *testing.T, filename, snapshot string) {
 	path := filepath.Join(automatedTestDir, filename)
-	err := os.WriteFile(path, []byte(snapshot), 0644)
+	err := os.WriteFile(path, []byte(snapshot), 0o644)
 	if err != nil {
 		t.Logf("Failed to save snapshot %s: %v", filename, err)
 	}
@@ -550,9 +550,9 @@ func TestTUIRenderingCorrectness(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping rendering correctness tests in short mode")
 	}
-	
+
 	log := logger.Global()
-	configLoader, err := config.NewReferenceEnhancedLoader()
+	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
 	engine := toggle.NewEngineWithDeps(configLoader, log)
 	configService := service.NewConfigService(engine, configLoader, log)

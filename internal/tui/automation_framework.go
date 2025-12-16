@@ -12,20 +12,20 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
+	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 )
 
 // AutomationFramework provides comprehensive TUI testing automation
 type AutomationFramework struct {
 	configService *service.ConfigService
 	testSuites    map[string]*TestSuite
-	results    *TestResults
-	config     *AutomationConfig
-	logger     *log.Logger
-	watchMode  bool
-	reportPath string
-	mu         sync.RWMutex
+	results       *TestResults
+	config        *AutomationConfig
+	logger        *log.Logger
+	watchMode     bool
+	reportPath    string
+	mu            sync.RWMutex
 }
 
 // AutomationConfig configures the testing framework
@@ -610,7 +610,7 @@ func (af *AutomationFramework) generateReports() error {
 	timestamp := time.Now().Format("20060102-150405")
 	reportDir := fmt.Sprintf("testdata/reports/%s", timestamp)
 
-	if err := os.MkdirAll(reportDir, 0755); err != nil {
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
 		return err
 	}
 

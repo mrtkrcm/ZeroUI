@@ -18,7 +18,7 @@ func setupTestEngine(t testing.TB) (*Engine, string, func()) {
 
 	// Create apps directory
 	appsDir := filepath.Join(tmpDir, "apps")
-	if err := os.MkdirAll(appsDir, 0755); err != nil {
+	if err := os.MkdirAll(appsDir, 0o755); err != nil {
 		t.Fatalf("Failed to create apps dir: %v", err)
 	}
 
@@ -68,13 +68,13 @@ hooks:
 `
 
 	configPath := filepath.Join(appsDir, "test-app.yaml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	// Create test target config file
 	targetDir := filepath.Join(tmpDir, "target")
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		t.Fatalf("Failed to create target dir: %v", err)
 	}
 
@@ -85,7 +85,7 @@ hooks:
   "debug": false
 }`
 
-	if err := os.WriteFile(targetConfigPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetConfigPath, []byte(targetConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write target config: %v", err)
 	}
 
@@ -134,7 +134,7 @@ hooks:
   post-toggle: "echo 'Config updated'"
 `
 
-	if err := os.WriteFile(configPath, []byte(updatedConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(updatedConfig), 0o644); err != nil {
 		t.Fatalf("Failed to update test config: %v", err)
 	}
 
@@ -498,14 +498,14 @@ env:
 `
 
 	hookConfigPath := filepath.Join(appsDir, "hook-test.yaml")
-	if err := os.WriteFile(hookConfigPath, []byte(configWithHooks), 0644); err != nil {
+	if err := os.WriteFile(hookConfigPath, []byte(configWithHooks), 0o644); err != nil {
 		t.Fatalf("Failed to write hook config: %v", err)
 	}
 
 	// Create target config
 	targetConfig := `{"theme": "dark"}`
 	targetPath := filepath.Join(tmpDir, "hook-appconfig.json")
-	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write hook target config: %v", err)
 	}
 
@@ -542,13 +542,13 @@ hooks:
 `
 
 		badHookConfigPath := filepath.Join(appsDir, "bad-hook-test.yaml")
-		if err := os.WriteFile(badHookConfigPath, []byte(configWithBadHook), 0644); err != nil {
+		if err := os.WriteFile(badHookConfigPath, []byte(configWithBadHook), 0o644); err != nil {
 			t.Fatalf("Failed to write bad hook config: %v", err)
 		}
 
 		badTargetConfig := `{"theme": "dark"}`
 		badTargetPath := filepath.Join(tmpDir, "bad-hook-appconfig.json")
-		if err := os.WriteFile(badTargetPath, []byte(badTargetConfig), 0644); err != nil {
+		if err := os.WriteFile(badTargetPath, []byte(badTargetConfig), 0o644); err != nil {
 			t.Fatalf("Failed to write bad hook target config: %v", err)
 		}
 
@@ -628,14 +628,14 @@ fields:
 `
 
 	singleConfigPath := filepath.Join(appsDir, "single-value-test.yaml")
-	if err := os.WriteFile(singleConfigPath, []byte(singleValueConfig), 0644); err != nil {
+	if err := os.WriteFile(singleConfigPath, []byte(singleValueConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write single value config: %v", err)
 	}
 
 	// Create target config
 	targetConfig := `{"single-choice": "only-option", "no-values": "some-value"}`
 	targetPath := filepath.Join(tmpDir, "single-appconfig.json")
-	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write single target config: %v", err)
 	}
 
@@ -684,14 +684,14 @@ presets:
 `
 
 	unknownConfigPath := filepath.Join(appsDir, "unknown-field-test.yaml")
-	if err := os.WriteFile(unknownConfigPath, []byte(unknownFieldConfig), 0644); err != nil {
+	if err := os.WriteFile(unknownConfigPath, []byte(unknownFieldConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write unknown field config: %v", err)
 	}
 
 	// Create target config
 	targetConfig := `{"theme": "dark"}`
 	targetPath := filepath.Join(tmpDir, "unknown-appconfig.json")
-	if err := os.WriteFile(targetPath, []byte(targetConfig), 0644); err != nil {
+	if err := os.WriteFile(targetPath, []byte(targetConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write unknown target config: %v", err)
 	}
 

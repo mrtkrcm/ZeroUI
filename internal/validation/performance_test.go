@@ -11,12 +11,12 @@ func TestOptimizedVsUnoptimizedValidation(t *testing.T) {
 	validator := NewValidator()
 
 	// Create test data
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Name:        "test-app",
 		Path:        "/path/to/config",
 		Format:      "json",
 		Description: "Test application",
-		Fields: map[string]config.FieldConfig{
+		Fields: map[string]appconfig.FieldConfig{
 			"username": {
 				Type:        "string",
 				Default:     "testuser",
@@ -104,12 +104,12 @@ func TestOptimizedVsUnoptimizedValidation(t *testing.T) {
 func BenchmarkValidatorOptimized(b *testing.B) {
 	validator := NewValidator()
 
-	appConfig := &config.AppConfig{
+	appConfig := &appconfig.AppConfig{
 		Name:        "optimized-test",
 		Path:        "/path/to/config",
 		Format:      "json",
 		Description: "Optimized test application",
-		Fields: map[string]config.FieldConfig{
+		Fields: map[string]appconfig.FieldConfig{
 			"setting1": {Type: "string", Default: "value1"},
 			"setting2": {Type: "number", Default: 42},
 			"setting3": {Type: "boolean", Default: true},

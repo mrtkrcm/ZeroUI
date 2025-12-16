@@ -22,7 +22,7 @@ func TestIntegration_Ghostty_SaveOnlyChanges(t *testing.T) {
 
 	// Build a minimal apps schema dir
 	appsDir := filepath.Join(tmpDir, "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	ghosttySchema := `name: ghostty
 path: ` + filepath.Join(tmpDir, "ghostty.conf") + `
@@ -38,12 +38,12 @@ fields:
     type: string
     description: Theme
 `
-	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(ghosttySchema), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(ghosttySchema), 0o644))
 
 	// Original target config with only font-family defined
 	original := "font-family = SF Mono\n"
 	targetPath := filepath.Join(tmpDir, "ghostty.conf")
-	require.NoError(t, os.WriteFile(targetPath, []byte(original), 0644))
+	require.NoError(t, os.WriteFile(targetPath, []byte(original), 0o644))
 
 	// Create a loader rooted at tmpDir
 	loader, err := cfg.NewLoader()
@@ -85,7 +85,7 @@ func TestIntegration_Ghostty_SanitizeAndSkipInvalid(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	appsDir := filepath.Join(tmpDir, "apps")
-	require.NoError(t, os.MkdirAll(appsDir, 0755))
+	require.NoError(t, os.MkdirAll(appsDir, 0o755))
 
 	ghosttySchema := `name: ghostty
 path: ` + filepath.Join(tmpDir, "ghostty.conf") + `
@@ -98,11 +98,11 @@ fields:
   keybind-33:
     type: string
 `
-	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(ghosttySchema), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appsDir, "ghostty.yaml"), []byte(ghosttySchema), 0o644))
 
 	original := "palette-117 = #87d7d7\nkeybind-31 = super+ctrl+left=resize_split:left\nkeybind-33 = super+ctrl+up=resize_split:up\n"
 	targetPath := filepath.Join(tmpDir, "ghostty.conf")
-	require.NoError(t, os.WriteFile(targetPath, []byte(original), 0644))
+	require.NoError(t, os.WriteFile(targetPath, []byte(original), 0o644))
 
 	loader, err := cfg.NewLoader()
 	require.NoError(t, err)
