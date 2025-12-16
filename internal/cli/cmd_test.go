@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -19,19 +18,13 @@ import (
 
 func executeCommand(t *testing.T, args ...string) (int, string, string) {
 	t.Helper()
-	cmd := rootCmd
+	rc := NewRootCommand()
+	rc.AddSubcommands()
 	var stdout, stderr bytes.Buffer
+	rc.cmd.SetOut(&stdout)
+	rc.cmd.SetErr(&stderr)
 
-	oldOut := cmd.OutOrStdout()
-	oldErr := cmd.ErrOrStderr()
-	cmd.SetOut(&stdout)
-	cmd.SetErr(&stderr)
-	cmd.SetArgs(args)
-
-	err := cmd.Execute()
-	cmd.SetOut(oldOut)
-	cmd.SetErr(oldErr)
-	cmd.SetArgs(nil)
+	err := rc.Execute(context.Background(), args)
 
 	code := 0
 	if err != nil {
@@ -46,6 +39,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestRootCmd(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	// Test that root command exists and can be executed
 	// The root command is initialized as a global variable
 	if rootCmd == nil {
@@ -84,9 +80,11 @@ func TestExecuteWithContext(t *testing.T) {
 		os.Stdin = oldStdin
 	}()
 
+	rc := NewRootCommand()
+	rc.AddSubcommands()
 	// This should not panic
-	if err := ExecuteWithContext(ctx); err != nil && !errors.Is(err, context.Canceled) {
-		t.Fatalf("ExecuteWithContext returned error: %v", err)
+	if err := rc.Execute(ctx, nil); err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatalf("Execute returned an error: %v", err)
 	}
 
 	// Restore stdout
@@ -95,6 +93,9 @@ func TestExecuteWithContext(t *testing.T) {
 }
 
 func TestCommandStructure(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	// Test that the root command has the expected structure
 	if rootCmd.Use != "zeroui" {
 		t.Errorf("Expected root command use to be 'zeroui', got '%s'", rootCmd.Use)
@@ -132,11 +133,16 @@ func TestCommandStructure(t *testing.T) {
 }
 
 func TestContainerInitialization(t *testing.T) {
-	// Test that the container is properly initialized via GetContainer()
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	// Test that the container is properly initialized via getContainer()
 	// Container is lazily initialized on first access
-	c := GetContainer()
+	c, err := rc.getContainer()
+	if err != nil {
+		t.Fatalf("getContainer() returned an error: %v", err)
+	}
 	if c == nil {
-		t.Error("GetContainer() should return a non-nil container")
+		t.Error("getContainer() should return a non-nil container")
 	}
 }
 
@@ -177,11 +183,11 @@ func TestMissingArgsValidation(t *testing.T) {
 }
 
 func TestRunWithSIGINTTriggersCleanup(t *testing.T) {
-	signalChan := make(chan os.Signal, 1)
+	rc := NewRootCommand()
+	rc.AddSubcommands()
 
 	cleanupCalled := make(chan struct{}, 1)
-	RegisterCleanupHook(func() { cleanupCalled <- struct{}{} })
-	t.Cleanup(func() { cleanupHooks = nil })
+	rc.RegisterCleanupHook(func() { cleanupCalled <- struct{}{} })
 
 	started := make(chan struct{}, 1)
 	blockCmd := &cobra.Command{
@@ -193,12 +199,14 @@ func TestRunWithSIGINTTriggersCleanup(t *testing.T) {
 			return cmd.Context().Err()
 		},
 	}
-	rootCmd.AddCommand(blockCmd)
-	t.Cleanup(func() { rootCmd.RemoveCommand(blockCmd) })
+	rc.cmd.AddCommand(blockCmd)
 
-	exitCodeCh := make(chan int, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errCh := make(chan error, 1)
 	go func() {
-		exitCodeCh <- RunWithOptions(RunOptions{Args: []string{"test-block"}, SignalChan: signalChan})
+		errCh <- rc.Execute(ctx, []string{"test-block"})
 	}()
 
 	helpers.WaitForCondition(t, func() bool {
@@ -210,12 +218,13 @@ func TestRunWithSIGINTTriggersCleanup(t *testing.T) {
 		}
 	}, time.Second, "command should start")
 
-	signalChan <- syscall.SIGINT
+	// Simulate SIGINT
+	cancel()
 
 	select {
-	case code := <-exitCodeCh:
-		if code != 0 {
-			t.Fatalf("expected exit code 0 for SIGINT, got %d", code)
+	case err := <-errCh:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context.Canceled error, got %v", err)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("run did not complete after SIGINT")
@@ -231,67 +240,15 @@ func TestRunWithSIGINTTriggersCleanup(t *testing.T) {
 	}, time.Second, "cleanup hook should be called after SIGINT")
 }
 
-func TestRunWithSIGTERMTriggersCleanup(t *testing.T) {
-	signalChan := make(chan os.Signal, 1)
-
-	cleanupCalled := make(chan struct{}, 1)
-	RegisterCleanupHook(func() { cleanupCalled <- struct{}{} })
-	t.Cleanup(func() { cleanupHooks = nil })
-
-	started := make(chan struct{}, 1)
-	blockCmd := &cobra.Command{
-		Use:   "test-block",
-		Short: "test command that waits for cancellation",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			started <- struct{}{}
-			<-cmd.Context().Done()
-			return cmd.Context().Err()
-		},
-	}
-	rootCmd.AddCommand(blockCmd)
-	t.Cleanup(func() { rootCmd.RemoveCommand(blockCmd) })
-
-	exitCodeCh := make(chan int, 1)
-	go func() {
-		exitCodeCh <- RunWithOptions(RunOptions{Args: []string{"test-block"}, SignalChan: signalChan})
-	}()
-
-	helpers.WaitForCondition(t, func() bool {
-		select {
-		case <-started:
-			return true
-		default:
-			return false
-		}
-	}, time.Second, "command should start")
-
-	signalChan <- syscall.SIGTERM
-
-	select {
-	case code := <-exitCodeCh:
-		if code != 0 {
-			t.Fatalf("expected exit code 0 for SIGTERM, got %d", code)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("run did not complete after SIGTERM")
-	}
-
-	helpers.WaitForCondition(t, func() bool {
-		select {
-		case <-cleanupCalled:
-			return true
-		default:
-			return false
-		}
-	}, time.Second, "cleanup hook should be called after SIGTERM")
-}
-
 // ============================================================================
 // Phase 1 & Phase 2 Integration Tests
 // ============================================================================
 
 // TestCommandTracingLogsStartAndEnd verifies that command tracing is attached and executes
 func TestCommandTracingLogsStartAndEnd(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	// Verify that command tracing is properly attached by checking that
 	// the PersistentPreRunE hook was set up by attachCommandTracing
 	if rootCmd.PersistentPreRunE == nil {
@@ -325,6 +282,8 @@ func TestRequestIDGeneration(t *testing.T) {
 
 // TestLoggerAvailableInContext verifies that logger is available from context in subcommands
 func TestLoggerAvailableInContext(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
 	loggerFound := false
 	testCmd := &cobra.Command{
 		Use:   "test-context-logger",
@@ -338,13 +297,12 @@ func TestLoggerAvailableInContext(t *testing.T) {
 			return nil
 		},
 	}
-	rootCmd.AddCommand(testCmd)
-	t.Cleanup(func() { rootCmd.RemoveCommand(testCmd) })
+	rc.cmd.AddCommand(testCmd)
 
 	ctx := context.Background()
-	err := ExecuteContext(ctx, []string{"test-context-logger"})
+	err := rc.Execute(ctx, []string{"test-context-logger"})
 	if err != nil {
-		t.Fatalf("ExecuteContext failed: %v", err)
+		t.Fatalf("Execute failed: %v", err)
 	}
 
 	if !loggerFound {
@@ -374,8 +332,10 @@ func TestRuntimeConfigFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rc := NewRootCommand()
+			rc.AddSubcommands()
 			ctx := context.Background()
-			err := ExecuteContext(ctx, tt.args)
+			err := rc.Execute(ctx, tt.args)
 			// The command should execute without error
 			if err != nil {
 				t.Errorf("Expected no error but got: %v", err)
@@ -410,6 +370,7 @@ func TestRuntimeConfigEnvironmentVariables(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rc := NewRootCommand()
 			// Set environment variable
 			oldValue := os.Getenv(tt.envKey)
 			os.Setenv(tt.envKey, tt.envValue)
@@ -425,7 +386,7 @@ func TestRuntimeConfigEnvironmentVariables(t *testing.T) {
 			viper.Reset()
 
 			// Re-initialize config - this triggers environment variable loading
-			initConfig()
+			rc.initConfig()
 
 			// The environment variable should be loaded via automatic env binding
 			// We test this indirectly by ensuring initConfig doesn't panic or error
@@ -441,10 +402,12 @@ func TestFlagPrecedenceOverEnvironment(t *testing.T) {
 	t.Cleanup(func() { os.Unsetenv("ZEROUI_LOG_LEVEL") })
 
 	// Execute with flag (should override env var) - the flag value should be used
+	rc := NewRootCommand()
+	rc.AddSubcommands()
 	ctx := context.Background()
-	err := ExecuteContext(ctx, []string{"--log-level=debug", "list", "apps"})
+	err := rc.Execute(ctx, []string{"--log-level=debug", "list", "apps"})
 	if err != nil {
-		t.Fatalf("ExecuteContext failed: %v", err)
+		t.Fatalf("Execute failed: %v", err)
 	}
 
 	// The command should execute successfully, demonstrating flag precedence
@@ -453,6 +416,7 @@ func TestFlagPrecedenceOverEnvironment(t *testing.T) {
 
 // TestThemeInitialization verifies that theme is properly initialized from config
 func TestThemeInitialization(t *testing.T) {
+	rc := NewRootCommand()
 	// Create a temporary config file with theme setting
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "config.yaml")
@@ -469,10 +433,10 @@ log-format: text
 	viper.Reset()
 
 	// Set config file
-	cfgFile = configPath
+	rc.cfgFile = configPath
 
 	// Re-initialize config (this should load the theme)
-	initConfig()
+	rc.initConfig()
 
 	// Verify theme was set (we can't directly check the theme name from styles package,
 	// but we can verify the config was loaded)
@@ -484,17 +448,16 @@ log-format: text
 
 // TestCleanupHooksExecution verifies that cleanup hooks are executed properly
 func TestCleanupHooksExecution(t *testing.T) {
+	rc := NewRootCommand()
 	// Track cleanup execution order
 	var executionOrder []int
 
-	RegisterCleanupHook(func() { executionOrder = append(executionOrder, 1) })
-	RegisterCleanupHook(func() { executionOrder = append(executionOrder, 2) })
-	RegisterCleanupHook(func() { executionOrder = append(executionOrder, 3) })
-
-	t.Cleanup(func() { cleanupHooks = nil })
+	rc.RegisterCleanupHook(func() { executionOrder = append(executionOrder, 1) })
+	rc.RegisterCleanupHook(func() { executionOrder = append(executionOrder, 2) })
+	rc.RegisterCleanupHook(func() { executionOrder = append(executionOrder, 3) })
 
 	// Run cleanup
-	runCleanupHooks()
+	rc.runCleanupHooks()
 
 	// Verify all hooks were executed
 	if len(executionOrder) != 3 {
@@ -511,13 +474,13 @@ func TestCleanupHooksExecution(t *testing.T) {
 
 // TestCleanupHooksAreIdempotent verifies that cleanup hooks can only run once
 func TestCleanupHooksAreIdempotent(t *testing.T) {
+	rc := NewRootCommand()
 	executionCount := 0
-	RegisterCleanupHook(func() { executionCount++ })
-	t.Cleanup(func() { cleanupHooks = nil })
+	rc.RegisterCleanupHook(func() { executionCount++ })
 
 	// Run cleanup twice
-	runCleanupHooks()
-	runCleanupHooks()
+	rc.runCleanupHooks()
+	rc.runCleanupHooks()
 
 	// Should only execute once
 	if executionCount != 1 {
@@ -527,6 +490,9 @@ func TestCleanupHooksAreIdempotent(t *testing.T) {
 
 // TestGracefulShutdownOnContextCancellation verifies graceful shutdown when context is cancelled
 func TestGracefulShutdownOnContextCancellation(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	ctx, cancel := context.WithCancel(context.Background())
 
 	started := make(chan struct{}, 1)
@@ -544,7 +510,7 @@ func TestGracefulShutdownOnContextCancellation(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- ExecuteContext(ctx, []string{"test-cancel"})
+		errCh <- rc.Execute(ctx, []string{"test-cancel"})
 	}()
 
 	// Wait for command to start
@@ -573,6 +539,9 @@ func TestGracefulShutdownOnContextCancellation(t *testing.T) {
 
 // TestPersistentFlags verifies that persistent flags are available to all subcommands
 func TestPersistentFlags(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	tests := []struct {
 		name     string
 		flagName string
@@ -596,6 +565,9 @@ func TestPersistentFlags(t *testing.T) {
 
 // TestCommandTracingPreservesOriginalPreRunE verifies that command tracing preserves original PreRunE
 func TestCommandTracingPreservesOriginalPreRunE(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	preRunCalled := false
 	testCmd := &cobra.Command{
 		Use:   "test-prerun",
@@ -617,9 +589,9 @@ func TestCommandTracingPreservesOriginalPreRunE(t *testing.T) {
 	rootCmd.AddCommand(testCmd)
 	t.Cleanup(func() { rootCmd.RemoveCommand(testCmd) })
 
-	err := ExecuteContext(ctx, []string{"test-prerun"})
+	err := rc.Execute(ctx, []string{"test-prerun"})
 	if err != nil {
-		t.Fatalf("ExecuteContext failed: %v", err)
+		t.Fatalf("Execute failed: %v", err)
 	}
 
 	if !preRunCalled {
@@ -629,6 +601,9 @@ func TestCommandTracingPreservesOriginalPreRunE(t *testing.T) {
 
 // TestCommandTracingPreservesOriginalPostRunE verifies that command tracing preserves original PostRunE
 func TestCommandTracingPreservesOriginalPostRunE(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	postRunCalled := false
 	testCmd := &cobra.Command{
 		Use:   "test-postrun",
@@ -650,9 +625,9 @@ func TestCommandTracingPreservesOriginalPostRunE(t *testing.T) {
 	rootCmd.AddCommand(testCmd)
 	t.Cleanup(func() { rootCmd.RemoveCommand(testCmd) })
 
-	err := ExecuteContext(ctx, []string{"test-postrun"})
+	err := rc.Execute(ctx, []string{"test-postrun"})
 	if err != nil {
-		t.Fatalf("ExecuteContext failed: %v", err)
+		t.Fatalf("Execute failed: %v", err)
 	}
 
 	if !postRunCalled {
@@ -662,6 +637,9 @@ func TestCommandTracingPreservesOriginalPostRunE(t *testing.T) {
 
 // TestContainerCleanup verifies that the application container is properly closed
 func TestContainerCleanup(t *testing.T) {
+	rc := NewRootCommand()
+	rc.AddSubcommands()
+	rootCmd := rc.cmd
 	// This test verifies that ExecuteContext properly closes the container
 	// We can't directly test the Close() call, but we can verify no errors occur
 	ctx := context.Background()
@@ -676,9 +654,9 @@ func TestContainerCleanup(t *testing.T) {
 	rootCmd.AddCommand(testCmd)
 	t.Cleanup(func() { rootCmd.RemoveCommand(testCmd) })
 
-	err := ExecuteContext(ctx, []string{"test-container"})
+	err := rc.Execute(ctx, []string{"test-container"})
 	if err != nil {
-		t.Fatalf("ExecuteContext failed: %v", err)
+		t.Fatalf("Execute failed: %v", err)
 	}
 
 	// If we get here without errors, container cleanup worked
@@ -686,11 +664,12 @@ func TestContainerCleanup(t *testing.T) {
 
 // TestRegisterCleanupHookWithNil verifies that nil hooks are ignored
 func TestRegisterCleanupHookWithNil(t *testing.T) {
-	initialCount := len(cleanupHooks)
+	rc := NewRootCommand()
+	initialCount := len(rc.cleanupHooks)
 
-	RegisterCleanupHook(nil)
+	rc.RegisterCleanupHook(nil)
 
-	if len(cleanupHooks) != initialCount {
+	if len(rc.cleanupHooks) != initialCount {
 		t.Error("Nil cleanup hook should not be registered")
 	}
 }

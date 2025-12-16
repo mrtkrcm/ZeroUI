@@ -6,15 +6,16 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mrtkrcm/ZeroUI/internal/container"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list <type> [app]",
-	Short: "List available apps, presets, keys, values, or changed settings",
-	Long: `List available applications, presets for an app, UI configurable keys,
+func newListCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list <type> [app]",
+		Short: "List available apps, presets, keys, values, or changed settings",
+		Long: `List available applications, presets for an app, UI configurable keys,
 current configuration values, or changed settings.
 
 Examples:
@@ -23,60 +24,65 @@ Examples:
   zeroui list keys ghostty
   zeroui list values ghostty
   zeroui list changed ghostty`,
-	Example: `  zeroui list apps
+		Example: `  zeroui list apps
   zeroui list presets ghostty
   zeroui list keys ghostty
   zeroui list values ghostty
   zeroui list changed ghostty`,
-	Args: cobra.RangeArgs(1, 2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		listType := args[0]
-		var app string
-		if len(args) > 1 {
-			app = args[1]
-		}
+		Args: cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			listType := args[0]
+			var app string
+			if len(args) > 1 {
+				app = args[1]
+			}
 
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
 
-		configService := container.ConfigService()
+			configService := container.ConfigService()
 
-		switch listType {
-		case "apps":
-			return listApps(configService)
-		case "presets":
-			if app == "" {
-				return fmt.Errorf("app name required for listing presets")
+			switch listType {
+			case "apps":
+				return listApps(configService)
+			case "presets":
+				if app == "" {
+					return fmt.Errorf("app name required for listing presets")
+				}
+				return listPresets(configService, app)
+			case "keys":
+				if app == "" {
+					return fmt.Errorf("app name required for listing keys")
+				}
+				return listKeys(configService, app)
+			case "values":
+				if app == "" {
+					return fmt.Errorf("app name required for listing values")
+				}
+				return listCurrentValues(configService, app)
+			case "changed":
+				if app == "" {
+					return fmt.Errorf("app name required for listing changed values")
+				}
+				return listChangedValues(configService, app)
+			default:
+				return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys, values, changed)", listType)
 			}
-			return listPresets(configService, app)
-		case "keys":
-			if app == "" {
-				return fmt.Errorf("app name required for listing keys")
-			}
-			return listKeys(configService, app)
-		case "values":
-			if app == "" {
-				return fmt.Errorf("app name required for listing values")
-			}
-			return listCurrentValues(configService, app)
-		case "changed":
-			if app == "" {
-				return fmt.Errorf("app name required for listing changed values")
-			}
-			return listChangedValues(configService, app)
-		default:
-			return fmt.Errorf("invalid list type: %s (valid: apps, presets, keys, values, changed)", listType)
-		}
-	},
+		},
+	}
+	return cmd
 }
 
-// keymapCmd represents the keymap command
-var keymapCmd = &cobra.Command{
-	Use:   "keymap",
-	Short: "Manage keyboard shortcuts and keymaps for applications",
-	Long: `Manage keyboard shortcuts and keymaps across different applications.
+func newKeymapCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	keymapCmd := &cobra.Command{
+		Use:   "keymap",
+		Short: "Manage keyboard shortcuts and keymaps for applications",
+		Long: `Manage keyboard shortcuts and keymaps across different applications.
 Supports ghostty, vscode, zed, and other apps with keymap configurations.
 
 Examples:
@@ -87,28 +93,25 @@ Examples:
   zeroui keymap validate ghostty
   zeroui keymap presets ghostty
   zeroui keymap conflicts ghostty`,
-	Example: `  zeroui keymap list ghostty
+		Example: `  zeroui keymap list ghostty
   zeroui keymap add ghostty "ctrl+shift+t=new_tab"
   zeroui keymap remove ghostty "ctrl+w"
   zeroui keymap edit ghostty
   zeroui keymap validate ghostty
   zeroui keymap presets ghostty
   zeroui keymap conflicts ghostty`,
-	Args: cobra.NoArgs,
-}
-
-func init() {
-	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(keymapCmd)
+		Args: cobra.NoArgs,
+	}
 
 	// Add keymap subcommands
-	keymapCmd.AddCommand(keymapListCmd)
-	keymapCmd.AddCommand(keymapAddCmd)
-	keymapCmd.AddCommand(keymapRemoveCmd)
-	keymapCmd.AddCommand(keymapEditCmd)
-	keymapCmd.AddCommand(keymapValidateCmd)
-	keymapCmd.AddCommand(keymapPresetsCmd)
-	keymapCmd.AddCommand(keymapConflictsCmd)
+	keymapCmd.AddCommand(newKeymapListCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapAddCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapRemoveCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapEditCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapValidateCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapPresetsCmd(getContainer))
+	keymapCmd.AddCommand(newKeymapConflictsCmd(getContainer))
+	return keymapCmd
 }
 
 // Styles for list output
@@ -334,131 +337,165 @@ func listChangedValues(configService *service.ConfigService, app string) error {
 }
 
 // Keymap subcommands
-var keymapListCmd = &cobra.Command{
-	Use:   "list <app>",
-	Short: "List all keymaps for an application",
-	Example: `  zeroui keymap list ghostty
-  zeroui keymap list zed`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
-
-		configService := container.ConfigService()
-		return listKeymaps(configService, app)
-	},
-}
-
-var keymapAddCmd = &cobra.Command{
-	Use:   "add <app> <keymap>",
-	Short: "Add a new keymap to an application",
-	Example: `  zeroui keymap add ghostty "ctrl+shift+t=new_tab"
+func newKeymapAddCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "add <app> <keymap>",
+		Short: "Add a new keymap to an application",
+		Example: `  zeroui keymap add ghostty "ctrl+shift+t=new_tab"
   zeroui keymap add zed "cmd+b=toggle_sidebar"`,
-	Args: cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		keymap := args[1]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			keymap := args[1]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
 
-		configService := container.ConfigService()
-		return addKeymap(configService, app, keymap)
-	},
+			configService := container.ConfigService()
+			return addKeymap(configService, app, keymap)
+		},
+	}
 }
 
-var keymapRemoveCmd = &cobra.Command{
-	Use:   "remove <app> <keys>",
-	Short: "Remove a keymap from an application",
-	Example: `  zeroui keymap remove ghostty "ctrl+w"
-  zeroui keymap remove vscode "ctrl+shift+p"`,
-	Args: cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		keys := args[1]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
-
-		configService := container.ConfigService()
-		return removeKeymap(configService, app, keys)
-	},
-}
-
-var keymapEditCmd = &cobra.Command{
-	Use:   "edit <app>",
-	Short: "Launch interactive keymap editor",
-	Example: `  zeroui keymap edit ghostty
-  zeroui keymap edit vscode`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
-
-		return editKeymaps(app)
-	},
-}
-
-var keymapValidateCmd = &cobra.Command{
-	Use:   "validate <app>",
-	Short: "Validate all keymaps for an application",
-	Example: `  zeroui keymap validate ghostty
-  zeroui keymap validate zed`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
-
-		configService := container.ConfigService()
-		return validateKeymaps(configService, app)
-	},
-}
-
-var keymapPresetsCmd = &cobra.Command{
-	Use:   "presets <app>",
-	Short: "Show available keymap presets for an application",
-	Example: `  zeroui keymap presets ghostty
-  zeroui keymap presets wezterm`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
-
-		configService := container.ConfigService()
-		return showKeymapPresets(configService, app)
-	},
-}
-
-var keymapConflictsCmd = &cobra.Command{
-	Use:   "conflicts <app>",
-	Short: "Detect and show keymap conflicts",
-	Example: `  zeroui keymap conflicts ghostty
+func newKeymapConflictsCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "conflicts <app>",
+		Short: "Detect and show keymap conflicts",
+		Example: `  zeroui keymap conflicts ghostty
   zeroui keymap conflicts vscode`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		app := args[0]
-		container := GetContainer()
-		if container == nil {
-			return fmt.Errorf("application container not initialized")
-		}
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
 
-		configService := container.ConfigService()
-		return detectKeymapConflicts(configService, app)
-	},
+			configService := container.ConfigService()
+			return detectKeymapConflicts(configService, app)
+		},
+	}
+}
+
+func newKeymapEditCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "edit <app>",
+		Short: "Launch interactive keymap editor",
+		Example: `  zeroui keymap edit ghostty
+  zeroui keymap edit vscode`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
+			return editKeymaps(app)
+		},
+	}
+}
+
+func newKeymapRemoveCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "remove <app> <keys>",
+		Short: "Remove a keymap from an application",
+		Example: `  zeroui keymap remove ghostty "ctrl+w"
+  zeroui keymap remove vscode "ctrl+shift+p"`,
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			keys := args[1]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
+
+			configService := container.ConfigService()
+			return removeKeymap(configService, app, keys)
+		},
+	}
+}
+
+func newKeymapValidateCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "validate <app>",
+		Short: "Validate all keymaps for an application",
+		Example: `  zeroui keymap validate ghostty
+  zeroui keymap validate zed`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
+
+			configService := container.ConfigService()
+			return validateKeymaps(configService, app)
+		},
+	}
+}
+
+func newKeymapPresetsCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "presets <app>",
+		Short: "Show available keymap presets for an application",
+		Example: `  zeroui keymap presets ghostty
+  zeroui keymap presets wezterm`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
+
+			configService := container.ConfigService()
+			return showKeymapPresets(configService, app)
+		},
+	}
+}
+
+func newKeymapListCmd(getContainer func() (*container.Container, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list <app>",
+		Short: "List all keymaps for an application",
+		Example: `  zeroui keymap list ghostty
+  zeroui keymap list zed`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app := args[0]
+			container, err := getContainer()
+			if err != nil {
+				return fmt.Errorf("failed to get container: %w", err)
+			}
+			if container == nil {
+				return fmt.Errorf("application container not initialized")
+			}
+
+			configService := container.ConfigService()
+			return listKeymaps(configService, app)
+		},
+	}
 }
 
 // Keymap management functions

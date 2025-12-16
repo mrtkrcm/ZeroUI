@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// completionCmd represents the completion command
-var completionCmd = &cobra.Command{
-	Use:   "completion [bash|zsh|fish]",
-	Short: "Generate shell completion scripts",
-	Long: `Generate shell completion scripts for zeroui.
+func newCompletionCmd(rootCmd *cobra.Command) *cobra.Command {
+	return &cobra.Command{
+		Use:   "completion [bash|zsh|fish]",
+		Short: "Generate shell completion scripts",
+		Long: `Generate shell completion scripts for zeroui.
 
 The completion script can be loaded to provide auto-completion for zeroui commands,
 subcommands, and flags in your shell.
@@ -53,7 +53,7 @@ Fish:
   # To load completions for each session, execute once:
   $ zeroui completion fish > ~/.config/fish/completions/zeroui.fish
 `,
-	Example: `  # Bash
+		Example: `  # Bash
   source <(zeroui completion bash)
 
   # Zsh
@@ -61,24 +61,21 @@ Fish:
 
   # Fish
   zeroui completion fish | source`,
-	Args:      cobra.ExactArgs(1),
-	ValidArgs: []string{"bash", "zsh", "fish"},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		shell := args[0]
+		Args:      cobra.ExactArgs(1),
+		ValidArgs: []string{"bash", "zsh", "fish"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			shell := args[0]
 
-		switch shell {
-		case "bash":
-			return rootCmd.GenBashCompletion(os.Stdout)
-		case "zsh":
-			return rootCmd.GenZshCompletion(os.Stdout)
-		case "fish":
-			return rootCmd.GenFishCompletion(os.Stdout, true)
-		default:
-			return fmt.Errorf("unsupported shell: %s (supported: bash, zsh, fish)", shell)
-		}
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(completionCmd)
+			switch shell {
+			case "bash":
+				return rootCmd.GenBashCompletion(os.Stdout)
+			case "zsh":
+				return rootCmd.GenZshCompletion(os.Stdout)
+			case "fish":
+				return rootCmd.GenFishCompletion(os.Stdout, true)
+			default:
+				return fmt.Errorf("unsupported shell: %s (supported: bash, zsh, fish)", shell)
+			}
+		},
+	}
 }
