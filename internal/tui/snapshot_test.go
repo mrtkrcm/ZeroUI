@@ -15,6 +15,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 	forms "github.com/mrtkrcm/ZeroUI/internal/tui/components/forms"
 )
 
@@ -101,7 +102,8 @@ func TestSnapshotListView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -134,7 +136,8 @@ func TestSnapshotAppSelectionView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -162,7 +165,8 @@ func TestSnapshotFormView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -198,7 +202,8 @@ func TestSnapshotHelpView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -226,7 +231,8 @@ func TestSnapshotErrorView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -254,7 +260,8 @@ func TestSnapshotResponsiveSizes(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	sizes := []struct {
@@ -315,7 +322,8 @@ func TestSnapshotComponentStates(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -400,7 +408,8 @@ func TestCoreUIFunctionality(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -456,7 +465,8 @@ func TestUILayoutCoverage(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Test each view state with proper setup

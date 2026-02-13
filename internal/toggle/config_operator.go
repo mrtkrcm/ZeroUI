@@ -9,24 +9,27 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/mrtkrcm/ZeroUI/internal/appconfig"
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 	"github.com/spf13/viper"
 )
 
 // ConfigOperator handles core config read/write operations
 type ConfigOperator struct {
 	loader    ConfigLoader
+	validator validation.Manager
 	homeDir   string
 	pathCache *lru.Cache[string, string]
 	pathMutex sync.RWMutex
 }
 
 // NewConfigOperator creates a new config operator
-func NewConfigOperator(loader ConfigLoader) *ConfigOperator {
+func NewConfigOperator(loader ConfigLoader, validator validation.Manager) *ConfigOperator {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000)
 
 	return &ConfigOperator{
 		loader:    loader,
+		validator: validator,
 		homeDir:   homeDir,
 		pathCache: pathCache,
 	}
@@ -68,7 +71,7 @@ func (co *ConfigOperator) SaveConfigSafely(appConfig *appconfig.AppConfig, targe
 	if viper.GetBool("dry-run") {
 		return nil // Don't actually save in dry-run mode
 	}
-
+  
 	// Save target config (now includes advanced validation via FieldValidator in loader)
 	if err := co.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
 		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).

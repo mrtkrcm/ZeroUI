@@ -17,6 +17,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/errors"
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/recovery"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 	"github.com/mrtkrcm/ZeroUI/pkg/configextractor"
 	"github.com/spf13/viper"
 )
@@ -31,11 +32,12 @@ type ConfigLoader interface {
 
 // Engine handles configuration toggling operations
 type Engine struct {
-	loader    ConfigLoader
-	logger    *logger.Logger
-	homeDir   string                     // Cache for home directory
-	pathCache *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
-	pathMutex sync.RWMutex               // Thread-safe access to pathCache
+	loader         ConfigLoader
+	configOperator *ConfigOperator
+	logger         *logger.Logger
+	homeDir        string                     // Cache for home directory
+	pathCache      *lru.Cache[string, string] // LRU cache for expanded paths (prevents memory leak)
+	pathMutex      sync.RWMutex               // Thread-safe access to pathCache
 }
 
 // NewEngine creates a new toggle engine (backwards compatibility)
@@ -73,11 +75,12 @@ func NewEngine() (*Engine, error) {
 }
 
 // NewEngineWithDeps creates a new toggle engine with injected dependencies
-func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger) *Engine {
+func NewEngineWithDeps(configLoader ConfigLoader, log *logger.Logger, validator *validation.Validator) *Engine {
 	homeDir, _ := os.UserHomeDir()
 	pathCache, _ := lru.New[string, string](1000) // 1000 entry limit prevents memory leak
 	return &Engine{
-		loader: configLoader,
+		loader:         configLoader,
+		configOperator: NewConfigOperator(configLoader, validator),
 		logger: func() *logger.Logger {
 			if log != nil {
 				return log
@@ -167,7 +170,7 @@ func (e *Engine) Toggle(appName, key, value string) error {
 	}
 
 	// Save the config
-	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+	if err := e.configOperator.SaveConfigSafely(appConfig, targetConfig); err != nil {
 		// Rollback on failure
 		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
 			log.Error("Failed to rollback changes", rollbackErr)
@@ -265,7 +268,7 @@ func (e *Engine) Cycle(appName, key string) error {
 	}
 
 	// Save the config
-	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+	if err := e.configOperator.SaveConfigSafely(appConfig, targetConfig); err != nil {
 		// Rollback on failure
 		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
 			log.Error("Failed to rollback changes", rollbackErr)
@@ -383,7 +386,7 @@ func (e *Engine) AppendConfiguration(appName, key, value string) error {
 	}
 
 	// Save the config
-	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+	if err := e.configOperator.SaveConfigSafely(appConfig, targetConfig); err != nil {
 		// Rollback on failure
 		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
 			log.Error("Failed to rollback changes", rollbackErr)
@@ -507,7 +510,7 @@ func (e *Engine) RemoveConfiguration(appName, key, value string) error {
 	}
 
 	// Save the config
-	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+	if err := e.configOperator.SaveConfigSafely(appConfig, targetConfig); err != nil {
 		// Rollback on failure
 		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
 			log.Error("Failed to rollback changes", rollbackErr)
@@ -605,7 +608,7 @@ func (e *Engine) ApplyPreset(appName, presetName string) error {
 	}
 
 	// Save the config
-	if err := e.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
+	if err := e.configOperator.SaveConfigSafely(appConfig, targetConfig); err != nil {
 		// Rollback on failure
 		if rollbackErr := safeOp.Rollback(); rollbackErr != nil {
 			log.Error("Failed to rollback changes", rollbackErr)

@@ -55,7 +55,7 @@ func TestOptimizedVsUnoptimizedValidation(t *testing.T) {
 			},
 		},
 	}
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Test that optimized path works correctly
 	result := validator.ValidateAppConfig("test-app", appConfig)
@@ -128,7 +128,7 @@ func BenchmarkValidatorOptimized(b *testing.B) {
 			"setting5": {Type: "number", Min: floatPtr(1), Max: floatPtr(1000)},
 		},
 	}
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -150,7 +150,7 @@ func BenchmarkValidatorUnoptimized(b *testing.B) {
 			"setting5": {Type: "number", Min: floatPtr(1), Max: floatPtr(1000)},
 		},
 	}
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

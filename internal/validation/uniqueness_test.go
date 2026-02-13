@@ -158,13 +158,13 @@ func TestCustomValidationWithUniqueness(t *testing.T) {
 		}
 
 		// Test reserved value
-		err := validator.validateCustom("name", "root", custom)
+		err := validator.validateCustom("root", custom)
 		if err == nil {
 			t.Error("Expected error for reserved value in custom validation")
 		}
 
 		// Test valid value
-		err = validator.validateCustom("name", "uniquename", custom)
+		err = validator.validateCustom("uniquename", custom)
 		if err != nil {
 			t.Errorf("Unexpected error for valid value: %v", err)
 		}

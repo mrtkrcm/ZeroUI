@@ -14,6 +14,7 @@ import (
 	"github.com/mrtkrcm/ZeroUI/internal/logger"
 	"github.com/mrtkrcm/ZeroUI/internal/service"
 	"github.com/mrtkrcm/ZeroUI/internal/toggle"
+	"github.com/mrtkrcm/ZeroUI/internal/validation"
 	"github.com/mrtkrcm/ZeroUI/internal/tui/logging"
 )
 
@@ -25,7 +26,8 @@ func createTestModel(t testing.TB, initialApp string) *Model {
 	if err != nil {
 		t.Fatalf("Failed to create config loader: %v", err)
 	}
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	// Create logger for testing
@@ -103,7 +105,8 @@ func TestFullscreenLayout(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -135,7 +138,8 @@ func TestKeyboardNavigation(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -193,7 +197,8 @@ func TestComponentInteraction(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -213,7 +218,8 @@ func TestStateTransitions(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -263,7 +269,8 @@ func TestInitCommand(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -279,7 +286,8 @@ func TestErrorHandling(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")
@@ -298,7 +306,8 @@ func TestHelpView(t *testing.T) {
 	log := logger.Global()
 	configLoader, err := appconfig.NewReferenceEnhancedLoader()
 	require.NoError(t, err)
-	engine := toggle.NewEngineWithDeps(configLoader, log)
+	validator := validation.NewValidator()
+	engine := toggle.NewEngineWithDeps(configLoader, log, validator)
 	configService := service.NewConfigService(engine, configLoader, log)
 
 	model, err := NewTestModel(configService, "")

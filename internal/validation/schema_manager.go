@@ -26,7 +26,7 @@ func (v *Validator) LoadSchema(schemaPath string) error {
 	}
 
 	v.optimizeSchema(&schema)
-	v.RegisterSchema(&schema)
+	v.RegisterSchema(schema.Name, &schema)
 	return nil
 }
 
@@ -51,12 +51,6 @@ func (v *Validator) LoadSchemasFromDir(dir string) error {
 	return nil
 }
 
-// RegisterSchema registers a validation schema
-func (v *Validator) RegisterSchema(schema *Schema) {
-	v.optimizeSchema(schema)
-	v.schemas[schema.Name] = schema
-}
-
 // optimizeSchema pre-computes and caches expensive operations
 func (v *Validator) optimizeSchema(schema *Schema) {
 	for _, rule := range schema.Fields {
@@ -75,12 +69,6 @@ func (v *Validator) optimizeSchema(schema *Schema) {
 			}
 		}
 	}
-}
-
-// GetSchema returns a schema by name
-func (v *Validator) GetSchema(name string) (*Schema, bool) {
-	schema, ok := v.schemas[name]
-	return schema, ok
 }
 
 // HasSchema checks if a schema exists

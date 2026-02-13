@@ -303,3 +303,18 @@ func GetZeroUIError(err error) (*ZeroUIError, bool) {
 	}
 	return nil, false
 }
+
+// NewValidationError creates a new validation error from a slice of validation errors
+func NewValidationError(appName string, errors []struct {
+	Field   string
+	Message string
+}) *ZeroUIError {
+	var errorMessages []string
+	for _, err := range errors {
+		errorMessages = append(errorMessages, fmt.Sprintf("field '%s': %s", err.Field, err.Message))
+	}
+
+	return New(ValidationError, "configuration validation failed").
+		WithApp(appName).
+		WithSuggestions(errorMessages...)
+}

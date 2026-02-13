@@ -65,7 +65,7 @@ func setupValidatorTest(t *testing.T) (*Validator, string, func()) {
 		},
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	// Create schema file for loading tests with a different name
 	loadedSchema := &Schema{
@@ -113,7 +113,7 @@ func TestValidator_RegisterSchema(t *testing.T) {
 		Fields:      make(map[string]*FieldRule),
 	}
 
-	validator.RegisterSchema(schema)
+	validator.RegisterSchema(schema.Name, schema)
 
 	if len(validator.schemas) != 1 {
 		t.Errorf("Expected 1 schema, got %d", len(validator.schemas))
