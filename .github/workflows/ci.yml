@@ -1,4 +1,4 @@
-name: CI (Deterministic)
+name: CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Go ${{ matrix.go-version }} • deterministic tests
+    name: Go ${{ matrix.go-version }} • tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,11 +37,14 @@ jobs:
       - name: Download deps
         run: make deps
 
-      - name: Run deterministic full tests (relaxed visuals)
+      - name: Run tests
         env:
           ZEROUI_TEST_MODE: "true"
           FAST_TUI_TESTS: "true"
-        run: make test-deterministic
+        run: make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
 
       - name: Short unit tests (redundant sanity)
         env:

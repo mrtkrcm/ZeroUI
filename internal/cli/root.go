@@ -18,82 +18,103 @@ import (
 	"golang.org/x/term"
 )
 
-var (
+// RootCommand encapsulates the root command and its dependencies.
+type RootCommand struct {
+	cmd           *cobra.Command
 	cfgFile       string
-	appContainer  *container.Container
-	containerOnce sync.Once
-	cleanupMu     sync.Mutex
+	container     *container.Container
 	cleanupHooks  []func()
-)
+	cleanupMu     sync.Mutex
+	containerOnce sync.Once
+}
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "zeroui",
-	Short: "Zero-configuration UI toolkit manager for developers",
-	Long: `ZeroUI is a zero-configuration UI toolkit manager that simplifies managing
+// NewRootCommand creates a new root command with dependencies.
+func NewRootCommand() *RootCommand {
+	rc := &RootCommand{}
+
+	rc.cmd = &cobra.Command{
+		Use:   "zeroui",
+		Short: "Zero-configuration UI toolkit manager for developers",
+		Long: `ZeroUI is a zero-configuration UI toolkit manager that simplifies managing
 UI configurations, themes, and settings across development tools and applications.
 Built for speed and simplicity with both CLI and interactive TUI interfaces.`,
-	Example: `  zeroui                              # Launch interactive app grid
+		Example: `  zeroui                              # Launch interactive app grid
   zeroui toggle ghostty theme dark    # Direct configuration toggle
   zeroui cycle alacritty font         # Cycle through font options
   zeroui ui ghostty                   # Launch app-specific UI
   zeroui preset vscode minimal        # Apply configuration preset`,
-	Args:          cobra.NoArgs,
-	SilenceUsage:  true,
-	SilenceErrors: false,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// If no subcommand is provided, launch the UI
-		if len(args) == 0 && cmd.Flags().NFlag() == 0 {
-			// Avoid launching interactive TUI in non-interactive environments (CI/tests)
-			if !term.IsTerminal(int(os.Stdin.Fd())) {
-				fmt.Fprintln(os.Stderr, "Non-interactive environment detected: TUI requires a terminal. Use subcommands (e.g. 'zeroui list apps') or run this command in a terminal to launch the UI. To run non-interactively, use explicit subcommands or flags.")
-				// Show help so callers (including CI) won't hang waiting on a UI
-				return cmd.Help()
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: false,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// If no subcommand is provided, launch the UI
+			if len(args) == 0 && cmd.Flags().NFlag() == 0 {
+				// Avoid launching interactive TUI in non-interactive environments (CI/tests)
+				if !term.IsTerminal(int(os.Stdin.Fd())) {
+					fmt.Fprintln(os.Stderr, "Non-interactive environment detected: TUI requires a terminal. Use subcommands (e.g. 'zeroui list apps') or run this command in a terminal to launch the UI. To run non-interactively, use explicit subcommands or flags.")
+					// Show help so callers (including CI) won't hang waiting on a UI
+					return cmd.Help()
+				}
+
+				// Launch the UI without a specific app (show grid)
+				// Import the functionality directly instead of calling uiCmd
+				container, err := rc.getContainer()
+				if err != nil {
+					return fmt.Errorf("failed to get container: %w", err)
+				}
+				tuiApp, err := tui.NewApp(container, "")
+				if err != nil {
+					return fmt.Errorf("failed to create TUI app: %w", err)
+				}
+				return tuiApp.RunWithContext(cmd.Context())
 			}
+			// Show help if arguments are provided but no valid subcommand
+			return cmd.Help()
+		},
+	}
 
-			// Launch the UI without a specific app (show grid)
-			// Import the functionality directly instead of calling uiCmd
-			container := GetContainer()
-			tuiApp, err := tui.NewApp(container, "")
-			if err != nil {
-				return fmt.Errorf("failed to create TUI app: %w", err)
-			}
-			return tuiApp.RunWithContext(cmd.Context())
-		}
-		// Show help if arguments are provided but no valid subcommand
-		return cmd.Help()
-	},
+	cobra.OnInitialize(rc.initConfig)
+
+	// Global flags
+	rc.cmd.PersistentFlags().StringVar(&rc.cfgFile, "config", "", "config file (default is $HOME/.config/zeroui/config.yaml)")
+	rc.cmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
+	rc.cmd.PersistentFlags().BoolP("dry-run", "n", false, "show what would be changed without making changes")
+
+	// Runtime config flags (for future use with runtime config loader)
+	rc.cmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
+	rc.cmd.PersistentFlags().String("log-format", "text", "log format (text, json)")
+	rc.cmd.PersistentFlags().String("default-theme", "modern", "default theme (modern, dracula)")
+
+	// Bind flags to viper
+	viper.BindPFlag("verbose", rc.cmd.PersistentFlags().Lookup("verbose"))
+	viper.BindPFlag("dry-run", rc.cmd.PersistentFlags().Lookup("dry-run"))
+	viper.BindPFlag("log-level", rc.cmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag("log-format", rc.cmd.PersistentFlags().Lookup("log-format"))
+	viper.BindPFlag("default-theme", rc.cmd.PersistentFlags().Lookup("default-theme"))
+
+	// Add command tracing
+	attachCommandTracing(rc.cmd)
+
+	return rc
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	ExecuteWithContext(context.Background())
-}
-
-// ExecuteWithContext executes the root command with context support for graceful shutdown
-func ExecuteWithContext(ctx context.Context) error {
-	return ExecuteContext(ctx, nil)
-}
-
-// ExecuteContext executes the root command with optional arguments
-func ExecuteContext(ctx context.Context, args []string) error {
+func (rc *RootCommand) Execute(ctx context.Context, args []string) error {
 	defer func() {
-		if appContainer != nil {
-			if err := appContainer.Close(); err != nil {
+		if rc.container != nil {
+			if err := rc.container.Close(); err != nil {
 				logger.Error("Failed to close application container", err)
 			}
 		}
-		runCleanupHooks()
+		rc.runCleanupHooks()
 	}()
 
 	// Set the context on the root command for propagation to subcommands
-	rootCmd.SetContext(ctx)
+	rc.cmd.SetContext(ctx)
 	if args != nil {
-		rootCmd.SetArgs(args)
+		rc.cmd.SetArgs(args)
 	}
 
-	err := rootCmd.ExecuteContext(ctx)
+	err := rc.cmd.ExecuteContext(ctx)
 	if err != nil {
 		// Check if error is due to context cancellation (graceful shutdown)
 		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
@@ -106,35 +127,11 @@ func ExecuteContext(ctx context.Context, args []string) error {
 	return nil
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/zeroui/config.yaml)")
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().BoolP("dry-run", "n", false, "show what would be changed without making changes")
-
-	// Runtime config flags (for future use with runtime config loader)
-	rootCmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().String("log-format", "text", "log format (text, json)")
-	rootCmd.PersistentFlags().String("default-theme", "modern", "default theme (modern, dracula)")
-
-	// Bind flags to viper
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("dry-run", rootCmd.PersistentFlags().Lookup("dry-run"))
-	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
-	viper.BindPFlag("log-format", rootCmd.PersistentFlags().Lookup("log-format"))
-	viper.BindPFlag("default-theme", rootCmd.PersistentFlags().Lookup("default-theme"))
-
-	// Add command tracing
-	attachCommandTracing(rootCmd)
-}
-
 // initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
+func (rc *RootCommand) initConfig() {
+	if rc.cfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(rc.cfgFile)
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()
@@ -157,7 +154,7 @@ func initConfig() {
 
 	// Load runtime configuration
 	loader := runtimeconfig.NewLoader(viper.GetViper())
-	cfg, err := loader.Load(cfgFile, rootCmd.PersistentFlags())
+	cfg, err := loader.Load(rc.cfgFile, rc.cmd.PersistentFlags())
 	if err != nil {
 		// If runtime config loading fails, fall back to defaults
 		// This ensures backward compatibility
@@ -197,36 +194,56 @@ func initConfig() {
 	}
 }
 
-// GetContainer returns the application container (for use in subcommands)
-// The container is lazily initialized on first access to ensure it's created
-// after initConfig has run and the global logger is properly configured.
-func GetContainer() *container.Container {
-	containerOnce.Do(func() {
-		var err error
-		appContainer, err = container.New(nil)
-		if err != nil {
-			logger.Fatal("Failed to initialize application container", err)
-		}
+func (rc *RootCommand) getContainer() (*container.Container, error) {
+	var err error
+	rc.containerOnce.Do(func() {
+		rc.container, err = container.New(nil)
 	})
-	return appContainer
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize application container: %w", err)
+	}
+	return rc.container, nil
+}
+
+// AddSubcommands adds all the subcommands to the root command.
+func (rc *RootCommand) AddSubcommands() {
+	getContainer := func() (*container.Container, error) {
+		return rc.getContainer()
+	}
+
+	rc.cmd.AddCommand(
+		newUICmd(getContainer),
+		newToggleCmd(getContainer),
+		newListCmd(getContainer),
+		newKeymapCmd(getContainer),
+		newBackupCmd(),
+		newCompletionCmd(rc.cmd),
+		newCycleCmd(getContainer),
+		newDesignSystemCmd(getContainer),
+		newExtractCmd(),
+		newPresetCmd(),
+		newReferenceImprovedCmd(),
+		newValidateReferenceCmd(),
+		newVersionCmd(),
+	)
 }
 
 // RegisterCleanupHook adds a function to run after command execution completes
-func RegisterCleanupHook(hook func()) {
+func (rc *RootCommand) RegisterCleanupHook(hook func()) {
 	if hook == nil {
 		return
 	}
 
-	cleanupMu.Lock()
-	defer cleanupMu.Unlock()
-	cleanupHooks = append(cleanupHooks, hook)
+	rc.cleanupMu.Lock()
+	defer rc.cleanupMu.Unlock()
+	rc.cleanupHooks = append(rc.cleanupHooks, hook)
 }
 
-func runCleanupHooks() {
-	cleanupMu.Lock()
-	hooks := cleanupHooks
-	cleanupHooks = nil
-	cleanupMu.Unlock()
+func (rc *RootCommand) runCleanupHooks() {
+	rc.cleanupMu.Lock()
+	hooks := rc.cleanupHooks
+	rc.cleanupHooks = nil
+	rc.cleanupMu.Unlock()
 
 	for _, hook := range hooks {
 		hook()

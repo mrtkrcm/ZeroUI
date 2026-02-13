@@ -50,10 +50,10 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 	}
 
 	// Try to load custom apps from user config
-	home, err := os.UserHomeDir()
+	configDir, err := os.UserConfigDir()
 	if err == nil {
 		// Check for custom apps.yaml to add/override apps
-		customAppsPath := filepath.Join(home, ".config", "zeroui", "apps.yaml")
+		customAppsPath := filepath.Join(configDir, "zeroui", "apps.yaml")
 		if _, err := os.Stat(customAppsPath); err == nil {
 			if err := registry.MergeFromFile(customAppsPath); err != nil {
 				// Log error but don't fail - embedded registry is still valid
@@ -62,7 +62,7 @@ func LoadAppsRegistry() (*AppsRegistry, error) {
 		}
 
 		// Also check for full registry override (advanced users)
-		customRegistryPath := filepath.Join(home, ".config", "zeroui", "apps_registry.yaml")
+		customRegistryPath := filepath.Join(configDir, "zeroui", "apps_registry.yaml")
 		if _, err := os.Stat(customRegistryPath); err == nil {
 			// This completely replaces the embedded registry
 			return loadRegistryFromFile(customRegistryPath)

@@ -71,24 +71,8 @@ func (co *ConfigOperator) SaveConfigSafely(appConfig *appconfig.AppConfig, targe
 	if viper.GetBool("dry-run") {
 		return nil // Don't actually save in dry-run mode
 	}
-
-	// Validate the configuration before saving
-	result := co.validator.ValidateTargetConfig(appConfig.Name, targetConfig.All())
-	if !result.Valid {
-		// Create a validation error from the result
-		var errs []struct {
-			Field   string
-			Message string
-		}
-		for _, err := range result.Errors {
-			errs = append(errs, struct {
-				Field   string
-				Message string
-			}{Field: err.Field, Message: err.Message})
-		}
-		return errors.NewValidationError(appConfig.Name, errs)
-	}
-
+  
+	// Save target config (now includes advanced validation via FieldValidator in loader)
 	if err := co.loader.SaveTargetConfig(appConfig, targetConfig); err != nil {
 		return errors.Wrap(errors.ConfigWriteError, "failed to save config", err).
 			WithApp(appConfig.Name).

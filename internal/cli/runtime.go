@@ -39,7 +39,9 @@ func RunWithOptions(opts RunOptions) int {
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- ExecuteContext(ctx, opts.Args)
+		rootCmd := NewRootCommand()
+		rootCmd.AddSubcommands()
+		errCh <- rootCmd.Execute(ctx, opts.Args)
 	}()
 
 	for {

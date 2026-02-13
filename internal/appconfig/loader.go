@@ -354,6 +354,13 @@ func (l *Loader) SaveTargetConfig(appConfig *AppConfig, k *koanf.Koanf) error {
 		return fmt.Errorf("failed to write temp file: %w", err)
 	}
 
+	// Validate config values against AppConfig constraints
+	validator := NewFieldValidator()
+	if err := validator.ValidateConfig(appConfig, k); err != nil {
+		tempManager.Rollback(tempFile)
+		return fmt.Errorf("config values validation failed: %w", err)
+	}
+
 	// Validate the temporary file before committing
 	if err := integrityChecker.ValidateFormat(tempFile.TempPath); err != nil {
 		tempManager.Rollback(tempFile)

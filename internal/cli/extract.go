@@ -15,31 +15,34 @@ import (
 	"github.com/mrtkrcm/ZeroUI/pkg/legacyextractor"
 )
 
-var extractCmd = &cobra.Command{
-	Use:   "extract [app|--all]",
-	Short: "Extract configuration for app(s)",
-	Long:  `Extract configuration from applications using parallel methods (CLI, GitHub, local files).`,
-	Example: `  zeroui extract ghostty
+func newExtractCmd() *cobra.Command {
+	var (
+		extractAll    bool
+		extractOutput string
+		extractApps   string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "extract [app|--all]",
+		Short: "Extract configuration for app(s)",
+		Long:  `Extract configuration from applications using parallel methods (CLI, GitHub, local files).`,
+		Example: `  zeroui extract ghostty
   zeroui extract --all
   zeroui extract --apps "ghostty,zed" --output configs`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runExtract,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runExtract(cmd, args, extractAll, extractOutput, extractApps)
+		},
+	}
+
+	cmd.Flags().BoolVar(&extractAll, "all", false, "Extract all known apps")
+	cmd.Flags().StringVarP(&extractOutput, "output", "o", "configs", "Output directory")
+	cmd.Flags().StringVar(&extractApps, "apps", "", "Comma-separated app list")
+
+	return cmd
 }
 
-var (
-	extractAll    bool
-	extractOutput string
-	extractApps   string
-)
-
-func init() {
-	rootCmd.AddCommand(extractCmd)
-	extractCmd.Flags().BoolVar(&extractAll, "all", false, "Extract all known apps")
-	extractCmd.Flags().StringVarP(&extractOutput, "output", "o", "configs", "Output directory")
-	extractCmd.Flags().StringVar(&extractApps, "apps", "", "Comma-separated app list")
-}
-
-func runExtract(cmd *cobra.Command, args []string) error {
+func runExtract(cmd *cobra.Command, args []string, extractAll bool, extractOutput string, extractApps string) error {
 	start := time.Now()
 	ext := legacyextractor.New()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
